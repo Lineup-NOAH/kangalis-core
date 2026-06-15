@@ -1,19 +1,19 @@
 # Kangalis Yerel AI — Sıfır-Egress (Veri Dışarı Çıkmaz) Doğrulama Runbook'u
 
 > **Amaç:** Kangalis'in yerel AI asistanının, analiz ettiği zafiyet/bulgu verilerini
-> **müşteri ağının dışına çıkarmadığını** bağımsız olarak kanıtlamak. Bu belge hem iç ekip
-> hem de müşterinin güvenlik/uyum (KVKK, ISO 27001) ekibi için tekrar uygulanabilir bir
+> **dağıtım ağının dışına çıkarmadığını** bağımsız olarak kanıtlamak. Bu belge hem iç ekip
+> hem de operatörün güvenlik/uyum (KVKK, ISO 27001) ekibi için tekrar uygulanabilir bir
 > denetim prosedürüdür.
 
 ## 1. Mimari — neden veri çıkamaz
 
-AI üç katmandan oluşur ve **üçü de müşterinin kendi sunucusunda** çalışır:
+AI üç katmandan oluşur ve **üçü de operatörün kendi sunucusunda** çalışır:
 
 | Katman | Görev | Konum |
 |--------|-------|-------|
-| **Kangalis AI çatısı** (`core/ai/`) | İstek hazırlar, prompt kurar, yanıtı gösterir | Müşteri sunucusu (uygulama konteyneri) |
-| **Ollama** | Modeli yükler, OpenAI-uyumlu API sunar | Müşteri sunucusu (AI konteyneri) |
-| **Model** (örn. qwen3:8b) | Metni üreten yapay zekâ | Müşteri sunucusu (yerel diskte) |
+| **Kangalis AI çatısı** (`core/ai/`) | İstek hazırlar, prompt kurar, yanıtı gösterir | Dağıtım sunucusu (uygulama konteyneri) |
+| **Yerel çıkarım motoru** (llama.cpp; Ollama/LM Studio gibi yerel motorlar da olur) | Modeli yükler, OpenAI-uyumlu API sunar | Dağıtım sunucusu (AI konteyneri) |
+| **Model** (örn. qwen3:8b) | Metni üreten yapay zekâ | Dağıtım sunucusu (yerel diskte) |
 
 Bulut API'si **yoktur**. AI çağrısı yalnızca **iç ağ adresine** (`http://kangalis-ai:11434/v1`)
 gider — bu bir Docker iç-DNS adıdır, internet IP'si değildir; host makineden fiziksel olarak
@@ -117,9 +117,9 @@ konteynerler sağlıklı. ✅ **AI'ın internete ihtiyacı YOK; veri dışarı �
 
 > Üretimde kalıcı yöntem: AI konteynerini sürekli Docker `--internal` ağında tut ya da host
 > firewall'ında (iptables/Windows Defender Firewall) konteyner egress'ini DROP'la. Bu durumda
-> internet hiç açılmaz; model **air-gap baked imaj** (önceden indirilmiş ağırlıklar) ile gelir.
+> internet hiç açılmaz; model, önceden indirilmiş ağırlıklarla (imaja gömülü) gelir.
 
-## 4. Bağımsız ağ izleme (müşteri denetçisi için)
+## 4. Bağımsız ağ izleme (operatör denetçisi için)
 
 Host üzerinden paket düzeyinde doğrulama (Wireshark/tcpdump):
 
@@ -131,13 +131,13 @@ sudo tcpdump -ni any "host kangalis-ai and not (net 172.16.0.0/12 or net 10.0.0.
 
 ## 5. Tek dürüst istisna — model indirme (veri DEĞİL)
 
-Veri hiçbir zaman çıkmaz; ancak **ilk kurulumda** Ollama, modeli (qwen3 *ağırlık dosyaları*)
-`registry.ollama.ai` adresinden indirir. Bu:
+Veri hiçbir zaman çıkmaz; ancak **ilk kurulumda** yerel çıkarım motoru, modeli (qwen3 *ağırlık
+dosyaları*) genel bir model deposundan indirir. Bu:
 
-- **Müşteri verisi değildir** — yalnızca genel, açık-kaynak model ağırlıklarıdır (tek yön: indirme).
+- **Operatör/dağıtım verisi değildir** — yalnızca genel, açık-kaynak model ağırlıklarıdır (tek yön: indirme).
 - **Tek seferliktir** — model diske indikten sonra bir daha gerekmez.
-- **Air-gap dağıtımında hiç olmaz** — model, ürün imajına gömülü gelir (`docker load`), sıfır
-  kurulum-egress. (Bkz. paketleme planı: air-gap baked imaj.)
+- **Air-gap dağıtımında hiç olmaz** — model, ürün imajına önceden gömülü gelir (`docker load`), sıfır
+  kurulum-egress.
 
 ## 6. Özet
 
@@ -149,5 +149,5 @@ Veri hiçbir zaman çıkmaz; ancak **ilk kurulumda** Ollama, modeli (qwen3 *ağ�
 | İnternetsiz çalışır mı? | **Evet** — air-gap testi geçer (Bölüm 3). |
 | Hiç dış trafik var mı? | Yalnız tek-seferlik model indirme; air-gap'te o da yok (Bölüm 5). |
 
-**Sonuç:** Kangalis yerel AI, müşteri verisini ağ dışına çıkarmaz; bu, kod denetimi, çalışma-anı
+**Sonuç:** Kangalis yerel AI, operatör verisini ağ dışına çıkarmaz; bu, kod denetimi, çalışma-anı
 ağ analizi ve air-gap testiyle bağımsız olarak doğrulanabilir.

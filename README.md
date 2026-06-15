@@ -1,9 +1,9 @@
-# CyberSecTool
+# Kangalis
 
-> Lineup-NOAH ekibinin Python tabanlı, web panelli, ağırlıklı **iç ağ/sistem taramasına** odaklı zafiyet yönetim platformu.
+> **İç ağınızın bekçisi** — Lineup-NOAH ekibinin Python tabanlı, web panelli, ağırlıklı **iç ağ/sistem taramasına** odaklı zafiyet yönetim platformu.
 
-[![CI](https://github.com/Lineup-NOAH/CyberSecTool/actions/workflows/ci.yml/badge.svg)](https://github.com/Lineup-NOAH/CyberSecTool/actions/workflows/ci.yml)
-[![durum](https://img.shields.io/badge/durum-erken%20geli%C5%9Ftirme-orange)]()
+[![CI](https://github.com/Lineup-NOAH/kangalis/actions/workflows/ci.yml/badge.svg)](https://github.com/Lineup-NOAH/kangalis/actions/workflows/ci.yml)
+[![durum](https://img.shields.io/badge/durum-beta-yellow)]()
 [![python](https://img.shields.io/badge/python-3.12%2B-blue)]()
 [![lisans](https://img.shields.io/badge/lisans-MIT-green)]()
 
@@ -28,16 +28,18 @@ kimlik brute-force) ayrı, opsiyonel bir **sömürü eklentisinde** tutulur ve b
 > Host'a kurun (`apt install nmap` / `brew install nmap` / `choco install nmap`) veya çalışma
 > ortamında sağlayın.
 
-## Özellikler (planlanan)
+## Özellikler
 
 - 🔍 **Ağ & Host tarama** — host keşfi, port tarama, servis/versiyon tespiti (nmap)
 - 🛡️ **CVE eşleştirme + risk skoru** — NVD/OSV + Exploit-DB + CISA KEV + EPSS
 - 🌐 **Web tarama** — güvenlik başlıkları, TLS/SSL denetimi, dizin keşfi
 - 📦 **SCA** — bağımlılık (requirements.txt, package.json) zafiyet taraması
-- 🤖 **MCP sunucusu** — Claude tarama başlatıp sonuçları sorgulayabilir
+- ✅ **Uyum denetimleri** — CIS/KVKK/ISO/PCI kontrolleri ve raporlama
+- 🤖 **MCP sunucusu** — Claude tarama başlatıp sonuçları sorgular
+- 🧠 **Yerel (on-prem) savunmacı AI** — bulgu özetleme ve uyum anlatısı
 - 📊 **Web dashboard** — HTMX + Tailwind
 
-Ayrıntılı yol haritası: [`docs/PROJE_PLANI.md`](docs/PROJE_PLANI.md)
+Mimari/tasarım: [`docs/PROJE_PLANI.md`](docs/PROJE_PLANI.md)
 
 ## Teknoloji yığını
 
@@ -85,7 +87,8 @@ src/cybersectool/
 
 ## Katkı / iş akışı
 
-`feature/*` → **dev**'e PR. Conventional Commits. Her PR'da `ruff` + `mypy` + `pytest` geçmeli.
+Fork + **main**'e PR. Conventional Commits. Her PR'da `ruff` + `mypy` + `pytest` geçmeli.
+Ayrıntılar için: [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## Lisans
 

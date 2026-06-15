@@ -1,4 +1,4 @@
-# Kangalis (CyberSecTool) Helm değerleri — varsayılanlar.
+# Kangalis Helm değerleri — varsayılanlar.
 # Üretim için secrets.* ve postgres.password MUTLAKA override edilmeli (aşağıdaki NOTES uyarır).
 
 # Tüm bileşenler (app/worker/beat/mcp) AYNI imajı kullanır (Dockerfile tek; compose'da hepsi `build .`).

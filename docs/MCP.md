@@ -1,6 +1,6 @@
-# CyberSecTool MCP Sunucusu
+# Kangalis MCP Sunucusu
 
-Claude'un (Desktop / Code) CyberSecTool'u doğrudan kullanabilmesi için MCP sunucusu.
+Claude'un (Desktop / Code) Kangalis'i doğrudan kullanabilmesi için MCP sunucusu.
 Araçlar, web arayüzüyle **aynı core/service katmanını** çağırır.
 
 ## Araçlar
@@ -38,7 +38,7 @@ Sunucu veritabanına `DATABASE_URL` ile bağlanır (varsayılan `localhost:5432`
   "mcpServers": {
     "cybersectool": {
       "command": "uv",
-      "args": ["run", "--directory", "C:/Users/Omer/Desktop/cybersectool", "cybersectool-mcp"],
+      "args": ["run", "--directory", "<repo-dizini>", "cybersectool-mcp"],
       "env": {
         "DATABASE_URL": "postgresql+asyncpg://cyber:cyber@localhost:5432/cybersectool",
         "REDIS_URL": "redis://localhost:6379/0"
@@ -77,7 +77,7 @@ MCP_TRANSPORT=http python -m cybersectool.mcp.server   # http://0.0.0.0:8001/mcp
 Geçersiz/eksik kimlik → 401. API token üretimi (Bearer için):
 
 ```bash
-docker compose exec app python -m cybersectool.scripts.create_token --username omer --name claude-uzak
+docker compose exec app python -m cybersectool.scripts.create_token --username <kullanıcı-adı> --name claude-uzak
 ```
 
 İstemci (streamable-http destekleyen) bağlantısı:

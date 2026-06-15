@@ -1,4 +1,4 @@
-# Kangalis (CyberSecTool) — Kubernetes dağıtımı
+# Kangalis — Kubernetes dağıtımı
 
 `deploy/helm/kangalis` Helm chart'ı uygulamayı (app/worker/beat + opsiyonel postgres/redis/mcp)
 Kubernetes'e kurar. Tarama **worker'ları yatay ölçeklenir** (replica artırımı = daha çok eşzamanlı

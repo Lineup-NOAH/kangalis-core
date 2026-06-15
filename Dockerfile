@@ -1,4 +1,4 @@
-# CyberSecTool uygulama imaji (uv tabanli)
+# Kangalis uygulama imaji (uv tabanli)
 FROM python:3.12-slim
 
 # uv'yi resmi imajdan kopyala

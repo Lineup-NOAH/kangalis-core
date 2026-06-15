@@ -1,36 +1,18 @@
-# CyberSecTool — Kullanım Kılavuzu & Referans
+# Kangalis — Başlangıç & Kullanım Rehberi
 
-> Bu dosya: **bilmen gereken her şey** tek yerde — giriş bilgileri, komutlar, mimari, kullanım.
-> Proje: `C:\Users\Omer\Desktop\cybersectool` · GitHub: `Lineup-NOAH/CyberSecTool` (branch `dev`)
-> Durum: **27 PR merged, tüm yol haritası tamam + uzaktan MCP.** 69 test geçiyor, CI yeşil.
-
----
-
-## 1. 🔑 GİRİŞ BİLGİLERİ (Credentials)
-
-> ⚠️ Aşağıdaki `cyber`, `dev-secret`, `Admin123!` değerleri **geliştirme varsayılanlarıdır** —
-> local test için güvenli, **gerçek/üretim kullanımında MUTLAKA değiştir** (bkz. §6).
-
-| Bileşen | Kullanıcı | Şifre / Değer | Nerede tanımlı | Not |
-|---|---|---|---|---|
-| **Web paneli (admin)** | `admin` | `Admin123!` | DB'de (testte oluşturuldu) | Hemen giriş için |
-| **PostgreSQL** | `cyber` | `cyber` | `docker-compose.yml` | DB adı: `cybersectool` |
-| **Oturum imzası** | — | `dev-secret` (SECRET_KEY) | `docker-compose.yml` (app) | Cookie imzalama |
-| **Redis** | — | (şifresiz) | — | Port 6379 |
-| **API token (Claude/MCP/API)** | — | `cst_...` | `create_token` ile üretilir | Bir kez gösterilir |
-
-**Bağlantı dizesi (varsayılan):**
-```
-DATABASE_URL = postgresql+asyncpg://cyber:cyber@localhost:5432/cybersectool
-REDIS_URL    = redis://localhost:6379/0
-```
+> İç ağınızın bekçisi. Bu rehber Kangalis'i sıfırdan ayağa kaldırmanız, ilk
+> kullanıcıyı oluşturmanız, ilk taramayı başlatmanız ve isteğe bağlı MCP
+> entegrasyonunu kurmanız için gereken adımları içerir.
 
 ---
 
-## 2. 🚀 ÇALIŞTIRMA (sıfırdan)
+## 1. 🚀 Çalıştırma (sıfırdan)
+
+Önkoşul: Docker ve Docker Compose kurulu olmalı. Depoyu klonlayın ve dizine girin.
 
 ```powershell
-cd C:\Users\Omer\Desktop\cybersectool
+# <repo-dizini> = klonladığınız depo kökü
+cd <repo-dizini>
 
 # 1) Tüm servisleri başlat (app, db, redis, worker, beat, mcp)
 docker compose up -d --build
@@ -38,8 +20,8 @@ docker compose up -d --build
 # 2) Veritabanı tablolarını oluştur/güncelle
 docker compose exec app alembic upgrade head
 
-# 3) Admin kullanıcı (yoksa). Mevcut: admin/Admin123!
-docker compose exec app python -m cybersectool.scripts.create_user --username admin --password "GucluParola!" --role admin
+# 3) İlk kullanıcıyı oluştur — kendi güçlü parolanı belirle
+docker compose exec app python -m cybersectool.scripts.create_user --username <kullanıcı-adı> --password "<güçlü-bir-parola-seç>" --role admin
 
 # 4) ⚠️ ZORUNLU: yetkili tarama kapsamı (yoksa hiçbir tarama çalışmaz)
 docker compose exec app python -m cybersectool.scripts.set_scope --name ic-ag --allow 192.168.1.0/24 --allow 10.0.0.0/8
@@ -57,11 +39,17 @@ docker compose exec app python -m cybersectool.scripts.set_scope --name ic-ag --
 | PostgreSQL | localhost:5432 |
 | Redis | localhost:6379 |
 
+> Bağlantı bilgileri (DATABASE_URL, REDIS_URL, SECRET_KEY, PostgreSQL parolası vb.)
+> Compose dosyası ve ortam değişkenleriyle yapılandırılır. Üretim kullanımı için
+> bkz. §6 — varsayılan/geliştirme değerlerini mutlaka kendi güçlü değerlerinizle
+> değiştirin.
+
 ---
 
-## 3. 🖥️ WEB PANELİ KULLANIMI
+## 2. 🖥️ Web Paneli Kullanımı
 
-`http://localhost:8000/login` → `admin` / `Admin123!`
+`http://localhost:8000/login` adresinden, 1. adımda oluşturduğun kullanıcı adı ve
+parolayla giriş yap.
 
 | Sayfa | URL | Ne yapar |
 |---|---|---|
@@ -99,7 +87,6 @@ filtreleri ve sayılı kategori çipleri var. Güncelleme: panelde **"🔄 Verit
 Eski kayıtları yeniden sınıflandırmak: `... python -m cybersectool.scripts.reclassify_exploits [--all]`.
 API: `GET /api/exploits?q=&source=&category=windows&severity=critical`, `POST /api/exploits/sync`.
 NVD toplu çekme `NVD_API_KEY` ile hızlanır. Tipik boyut: ~70k kayıt ≈ 20-25 MB.
-> Taramayla otomatik eşleştirme (bir CVE bulununca ilgili exploit'leri gösterme) sonraki adımda.
 
 **Zone (tarama bölgesi):** `/zones` → ad + IP/CIDR blokları gir (her satıra bir tane) → "Zone Oluştur".
 Zone'lar **yalnızca yönetilir** burada (oluştur/sil). **Tarama Taramalar sayfasından** yapılır:
@@ -110,7 +97,7 @@ API (ağ modu): `POST /api/zones`, `GET /api/zones`, `POST /api/zones/{id}/scan`
 
 ---
 
-## 4. 🔧 TARAMA TÜRLERİ
+## 3. 🔧 Tarama Türleri
 
 | Tür | Nasıl | Bulur |
 |---|---|---|
@@ -138,24 +125,27 @@ olarak **denetim günlüğüne** (kim/ne zaman) yazılır. Zamanlanmış taramal
 
 ---
 
-## 5. 🤖 MCP (Claude entegrasyonu) — 2 mod
+## 4. 🤖 MCP (Claude entegrasyonu) — 2 mod
 
 ### A) Local (stdio) — kendi Claude Desktop'ın
+
 `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
     "cybersectool": {
       "command": "uv",
-      "args": ["run", "--directory", "C:/Users/Omer/Desktop/cybersectool", "cybersectool-mcp"],
-      "env": { "DATABASE_URL": "postgresql+asyncpg://cyber:cyber@localhost:5432/cybersectool" }
+      "args": ["run", "--directory", "<repo-dizini>", "cybersectool-mcp"],
+      "env": { "DATABASE_URL": "postgresql+asyncpg://<kullanıcı>:<parola>@localhost:5432/cybersectool" }
     }
   }
 }
 ```
 
+> `<repo-dizini>` ve `DATABASE_URL` değerlerini kendi kurulumuna göre doldur.
+
 ### B) Uzak (HTTP + token) — ağdaki herkes
-1. Token üret: `docker compose exec app python -m cybersectool.scripts.create_token --username omer --name claude-uzak`
+1. Token üret: `docker compose exec app python -m cybersectool.scripts.create_token --username <kullanıcı-adı> --name claude-uzak`
 2. İstemci bağlantısı:
    ```
    URL:    http://<sunucu-ip>:8001/mcp
@@ -167,13 +157,13 @@ Token yoksa/geçersizse → **401**. Detay: `docs/MCP.md`.
 
 ---
 
-## 6. 🔐 ÜRETİME GEÇİŞ (varsayılan şifreleri değiştir)
+## 5. 🔐 Üretime Geçiş (varsayılan şifreleri değiştir)
 
 1. Proje köküne **`.env`** oluştur (örnek: `.env.example`), git'e GİRMEZ.
 2. Güçlü değerler ver:
    ```
    SECRET_KEY=<uzun-rastgele-dize>
-   DATABASE_URL=postgresql+asyncpg://cyber:<GUCLU_PAROLA>@db:5432/cybersectool
+   DATABASE_URL=postgresql+asyncpg://<kullanıcı>:<güçlü-parola>@db:5432/cybersectool
    NOTIFY_WEBHOOK_URL=<istersen Slack/webhook>
    ALLOW_AGGRESSIVE_SCANS=false   # agresif/müdahaleci tarama; yalnızca bilinçli aç
    ```
@@ -183,7 +173,7 @@ Token yoksa/geçersizse → **401**. Detay: `docs/MCP.md`.
 
 ---
 
-## 7. 👥 ROLLER (RBAC)
+## 6. 👥 Roller (RBAC)
 
 | Rol | Yetki |
 |---|---|
@@ -193,7 +183,7 @@ Token yoksa/geçersizse → **401**. Detay: `docs/MCP.md`.
 
 ---
 
-## 8. ⚙️ MİMARİ (özet)
+## 7. ⚙️ Mimari (özet)
 
 **6 Docker servisi** (tek makine, Docker Compose — Kubernetes değil):
 
@@ -214,7 +204,7 @@ Token yoksa/geçersizse → **401**. Detay: `docs/MCP.md`.
 
 ---
 
-## 9. 📋 KOMUT CHEAT-SHEET
+## 8. 📋 Komut Cheat-Sheet
 
 ```powershell
 # Not: shell'inde 'docker' PATH'te yoksa başına şunu ekle:
@@ -231,7 +221,7 @@ docker compose exec app python -m cybersectool.scripts.create_token --username X
 docker compose exec app python -m cybersectool.scripts.set_scope --name ic --allow 10.0.0.0/8
 
 # geliştirme (kod değişince)
-uv run pytest                  # testler (69)
+uv run pytest                  # testler
 uv run ruff check .            # lint
 uv run mypy                    # tip kontrolü
 docker compose down            # durdur
@@ -239,27 +229,13 @@ docker compose down            # durdur
 
 ---
 
-## 10. ⚠️ ÖNEMLİ NOTLAR
+## 9. ⚠️ Önemli Notlar
 
 - **Scope zorunlu:** Tanımlamadığın hiçbir hedef taranmaz (default-deny, yasal güvence).
 - **Windows + iç ağ:** Docker Desktop gerçek ofis LAN'ını taramada sınırlı; üretim için Linux sunucu öner.
 - **Veri kalıcı:** `docker compose down` veriyi korur (pgdata volume). `-v` eklersen siler.
-- **Migration zinciri başı→son:** baseline → users → api_tokens → assets/scans/findings → scope_policies → cves → cve exploitability → scheduled_scans (`af93c05a857c` = güncel head).
-- **Git/PR akışı:** `feature/*` → `dev` PR → squash merge. CI (GitHub Actions) her PR'da ruff+mypy+pytest çalıştırır.
 - **MCP HTTP'de token = kimlik doğrulama**; araç-içi per-user RBAC henüz yok (geçerli token'lı herkes tüm araçları kullanır).
 - **Agresif tarama tehlikelidir:** hedef servisi kesintiye uğratabilir / iz bırakabilir. Varsayılan kapalı; açmadan önce hedefin **yedeğini al**. Üretim/kırılgan sistemlerde dikkatli kullan.
-
----
-
-## 11. ✅ YAPILANLAR (27 PR) & SONRAKİ ADAY İŞLER
-
-**Tamamlandı:** Temel (Docker/FastAPI/Postgres/Alembic/auth/RBAC/token) · MVP (nmap ağ tarama + envanter + panel) · CVE zekâsı (NVD + KEV + EPSS + risk skoru) · MCP (local + uzak) · Web/SCA/Host tarayıcılar · Zamanlanmış taramalar · Bildirimler · Rapor · Denetim · CI/CD.
-
-**Sonraki aday işler (plan dışı, istersen):**
-- MCP araçlarına **per-user RBAC** (token → kullanıcı rolü)
-- **Ürün-içi /chat** (Claude API tool-use **veya** local Ollama modeli)
-- SSH credential **şifreli saklama**
-- Gerçek **PDF** rapor (WeasyPrint), NVD **yerel mirror**
 
 ---
 

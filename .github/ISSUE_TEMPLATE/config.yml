@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Güvenlik açığı bildirimi
+    url: https://github.com/Lineup-NOAH/kangalis/blob/main/SECURITY.md
+    about: Güvenlik açıklarını kamuya açık issue olarak DEĞİL, SECURITY.md'deki sorumlu açıklama süreciyle bildirin.

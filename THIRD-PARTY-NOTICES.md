@@ -1,6 +1,6 @@
 # Üçüncü Taraf Bildirimleri
 
-CyberSecTool (MIT lisanslı, açık-kaynak çekirdek), aşağıdaki üçüncü taraf çalışma-zamanı
+Kangalis (MIT lisanslı, açık-kaynak çekirdek), aşağıdaki üçüncü taraf çalışma-zamanı
 bağımlılıklarını kullanır. Her bağımlılık kendi lisansı altında dağıtılır; ilgili lisans
 metinleri ve telif hakları paketlerin kendi dağıtımlarında yer alır. Bu liste yalnızca
 bilgilendirme amaçlıdır ve çalışma-zamanı (runtime) bağımlılıklarını kapsar; geliştirme/

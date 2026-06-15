@@ -1,6 +1,6 @@
 # Güvenlik Politikası
 
-CyberSecTool, Lineup-NOAH tarafından geliştirilen bir iç-ağ zafiyet tarama
+Kangalis, Lineup-NOAH tarafından geliştirilen bir iç-ağ zafiyet tarama
 platformudur. Aktif tarama, kimlik-doğrulama denetimi ve ağ keşfi gerçekleştirir;
 bu nedenle hem **sorumlu açıklama** hem de **yetkili kullanım** kurallarına tabidir.
 
@@ -23,7 +23,7 @@ bulunanlar sorumlu tutulamaz.
 
 ## Zafiyet Bildirimi (Sorumlu Açıklama)
 
-CyberSecTool'un **kendisinde** bir güvenlik açığı bulursanız, lütfen sorumlu açıklama
+Kangalis'in **kendisinde** bir güvenlik açığı bulursanız, lütfen sorumlu açıklama
 ilkesine uyun:
 
 - Açığı **kamuya açık** GitHub issue/PR olarak **yayınlamayın**.

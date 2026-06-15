@@ -1,11 +1,11 @@
 apiVersion: v2
 name: kangalis
-description: Kangalis (CyberSecTool) — iç ağ zafiyet tarama + pentest platformu (k8s dağıtımı)
+description: Kangalis — iç ağ zafiyet tarama + pentest platformu (k8s dağıtımı)
 type: application
 # Chart sürümü (paketleme); appVersion uygulama sürümünü izler.
 version: 0.1.0
 appVersion: "0.1.0"
-home: https://github.com/Lineup-NOAH/CyberSecTool
+home: https://github.com/Lineup-NOAH/kangalis
 keywords:
   - security
   - vulnerability-scanner

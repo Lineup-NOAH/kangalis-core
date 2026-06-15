@@ -1,4 +1,4 @@
-Kangalis (CyberSecTool) kuruldu: {{ .Release.Name }} (namespace: {{ .Release.Namespace }})
+Kangalis kuruldu: {{ .Release.Name }} (namespace: {{ .Release.Namespace }})
 
 Bileşenler:
   • app    ({{ .Values.app.replicas }} replica)  — web/API :8000
