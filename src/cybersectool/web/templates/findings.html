@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ t('nav_vuln') }} · {{ app_name }}{% endblock %}
+
+{% block content %}
+<h1 class="k-h1" style="margin-bottom:6px;">{{ t('nav_vuln') }}</h1>
+<p class="k-sm" style="margin-bottom:18px; max-width:680px;">{{ t('findings_sub') }}</p>
+
+{% set sevs = ['critical','high','medium','low','info'] %}
+<form method="get" action="/findings" style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; margin-bottom:18px;">
+  <div>
+    <label class="kg-field-label" for="severity">{{ t('h_severity') }}</label>
+    <select id="severity" name="severity" class="kg-select">
+      <option value="" {% if not severity %}selected{% endif %}>{{ t('all') }}</option>
+      {% for s in sevs %}<option value="{{ s }}" {% if severity == s %}selected{% endif %}>{{ t('sev_' + s) }}</option>{% endfor %}
+    </select>
+  </div>
+  <label class="kg-chip" style="height:40px; padding:0 14px; cursor:pointer; gap:8px;">
+    <input type="checkbox" name="exploitable" value="1" {% if exploitable %}checked{% endif %} />
+    {{ icon('flame', 15) }} {{ t('exploitable_only') }}
+  </label>
+  <button type="submit" class="kg-btn kg-btn-primary">{{ t('filter') }}</button>
+</form>
+
+{% if not findings %}
+<div class="kg-card" style="padding:32px; text-align:center; color:var(--fg2);">{{ t('no_findings') }}</div>
+{% else %}
+<div class="kg-table-wrap">
+  <table class="kg-table">
+    <thead>
+      <tr>
+        <th>{{ t('h_severity') }}</th><th>{{ t('h_cve') }}</th><th>{{ t('h_cvss') }}</th>
+        <th>{{ t('h_risk') }}</th><th>{{ t('th_exploitation') }}</th><th>{{ t('h_exploit') }}</th>
+        <th>{{ t('h_asset') }}</th><th>{{ t('h_title') }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for f in findings %}
+      {% set cve = cve_map.get(f.cve_id) %}
+      <tr>
+        <td><span class="kg-sev kg-sev-{{ f.severity.value }}">{{ t('sev_' + f.severity.value) }}</span></td>
+        <td class="font-mono" style="font-size:13px;">
+          {% if f.cve_id %}<a target="_blank" rel="noopener" style="color:var(--steel)" href="https://nvd.nist.gov/vuln/detail/{{ f.cve_id }}">{{ f.cve_id }}</a>{% else %}-{% endif %}
+        </td>
+        <td class="font-mono">{{ cve.cvss_score if cve and cve.cvss_score is not none else '-' }}</td>
+        <td style="font-weight:600;">{{ f.risk_score if f.risk_score is not none else '-' }}</td>
+        <td>
+          {% if cve and cve.kev_flag %}<span class="kg-sev kg-sev-critical" style="margin-right:4px;" title="CISA KEV">KEV</span>{% endif %}
+          {% if cve and cve.epss_score is not none %}<span class="k-sm" title="EPSS">EPSS {{ (cve.epss_score * 100)|round(1) }}%</span>{% endif %}
+        </td>
+        <td>
+          {% set ex = exploit_map.get(f.cve_id) %}
+          {% if ex and ex.count > 0 %}
+          <a href="/exploits?q={{ f.cve_id }}" class="kg-chip {% if ex.metasploit %}kg-sev-critical{% else %}kg-chip-accent{% endif %} kg-chip-link"
+             title="{{ ex.count }} exploit{% if ex.metasploit %} — Metasploit{% endif %}">
+            {{ icon('flame', 13) }} {{ ex.count }}{% if ex.metasploit %} · MSF{% endif %}
+          </a>
+          {% else %}<span style="color:var(--fg2)">-</span>{% endif %}
+        </td>
+        <td class="font-mono" style="font-size:13px; color:var(--fg2)">
+          {{ device_by_id.get(f.asset_id, '-') }}
+          {% if device_by_id.get(f.asset_id) and device_by_id.get(f.asset_id) != ip_by_id.get(f.asset_id) %}<br><span class="k-sm">{{ ip_by_id.get(f.asset_id) }}</span>{% endif %}
+        </td>
+        <td>{{ f.title }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

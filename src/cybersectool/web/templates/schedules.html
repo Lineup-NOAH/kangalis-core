@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{{ t('nav_schedules') }} · {{ app_name }}{% endblock %}
+
+{% block content %}
+<h1 class="k-h1" style="margin-bottom:6px;">{{ t('schedules_title') }}</h1>
+<p class="k-sm" style="margin-bottom:18px; max-width:680px;">{{ t('schedules_sub') }}</p>
+
+{% if message %}<div class="kg-alert kg-alert-ok" style="margin-bottom:16px;">{{ message }}</div>{% endif %}
+
+<div class="kg-card" style="padding:16px 20px; margin-bottom:18px; color:var(--fg2);">
+  <p class="k-sm" style="margin:0;">{{ t('sched_create_hint') }}
+    <a href="/scans" style="color:var(--accent); font-weight:600;">{{ t('nav_scans') }}</a></p>
+</div>
+
+{% if not schedules %}
+<div class="kg-card" style="padding:32px; text-align:center; color:var(--fg2);">{{ t('no_schedules') }}</div>
+{% else %}
+<div class="kg-table-wrap">
+  <table class="kg-table">
+    <thead>
+      <tr>
+        <th>{{ t('quick_name') }}</th><th>{{ t('h_asset') }}</th><th>{{ t('scan_type') }}</th><th>{{ t('th_period') }}</th>
+        <th>{{ t('th_start') }}</th><th>{{ t('th_last_run') }}</th><th>{{ t('h_status') }}</th>
+        {% if user.role.value == "admin" %}<th>{{ t('h_action') }}</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in schedules %}
+      <tr>
+        <td style="font-weight:600;">{{ s.name or '—' }}</td>
+        <td class="font-mono" style="font-size:13px;">{% if s.zone_ids or s.asset_ids %}{{ s.zone_ids|length }} zone + {{ s.asset_ids|length }} IP{% if s.credential_ids or s.credential_zone_ids %} · {{ t('kind_credentialed') }}{% endif %}{% else %}{{ s.target }}{% endif %}</td>
+        <td>{% if s.zone_ids or s.asset_ids %}{{ s.mode.value }}{% else %}{{ s.scan_type.value }}{% endif %}</td>
+        <td>{% if s.period == 'interval' %}{{ s.interval_minutes }} {{ t('min_short') }}{% else %}{{ t('period_' + s.period) }}{% endif %}</td>
+        <td class="k-sm" style="color:var(--fg2)">{{ s.start_at | localdt }}</td>
+        <td style="color:var(--fg2)">{{ (s.last_run | localdt) if s.last_run else t('never') }}</td>
+        <td>{% if s.is_active %}<span class="kg-status kg-status-completed">{{ t('active') }}</span>{% else %}<span class="kg-status kg-status-pending">{{ t('passive') }}</span>{% endif %}</td>
+        {% if user.role.value == "admin" %}
+        <td>
+          <div style="display:flex; gap:8px;">
+            <form method="post" action="/schedules/{{ s.id }}/toggle"><button type="submit" class="kg-btn kg-btn-ghost kg-btn-sm">{{ t('pause') if s.is_active else t('enable') }}</button></form>
+            <form method="post" action="/schedules/{{ s.id }}/delete" onsubmit="return confirm('?');"><button type="submit" class="kg-btn kg-btn-sm" style="color:var(--sev-critical); border:1px solid var(--danger-line); background:transparent;">{{ t('delete') }}</button></form>
+          </div>
+        </td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Sanal ortam / uv
+.venv/
+
+# Ortam degiskenleri (.env git'e GIRMEZ, .env.example girer)
+.env
+.env.*
+!.env.example
+
+# Test / lint onbellekleri
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Claude yerel ayarlari
+.claude/
+
+# Yerel parola/erişim referansı (ASLA git'e GİRMEZ — düz metin sır içerir)
+password.txt
+*credentials*.txt
+KANGALIS-*.txt

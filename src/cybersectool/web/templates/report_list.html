@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ t('reports_title') }} · {{ app_name }}{% endblock %}
+
+{% block content %}
+<h1 class="k-h1" style="margin-bottom:6px;">{{ t('reports_title') }}</h1>
+<p class="k-sm" style="margin-bottom:18px; max-width:680px;">{{ t('reports_sub') }}</p>
+
+{% if message %}<div class="kg-alert kg-alert-ok" style="margin-bottom:16px;">{{ message }}</div>{% endif %}
+
+<div class="print:hidden" style="margin-bottom:16px;">
+  <a href="/report/pdf" class="kg-btn kg-btn-ghost kg-btn-sm">{{ icon('download', 16) }} {{ t('report_all_pdf') }}</a>
+</div>
+
+{% if not entries %}
+<div class="kg-card" style="padding:32px; text-align:center; color:var(--fg2);">{{ t('no_scans') }}</div>
+{% else %}
+<div class="kg-card kg-table-wrap" style="padding:0;">
+  <table class="kg-table kg-zebra">
+    <thead><tr>
+      <th>{{ t('quick_name') }}</th><th>{{ t('th_target') }}</th><th>{{ t('th_type') }}</th>
+      <th>{{ t('th_status') }}</th><th>{{ t('total_findings') }}</th><th>{{ t('th_date') }}</th><th></th>
+    </tr></thead>
+    <tbody>
+      {% for e in entries %}
+      <tr>
+        <td style="font-weight:600;">{{ e.name }}</td>
+        <td class="font-mono k-sm">{{ e.scope }}</td>
+        <td class="k-sm">{{ e.type }}</td>
+        <td><span class="kg-status kg-status-{{ e.status }}">{{ t('st_' + e.status) }}</span></td>
+        <td style="font-weight:600;">{{ e.findings }}</td>
+        <td class="k-sm">{{ e.date | localdt }}</td>
+        <td style="text-align:right; white-space:nowrap;">
+          <a href="{{ e.view }}" class="kg-btn kg-btn-ghost kg-btn-sm">{{ t('view') }}</a>
+          <a href="{{ e.pdf }}" class="kg-btn kg-btn-subtle kg-btn-sm">PDF</a>
+          {% if can_delete %}
+          <form method="post" action="{{ e.del }}" style="display:inline;"
+                onsubmit="return confirm('{{ t('report_delete_confirm') }}');">
+            <button type="submit" class="kg-btn kg-btn-danger kg-btn-sm">{{ t('delete') }}</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

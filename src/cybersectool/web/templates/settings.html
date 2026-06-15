@@ -1,0 +1,442 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ t('settings_title') }} · {{ app_name }}{% endblock %}
+
+{% block content %}
+<h1 class="k-h1" style="margin-bottom:6px;">{{ t('settings_title') }}</h1>
+<p class="k-sm" style="margin-bottom:18px; max-width:760px;">{{ t('settings_sub') }}</p>
+
+{% if error %}<div class="kg-alert kg-alert-error" style="margin-bottom:16px;">{{ error }}</div>{% endif %}
+{% if message %}<div class="kg-alert kg-alert-ok" style="margin-bottom:16px;">{{ message }}</div>{% endif %}
+
+<!-- 1) Giriş kaba-kuvvet koruması -->
+<h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 4px;">{{ icon('lock', 18) }} {{ t('set_rl_title') }}</h2>
+<p class="k-sm" style="margin:0 0 12px; color:var(--fg2); max-width:760px;">{{ t('set_rl_desc') }}</p>
+<form method="post" action="/settings/ratelimit" class="kg-card" style="padding:20px; margin-bottom:24px;">
+  <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+    <input id="rl-en" name="enabled" type="checkbox" {{ 'checked' if s.ratelimit_enabled else '' }} />
+    <label for="rl-en" class="k-sm">{{ t('settings_enabled') }}</label>
+  </div>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px;">
+    <div>
+      <label class="kg-field-label" for="rl-max">{{ t('set_rl_max') }}</label>
+      <input id="rl-max" name="max_attempts" type="number" min="1" max="100" value="{{ s.ratelimit_max_attempts }}" class="kg-input" />
+    </div>
+    <div>
+      <label class="kg-field-label" for="rl-win">{{ t('set_rl_window') }}</label>
+      <input id="rl-win" name="window_sec" type="number" min="10" max="86400" value="{{ s.ratelimit_window_sec }}" class="kg-input" />
+    </div>
+    <div>
+      <label class="kg-field-label" for="rl-lock">{{ t('set_rl_lockout') }}</label>
+      <input id="rl-lock" name="lockout_sec" type="number" min="10" max="86400" value="{{ s.ratelimit_lockout_sec }}" class="kg-input" />
+    </div>
+  </div>
+  <div style="margin-top:16px;"><button type="submit" class="kg-btn kg-btn-primary">{{ t('save') }}</button></div>
+</form>
+
+<!-- 2) SMTP ve e-posta uyarıları -->
+<h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 4px;">{{ icon('mail', 18) }} {{ t('set_smtp_title') }}</h2>
+<p class="k-sm" style="margin:0 0 12px; color:var(--fg2); max-width:760px;">{{ t('set_smtp_desc') }}</p>
+<form method="post" action="/settings/smtp" class="kg-card" style="padding:20px; margin-bottom:12px;">
+  <div style="display:flex; align-items:center; gap:18px; margin-bottom:14px; flex-wrap:wrap;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <input id="sm-en" name="enabled" type="checkbox" {{ 'checked' if s.smtp_enabled else '' }} />
+      <label for="sm-en" class="k-sm">{{ t('settings_enabled') }}</label>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <input id="sm-tls" name="use_tls" type="checkbox" {{ 'checked' if s.smtp_use_tls else '' }} />
+      <label for="sm-tls" class="k-sm">{{ t('set_smtp_tls') }}</label>
+    </div>
+  </div>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px;">
+    <div>
+      <label class="kg-field-label" for="sm-host">{{ t('set_smtp_host') }}</label>
+      <input id="sm-host" name="host" placeholder="smtp.corp.local" value="{{ s.smtp_host }}" class="kg-input font-mono" />
+    </div>
+    <div>
+      <label class="kg-field-label" for="sm-port">{{ t('set_smtp_port') }}</label>
+      <input id="sm-port" name="port" type="number" min="1" max="65535" value="{{ s.smtp_port }}" class="kg-input" />
+    </div>
+    <div>
+      <label class="kg-field-label" for="sm-user">{{ t('set_smtp_user') }}</label>
+      <input id="sm-user" name="username" value="{{ s.smtp_username }}" class="kg-input font-mono" autocomplete="off" />
+    </div>
+    <div>
+      <label class="kg-field-label" for="sm-pass">{{ t('set_smtp_pass') }}</label>
+      <input id="sm-pass" name="password" type="password" autocomplete="new-password" placeholder="{{ t('set_smtp_pass_ph') }}" class="kg-input" />
+    </div>
+    <div>
+      <label class="kg-field-label" for="sm-from">{{ t('set_smtp_from') }}</label>
+      <input id="sm-from" name="sender" placeholder="kangalis@corp.local" value="{{ s.smtp_from }}" class="kg-input font-mono" />
+    </div>
+    <div>
+      <label class="kg-field-label" for="sm-to">{{ t('set_smtp_alert_to') }}</label>
+      <input id="sm-to" name="alert_to" placeholder="soc@corp.local" value="{{ s.alert_email_to }}" class="kg-input font-mono" />
+    </div>
+  </div>
+  <div style="margin-top:16px;"><button type="submit" class="kg-btn kg-btn-primary">{{ t('save') }}</button></div>
+</form>
+<form method="post" action="/settings/smtp/test" style="margin-bottom:24px;">
+  <button type="submit" class="kg-btn kg-btn-ghost kg-btn-sm" {{ 'disabled' if not s.smtp_host else '' }}>{{ icon('mail', 15) }} {{ t('set_smtp_test') }}</button>
+</form>
+
+<!-- 3) Syslog / SIEM -->
+<h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 4px;">{{ icon('audit', 18) }} {{ t('set_syslog_title') }}</h2>
+<p class="k-sm" style="margin:0 0 12px; color:var(--fg2); max-width:760px;">{{ t('set_syslog_desc') }}</p>
+<form method="post" action="/settings/syslog" class="kg-card" style="padding:20px; margin-bottom:24px;">
+  <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+    <input id="sl-en" name="enabled" type="checkbox" {{ 'checked' if s.syslog_enabled else '' }} />
+    <label for="sl-en" class="k-sm">{{ t('settings_enabled') }}</label>
+  </div>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px;">
+    <div>
+      <label class="kg-field-label" for="sl-host">{{ t('set_syslog_host') }}</label>
+      <input id="sl-host" name="host" placeholder="siem.corp.local" value="{{ s.syslog_host }}" class="kg-input font-mono" />
+    </div>
+    <div>
+      <label class="kg-field-label" for="sl-port">{{ t('set_syslog_port') }}</label>
+      <input id="sl-port" name="port" type="number" min="1" max="65535" value="{{ s.syslog_port }}" class="kg-input" />
+    </div>
+    <div>
+      <label class="kg-field-label" for="sl-proto">{{ t('set_syslog_proto') }}</label>
+      <select id="sl-proto" name="protocol" class="kg-select">
+        {% for p in syslog_protocols %}<option value="{{ p }}" {{ 'selected' if s.syslog_protocol == p else '' }}>{{ p | upper }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="kg-field-label" for="sl-fmt">{{ t('set_syslog_fmt') }}</label>
+      <select id="sl-fmt" name="fmt" class="kg-select">
+        {% for f in syslog_formats %}<option value="{{ f }}" {{ 'selected' if s.syslog_format == f else '' }}>{{ f | upper }}</option>{% endfor %}
+      </select>
+    </div>
+  </div>
+  <div style="margin-top:16px;"><button type="submit" class="kg-btn kg-btn-primary">{{ t('save') }}</button></div>
+</form>
+
+<!-- 4) Oturum / parola / LDAPS -->
+<h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 4px;">{{ icon('shield', 18) }} {{ t('set_hard_title') }}</h2>
+<p class="k-sm" style="margin:0 0 12px; color:var(--fg2); max-width:760px;">{{ t('set_hard_desc') }}</p>
+<form method="post" action="/settings/hardening" class="kg-card" style="padding:20px; margin-bottom:24px;">
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px;">
+    <div>
+      <label class="kg-field-label" for="hd-sess">{{ t('set_session_timeout') }}</label>
+      <input id="hd-sess" name="session_timeout_min" type="number" min="0" max="10080" value="{{ s.session_timeout_min }}" class="kg-input" />
+    </div>
+    <div>
+      <label class="kg-field-label" for="hd-pwmin">{{ t('set_pw_min') }}</label>
+      <input id="hd-pwmin" name="password_min_length" type="number" min="4" max="128" value="{{ s.password_min_length }}" class="kg-input" />
+    </div>
+  </div>
+  <div style="display:flex; flex-direction:column; gap:10px; margin-top:14px;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <input id="hd-cx" name="password_require_complexity" type="checkbox" {{ 'checked' if s.password_require_complexity else '' }} />
+      <label for="hd-cx" class="k-sm">{{ t('set_pw_complex') }}</label>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <input id="hd-ldv" name="ldaps_verify_cert" type="checkbox" {{ 'checked' if s.ldaps_verify_cert else '' }} />
+      <label for="hd-ldv" class="k-sm">{{ t('set_ldaps_verify') }}</label>
+    </div>
+  </div>
+  <div style="margin-top:14px;">
+    <label class="kg-field-label" for="hd-ca">{{ t('set_ldaps_ca') }}</label>
+    <textarea id="hd-ca" name="ldaps_ca_cert" rows="4" class="kg-input font-mono" placeholder="-----BEGIN CERTIFICATE-----">{{ s.ldaps_ca_cert or '' }}</textarea>
+  </div>
+  <div style="margin-top:16px;"><button type="submit" class="kg-btn kg-btn-primary">{{ t('save') }}</button></div>
+</form>
+
+<!-- Ağ / DNS (VI-6) -->
+<h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 4px;">{{ icon('zones', 18) }} {{ t('set_network_section') }}</h2>
+<p class="k-sm" style="margin:0 0 12px; color:var(--fg2); max-width:760px;">{{ t('set_network_sub') }}</p>
+<!-- DNS / Ağ çözümleme (tarama hızı/dağıtımı AYRI karttadır — aşağıda) -->
+<form method="post" action="/settings/network" class="kg-card" style="padding:20px; margin-bottom:14px;">
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; align-items:start;">
+    <div title="{{ t('set_dns_servers_tip') }}">
+      <label class="kg-field-label" for="net-dns">{{ t('set_dns_servers') }}</label>
+      <input id="net-dns" name="dns_servers" value="{{ s.dns_servers }}" placeholder="10.0.0.1, 10.0.0.2" class="kg-input font-mono" />
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; margin-top:22px;" title="{{ t('set_reverse_dns_tip') }}">
+      <input id="net-rev" name="reverse_dns_enabled" type="checkbox" {{ 'checked' if s.reverse_dns_enabled else '' }} />
+      <label for="net-rev" class="k-sm">{{ t('set_reverse_dns') }}</label>
+    </div>
+  </div>
+  <p class="k-sm" style="margin-top:10px; color:var(--fg2);">{{ t('set_dns_hint') }}</p>
+  <div style="margin-top:16px;"><button type="submit" class="kg-btn kg-btn-primary">{{ t('save') }}</button></div>
+</form>
+
+<!-- Tarama hızı + worker dağıtımı (fan-out) — DNS'ten AYRI bölüm -->
+<h3 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:18px 0 4px; font-size:1rem;">{{ icon('scan', 16) }} {{ t('set_scan_section') }}</h3>
+<p class="k-sm" style="margin:0 0 10px; color:var(--fg2); max-width:760px;">{{ t('set_scan_sub') }}</p>
+<form method="post" action="/settings/scan" class="kg-card" style="padding:20px; margin-bottom:14px;">
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; align-items:start;">
+    <div title="{{ t('set_scan_speed_tip') }}">
+      <label class="kg-field-label" for="scan-speed">{{ t('set_scan_speed') }}</label>
+      <select id="scan-speed" name="scan_speed" class="kg-input">
+        <option value="normal" {{ 'selected' if s.scan_speed == 'normal' else '' }}>{{ t('set_scan_speed_normal') }}</option>
+        <option value="fast" {{ 'selected' if s.scan_speed == 'fast' else '' }}>{{ t('set_scan_speed_fast') }}</option>
+        <option value="insane" {{ 'selected' if s.scan_speed == 'insane' else '' }}>{{ t('set_scan_speed_insane') }}</option>
+        <option value="slow" {{ 'selected' if s.scan_speed == 'slow' else '' }}>{{ t('set_scan_speed_slow') }}</option>
+      </select>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; margin-top:22px;" title="{{ t('set_scan_fanout_tip') }}">
+      <input id="scan-fanout" name="scan_fanout" type="checkbox" {{ 'checked' if s.scan_fanout else '' }}
+             onchange="document.getElementById('scan-workers').disabled = !this.checked;" />
+      <label for="scan-fanout" class="k-sm">{{ t('set_scan_fanout') }}</label>
+    </div>
+    <div title="{{ t('set_fanout_workers_tip') }}">
+      <label class="kg-field-label" for="scan-workers">{{ t('set_fanout_workers') }}</label>
+      <input id="scan-workers" name="fanout_workers" type="number" min="1" max="32" step="1"
+             value="{{ s.fanout_workers }}" class="kg-input" {{ '' if s.scan_fanout else 'disabled' }} />
+    </div>
+  </div>
+  <div class="k-sm" style="margin-top:12px; padding:10px 12px; background:var(--bg2); border-radius:8px; color:var(--fg2);">
+    <strong>{{ t('set_fanout_info_title') }}</strong>
+    <ul style="margin:6px 0 0; padding-left:18px;">
+      <li>{{ t('set_fanout_info_single').replace('{n}', s.fanout_workers|string) }}</li>
+      <li>{{ t('set_fanout_info_bigport').replace('{n}', s.fanout_workers|string) }}</li>
+      <li>{{ t('set_fanout_info_cidr') }}</li>
+    </ul>
+  </div>
+  <p class="k-sm" style="margin-top:8px; color:var(--fg2);">{{ t('set_scan_speed_hint') }}</p>
+  <div style="margin-top:16px;"><button type="submit" class="kg-btn kg-btn-primary">{{ t('save') }}</button></div>
+</form>
+
+<!-- Varlık kapsamı (F1) -->
+<h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 4px;">{{ icon('server', 18) }} {{ t('set_asset_scope_section') }}</h2>
+<p class="k-sm" style="margin:0 0 12px; color:var(--fg2); max-width:760px;">{{ t('set_asset_scope_sub') }}</p>
+<form method="post" action="/settings/asset-scope" class="kg-card" style="padding:20px; margin-bottom:14px;">
+  <label class="kg-field-label" for="asset-scope">{{ t('set_asset_scope_label') }}</label>
+  <textarea id="asset-scope" name="asset_scope_cidrs" rows="5" class="kg-input font-mono" style="resize:vertical;" placeholder="10.0.0.0/8&#10;192.168.0.0/16&#10;203.0.113.10/32">{{ s.asset_scope_cidrs | join('\n') }}</textarea>
+  <p class="k-sm" style="margin-top:10px; color:var(--fg2);">{{ t('set_asset_scope_hint') }}</p>
+  <div style="margin-top:16px;"><button type="submit" class="kg-btn kg-btn-primary">{{ t('save') }}</button></div>
+</form>
+
+<!-- Zafiyet veritabanı (CVE-COVERAGE FE) -->
+<h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 4px;">{{ icon('vuln', 18) }} {{ t('set_vulndb_section') }}</h2>
+<p class="k-sm" style="margin:0 0 12px; color:var(--fg2); max-width:760px;">{{ t('set_vulndb_sub') }}</p>
+
+<!-- Durum paneli (salt-okunur) -->
+<div class="kg-card" style="padding:20px; margin-bottom:12px;">
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:18px;">
+    <div>
+      <div class="k-sm" style="color:var(--fg2);">{{ t('set_vulndb_cve_count') }}</div>
+      <div style="font-size:22px; font-weight:600;">{{ '{:,}'.format(vulndb_cve_count) }}</div>
+    </div>
+    <div>
+      <div class="k-sm" style="color:var(--fg2);">{{ t('set_vulndb_cpe_count') }}</div>
+      <div style="font-size:22px; font-weight:600;">{{ '{:,}'.format(vulndb_cpe_count) }}</div>
+    </div>
+    <div>
+      <div class="k-sm" style="color:var(--fg2);">{{ t('set_vulndb_window') }}</div>
+      <div style="font-size:22px; font-weight:600;">{{ s.nvd_sync_days }} <span class="k-sm" style="font-weight:400; color:var(--fg2);">{{ t('set_vulndb_days') }}</span></div>
+    </div>
+    <div>
+      <div class="k-sm" style="color:var(--fg2);">{{ t('set_vulndb_last_sync') }}</div>
+      <div style="margin-top:4px;">
+        <span style="font-weight:600;">{% if cve_fresh.last_sync %}{{ cve_fresh.last_sync | localdt }}{% else %}—{% endif %}</span>
+        {% if cve_fresh.last_sync %}
+          {% if cve_fresh.up_to_date %}
+          <span class="kg-chip" style="background:color-mix(in srgb, #16a34a 16%, transparent); color:#16a34a;">{{ t('set_vulndb_fresh') }}</span>
+          {% else %}
+          <span class="kg-chip" style="background:color-mix(in srgb, #d97706 16%, transparent); color:#d97706;">{{ t('set_vulndb_stale') }}</span>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NVD senkron ayarı (kapsam + API anahtarı) -->
+<form method="post" action="/settings/nvd" class="kg-card" style="padding:20px; margin-bottom:14px;">
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; align-items:start;">
+    <div>
+      <label class="kg-field-label" for="nvd-days">{{ t('set_nvd_days_label') }}</label>
+      <input id="nvd-days" name="nvd_sync_days" type="number" min="{{ nvd_sync_days_min }}" max="{{ nvd_sync_days_max }}" value="{{ s.nvd_sync_days }}" class="kg-input" />
+    </div>
+    <div>
+      <label class="kg-field-label" for="nvd-key">{{ t('set_nvd_key_label') }}</label>
+      <input id="nvd-key" name="nvd_api_key" type="password" autocomplete="off" placeholder="{{ t('set_nvd_key_set') if s.nvd_api_key_encrypted else t('set_nvd_key_empty') }}" class="kg-input font-mono" />
+    </div>
+  </div>
+  <p class="k-sm" style="margin-top:10px; color:var(--fg2);">{{ t('set_nvd_hint') }}</p>
+  <div style="margin-top:16px;"><button type="submit" class="kg-btn kg-btn-primary">{{ t('save') }}</button></div>
+</form>
+
+<!-- Tek seferlik geçmiş yükleme (backfill) -->
+<form method="post" action="/settings/nvd/backfill" class="kg-card" style="padding:20px; margin-bottom:14px; border-style:dashed;">
+  <div class="kg-field-label" style="margin-bottom:2px;">{{ t('set_nvd_backfill_title') }}</div>
+  <p class="k-sm" style="margin:0 0 12px; color:var(--fg2); max-width:760px;">{{ t('set_nvd_backfill_sub') }}</p>
+  <div style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+    <div style="max-width:200px;">
+      <label class="kg-field-label" for="nvd-backfill-years">{{ t('set_nvd_backfill_years') }}</label>
+      <select id="nvd-backfill-years" name="backfill_years" class="kg-select">
+        <option value="1">1 {{ t('set_nvd_backfill_year') }}</option>
+        <option value="2" selected>2 {{ t('set_nvd_backfill_year') }}</option>
+        <option value="3">3 {{ t('set_nvd_backfill_year') }}</option>
+        <option value="5">5 {{ t('set_nvd_backfill_year') }}</option>
+      </select>
+    </div>
+    <button type="submit" class="kg-btn kg-btn-ghost">{{ icon('download', 16) }} {{ t('set_nvd_backfill_btn') }}</button>
+  </div>
+  <p class="k-sm" style="margin-top:10px; color:var(--fg2);">{{ t('set_nvd_backfill_hint') }}</p>
+</form>
+
+<!-- Yerel AI asistanı (OpenAI-uyumlu yerel motor, on-prem; #182) -->
+<h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 4px;">{{ icon('sparkles', 18) }} {{ t('set_ai_section') }}</h2>
+<p class="k-sm" style="margin:0 0 12px; color:var(--fg2); max-width:760px;">{{ t('set_ai_sub') }}</p>
+<form method="post" action="/settings/ai" class="kg-card" style="padding:20px; margin-bottom:10px;">
+  <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;" title="{{ t('set_ai_enabled_tip') }}">
+    <input id="ai-enabled" name="ai_enabled" type="checkbox" {{ 'checked' if s.ai_enabled else '' }} />
+    <label for="ai-enabled" class="k-sm" style="font-weight:600;">{{ t('set_ai_enabled') }}</label>
+  </div>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; align-items:start;">
+    <div title="{{ t('set_ai_endpoint_tip') }}">
+      <label class="kg-field-label" for="ai-endpoint">{{ t('set_ai_endpoint') }}</label>
+      <input id="ai-endpoint" name="ai_endpoint_url" value="{{ s.ai_endpoint_url }}" placeholder="http://llamacpp:8080/v1" class="kg-input font-mono" />
+    </div>
+    <div title="{{ t('set_ai_model_tip') }}">
+      <label class="kg-field-label" for="ai-model">{{ t('set_ai_model') }}</label>
+      <input id="ai-model" name="ai_model_name" value="{{ s.ai_model_name }}" placeholder="qwen3:8b" class="kg-input font-mono" />
+    </div>
+    <div title="{{ t('set_ai_timeout_tip') }}">
+      <label class="kg-field-label" for="ai-timeout">{{ t('set_ai_timeout') }}</label>
+      <input id="ai-timeout" name="ai_timeout_sec" type="number" min="5" max="600" step="5" value="{{ s.ai_timeout_sec }}" class="kg-input" />
+    </div>
+  </div>
+  <div class="k-sm" style="margin-top:12px; padding:10px 12px; background:var(--bg2); border-radius:8px; color:var(--fg2);">
+    🔒 {{ t('set_ai_privacy') }}
+  </div>
+  <p class="k-sm" style="margin-top:8px; color:var(--fg2);">{{ t('set_ai_hint') }}</p>
+  <div style="margin-top:16px;"><button type="submit" class="kg-btn kg-btn-primary">{{ t('save') }}</button></div>
+</form>
+<div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:10px;">
+  <form method="post" action="/settings/ai/test" style="margin:0;">
+    <button type="submit" class="kg-btn kg-btn-ghost">{{ icon('refresh', 15) }} {{ t('set_ai_test') }}</button>
+  </form>
+  <button type="button" class="kg-btn kg-btn-ghost" title="{{ t('set_ai_detect_tip') }}"
+          hx-post="/settings/ai/detect" hx-target="#ai-detect-result" hx-swap="innerHTML"
+          hx-indicator="#ai-detect-spin">{{ icon('sparkles', 15) }} {{ t('set_ai_detect') }}</button>
+  <span id="ai-detect-spin" class="htmx-indicator k-sm" style="color:var(--fg2);">…</span>
+</div>
+<div id="ai-detect-result" style="margin-bottom:24px;"></div>
+
+<!-- Saat dilimi (IX-1) -->
+<h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 4px;">{{ icon('clock', 18) }} {{ t('set_tz_section') }}</h2>
+<p class="k-sm" style="margin:0 0 12px; color:var(--fg2); max-width:760px;">{{ t('set_tz_sub') }}</p>
+<form method="post" action="/settings/timezone" class="kg-card" style="padding:20px; margin-bottom:14px;">
+  <div style="max-width:320px;">
+    <label class="kg-field-label" for="tz-select">{{ t('set_tz_label') }}</label>
+    <select id="tz-select" name="timezone" class="kg-select">
+      {% for tz in timezones %}
+      <option value="{{ tz }}" {{ 'selected' if s.timezone == tz else '' }}>{{ tz }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <p class="k-sm" style="margin-top:10px; color:var(--fg2);">{{ t('set_tz_hint') }}</p>
+  <div style="margin-top:16px;"><button type="submit" class="kg-btn kg-btn-primary">{{ t('save') }}</button></div>
+</form>
+
+<!-- 5) LDAP bağlantısı -->
+<h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 4px;">{{ icon('globe', 18) }} {{ t('ldap_conn_section') }}</h2>
+<p class="k-sm" style="margin:0 0 12px; color:var(--fg2); max-width:760px;">{{ t('ldap_sub') }}</p>
+<div id="ldap-status" hx-get="/ldap/status" hx-trigger="load" hx-swap="innerHTML" style="margin-bottom:12px;"><span class="kg-chip">{{ t('ldap_checking') }}</span></div>
+<form method="post" action="/ldap/config" id="ldap-config-form" class="kg-card" style="padding:20px; margin-bottom:14px;">
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px;">
+    <div>
+      <label class="kg-field-label" for="l-uri">{{ t('ldap_server_uri') }}</label>
+      <input id="l-uri" name="server_uri" required placeholder="ldap://dc.corp.local:389" value="{{ ldap_config.server_uri if ldap_config else '' }}" class="kg-input font-mono" />
+    </div>
+    <div>
+      <label class="kg-field-label" for="l-base">{{ t('ldap_base_dn') }}</label>
+      <input id="l-base" name="base_dn" required placeholder="ou=people,dc=corp,dc=local" value="{{ ldap_config.base_dn if ldap_config else '' }}" class="kg-input font-mono" />
+    </div>
+    <div>
+      <label class="kg-field-label" for="l-bind">{{ t('ldap_bind_dn') }}</label>
+      <input id="l-bind" name="bind_dn" placeholder="cn=admin,dc=corp,dc=local" value="{{ ldap_config.bind_dn if ldap_config else '' }}" class="kg-input font-mono" />
+    </div>
+    <div>
+      <label class="kg-field-label" for="l-pass">{{ t('ldap_bind_pass') }}</label>
+      <input id="l-pass" name="bind_password" type="password" autocomplete="new-password" placeholder="{{ t('ldap_bind_pass_ph') }}" class="kg-input" />
+    </div>
+    <div>
+      <label class="kg-field-label" for="l-role">{{ t('ldap_default_role') }}</label>
+      <select id="l-role" name="default_role" class="kg-select">
+        {% for r in roles %}<option value="{{ r }}" {{ 'selected' if ldap_config and ldap_config.default_role == r else '' }}>{{ t('role_' + r) }}</option>{% endfor %}
+      </select>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; margin-top:22px;">
+      <input id="l-ssl" name="use_ssl" type="checkbox" {{ 'checked' if ldap_config and ldap_config.use_ssl else '' }} />
+      <label for="l-ssl" class="k-sm">{{ t('ldap_use_ssl') }}</label>
+    </div>
+  </div>
+  <details style="margin-top:14px;">
+    <summary style="cursor:pointer; font-size:13px; color:var(--fg2);">{{ t('ldap_advanced') }}</summary>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; margin-top:12px;">
+      <div>
+        <label class="kg-field-label" for="l-filter">{{ t('ldap_user_filter') }}</label>
+        <input id="l-filter" name="user_filter" value="{{ ldap_config.user_filter if ldap_config else '(objectClass=person)' }}" class="kg-input font-mono" />
+      </div>
+      <div>
+        <label class="kg-field-label" for="l-au">{{ t('ldap_attr_username') }}</label>
+        <input id="l-au" name="attr_username" value="{{ ldap_config.attr_username if ldap_config else 'uid' }}" class="kg-input font-mono" />
+      </div>
+      <div>
+        <label class="kg-field-label" for="l-ae">{{ t('ldap_attr_email') }}</label>
+        <input id="l-ae" name="attr_email" value="{{ ldap_config.attr_email if ldap_config else 'mail' }}" class="kg-input font-mono" />
+      </div>
+      <div>
+        <label class="kg-field-label" for="l-an">{{ t('ldap_attr_name') }}</label>
+        <input id="l-an" name="attr_display_name" value="{{ ldap_config.attr_display_name if ldap_config else 'cn' }}" class="kg-input font-mono" />
+      </div>
+    </div>
+  </details>
+  <div style="display:flex; gap:10px; margin-top:16px;">
+    <button type="submit" class="kg-btn kg-btn-primary">{{ t('ldap_save') }}</button>
+  </div>
+</form>
+<div style="display:flex; align-items:center; gap:10px; margin-bottom:24px;">
+  <button type="button" class="kg-btn kg-btn-ghost kg-btn-sm"
+          hx-post="/ldap/test"
+          hx-include="#ldap-config-form"
+          hx-target="#ldap-status"
+          hx-swap="innerHTML"
+          hx-indicator="#ldap-test-spin"
+          hx-disabled-elt="this">{{ icon('refresh', 15) }} {{ t('ldap_test') }}</button>
+  <span id="ldap-test-spin" class="htmx-indicator k-sm" style="color:var(--fg2);">{{ t('ldap_testing') }}</span>
+</div>
+
+<!-- 5b) LDAP periyodik kullanıcı senkronu (X-6) — yalnız LDAP yapılandırılmışken görünür -->
+{% if ldap_config and ldap_config.server_uri %}
+<h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 4px;">{{ icon('schedules', 18) }} {{ t('ldap_sync_section') }}</h2>
+<p class="k-sm" style="margin:0 0 12px; color:var(--fg2); max-width:760px;">{{ t('ldap_sync_sub') }}</p>
+<form method="post" action="/settings/ldap-sync" class="kg-card" style="padding:20px; margin-bottom:24px;">
+  <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+    <input id="ls-en" name="enabled" type="checkbox" {{ 'checked' if s.ldap_sync_enabled else '' }} />
+    <label for="ls-en" class="k-sm">{{ t('ldap_sync_enable') }}</label>
+  </div>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px;">
+    <div>
+      <label class="kg-field-label" for="ls-period">{{ t('ldap_sync_period') }}</label>
+      <select id="ls-period" name="period" class="kg-select">
+        <option value="hourly" {{ 'selected' if s.ldap_sync_period == 'hourly' else '' }}>{{ t('ldap_sync_hourly') }}</option>
+        <option value="daily" {{ 'selected' if s.ldap_sync_period == 'daily' else '' }}>{{ t('ldap_sync_daily') }}</option>
+        <option value="weekly" {{ 'selected' if s.ldap_sync_period == 'weekly' else '' }}>{{ t('ldap_sync_weekly') }}</option>
+      </select>
+    </div>
+    <div>
+      <label class="kg-field-label" for="ls-hour">{{ t('ldap_sync_hour') }}</label>
+      <select id="ls-hour" name="hour" class="kg-select">
+        {% for h in range(24) %}<option value="{{ h }}" {{ 'selected' if s.ldap_sync_hour == h else '' }}>{{ '%02d:00'|format(h) }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="kg-field-label">{{ t('ldap_sync_last') }}</label>
+      <div class="kg-input" style="display:flex; align-items:center; color:var(--fg2);">{{ s.ldap_sync_last | localdt('%Y-%m-%d %H:%M') if s.ldap_sync_last else t('ldap_sync_never') }}</div>
+    </div>
+  </div>
+  <p class="k-sm" style="margin:12px 0 0; color:var(--fg2);">{{ t('ldap_sync_note') }}</p>
+  <div style="display:flex; gap:10px; margin-top:16px;">
+    <button type="submit" class="kg-btn kg-btn-primary">{{ t('ldap_save') }}</button>
+  </div>
+</form>
+{% endif %}
+{% endblock %}

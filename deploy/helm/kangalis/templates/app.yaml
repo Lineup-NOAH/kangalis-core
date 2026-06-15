@@ -1,0 +1,110 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kangalis.fullname" . }}-app
+  labels:
+    {{- include "kangalis.labels" . | nindent 4 }}
+    app.kubernetes.io/component: app
+spec:
+  type: {{ .Values.app.service.type }}
+  ports:
+    - port: {{ .Values.app.service.port }}
+      targetPort: 8000
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "kangalis.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: app
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kangalis.fullname" . }}-app
+  labels:
+    {{- include "kangalis.labels" . | nindent 4 }}
+    app.kubernetes.io/component: app
+spec:
+  replicas: {{ .Values.app.replicas }}
+  selector:
+    matchLabels:
+      {{- include "kangalis.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: app
+  template:
+    metadata:
+      labels:
+        {{- include "kangalis.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: app
+    spec:
+      serviceAccountName: {{ include "kangalis.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.postgres.enabled }}
+      initContainers:
+        - name: wait-for-db
+          image: {{ include "kangalis.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              until python -c "import socket; socket.create_connection(('{{ include "kangalis.postgresHost" . }}', 5432), 2)" 2>/dev/null; do echo 'db bekleniyor'; sleep 2; done
+      {{- end }}
+      containers:
+        - name: app
+          image: {{ include "kangalis.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "kangalis.fullname" . }}-config
+            - secretRef:
+                name: {{ include "kangalis.fullname" . }}-secret
+          ports:
+            - containerPort: 8000
+              name: http
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          {{- if .Values.app.dockerSocket }}
+          volumeMounts:
+            - name: docker-sock
+              mountPath: /var/run/docker.sock
+              readOnly: true
+          {{- end }}
+          {{- with .Values.app.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- if .Values.app.dockerSocket }}
+      volumes:
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
+            type: Socket
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

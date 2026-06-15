@@ -1,0 +1,17 @@
+{% import '_icons.html' as ic %}
+{# Yerel AI üretim parçası (#183) — /ai/explain & /ai/summary HTMX yanıtı + rapor ön-yükleme.
+   Durumlar: error (üretilemedi) ya da content (açıklama). "AI üretti — doğrula" notu zorunlu. #}
+{% if error %}
+<div class="kg-card" style="margin-top:10px; padding:10px 14px; border:1px solid var(--border); border-radius:var(--r-md); color:var(--fg2);">
+  <span class="k-sm">{{ ic.icon('alert', 13) }} {{ error }}</span>
+</div>
+{% else %}
+<div class="kg-card" style="margin-top:10px; padding:12px 14px; background:color-mix(in srgb, var(--accent) 8%, transparent); border:1px solid color-mix(in srgb, var(--accent) 28%, transparent); border-radius:var(--r-md);">
+  <div class="k-label" style="color:var(--accent); display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+    {{ ic.icon('sparkles', 13) }} {{ t('ai_explanation_label') }}
+    {% if cached %}<span class="kg-chip" style="font-size:10px;" title="{{ t('ai_cached_tip') }}">{{ t('ai_cached') }}</span>{% endif %}
+  </div>
+  <div class="k-sm" style="margin-top:6px; white-space:pre-wrap; line-height:1.5;">{{ content }}</div>
+  <p class="k-sm" style="margin-top:8px; color:var(--fg2); font-style:italic;">⚠ {{ t('ai_verify_note') }}{% if model %} · {{ model }}{% endif %}</p>
+</div>
+{% endif %}

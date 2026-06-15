@@ -1,0 +1,11 @@
+{% if count == 0 %}
+<div class="k-sm" style="color:var(--fg2);">{{ t('gen_preview_empty') }}</div>
+{% else %}
+<div class="k-sm" style="margin-bottom:6px;">
+  <strong>{{ count }}</strong> {{ t('gen_preview_count') }}
+  {% if count > sample|length %}<span style="color:var(--fg2);"> · {{ t('gen_preview_first') }} {{ sample|length }}</span>{% endif %}
+</div>
+<div class="font-mono k-sm" style="max-height:170px; overflow:auto; background:var(--bg2,transparent); border:1px solid var(--line,#2a2a2a); border-radius:6px; padding:8px;">
+  {% for u in sample %}{{ u }}<br/>{% endfor %}
+</div>
+{% endif %}

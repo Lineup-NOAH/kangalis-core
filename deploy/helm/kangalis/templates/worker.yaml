@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kangalis.fullname" . }}-worker
+  labels:
+    {{- include "kangalis.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  {{- if not .Values.worker.autoscaling.enabled }}
+  replicas: {{ .Values.worker.replicas }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "kangalis.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      labels:
+        {{- include "kangalis.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: worker
+    spec:
+      serviceAccountName: {{ include "kangalis.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.worker.hostNetwork }}
+      # Tarayıcı hedef LAN/VLAN'a NAT'sız erişsin (sensör modeli). Küme DNS'i korunur.
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      {{- end }}
+      {{- if .Values.postgres.enabled }}
+      initContainers:
+        - name: wait-for-db
+          image: {{ include "kangalis.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              until python -c "import socket; socket.create_connection(('{{ include "kangalis.postgresHost" . }}', 5432), 2)" 2>/dev/null; do echo 'db bekleniyor'; sleep 2; done
+      {{- end }}
+      containers:
+        - name: worker
+          image: {{ include "kangalis.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["celery", "-A", "cybersectool.tasks.celery_app", "worker", "--loglevel=info"]
+          envFrom:
+            - configMapRef:
+                name: {{ include "kangalis.fullname" . }}-config
+            - secretRef:
+                name: {{ include "kangalis.fullname" . }}-secret
+          {{- if .Values.worker.netRaw }}
+          # nmap raw soket: -sS (SYN) ve -sn (host keşfi) için CAP_NET_RAW gerekir.
+          securityContext:
+            capabilities:
+              add: ["NET_RAW", "NET_ADMIN"]
+          {{- end }}
+          {{- with .Values.worker.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- if .Values.worker.autoscaling.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "kangalis.fullname" . }}-worker
+  labels:
+    {{- include "kangalis.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "kangalis.fullname" . }}-worker
+  minReplicas: {{ .Values.worker.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.worker.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.worker.autoscaling.targetCPUUtilizationPercentage }}
+{{- end }}

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <title>Güvenlik Raporu · {{ app_name }}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 2cm 1.5cm 2cm 1.5cm;
+      @bottom-center {
+        content: "Sayfa " counter(page) " / " counter(pages);
+        font-size: 8pt;
+        color: #94a3b8;
+      }
+      @bottom-right {
+        content: "{{ app_name }}";
+        font-size: 8pt;
+        color: #cbd5e1;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "DejaVu Sans", "Liberation Sans", sans-serif;
+      color: #1e293b;
+      font-size: 10pt;
+      line-height: 1.4;
+      margin: 0;
+    }
+    .header {
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 12px;
+      margin-bottom: 18px;
+    }
+    .header h1 { font-size: 18pt; margin: 0 0 4px 0; color: #0f172a; }
+    .header .meta { font-size: 9pt; color: #64748b; }
+    h2 { font-size: 13pt; color: #0f172a; margin: 22px 0 10px 0; }
+    .summary { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+    .summary td {
+      width: 25%;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 10px;
+      text-align: center;
+      vertical-align: middle;
+    }
+    .summary .num { font-size: 20pt; font-weight: bold; }
+    .summary .lbl { font-size: 8pt; color: #64748b; text-transform: uppercase; }
+    .num-critical { color: #dc2626; }
+    .num-high { color: #ea580c; }
+    table.findings { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+    table.findings th {
+      background: #f1f5f9;
+      text-align: left;
+      padding: 6px 5px;
+      border: 1px solid #e2e8f0;
+      color: #334155;
+      font-size: 8pt;
+      text-transform: uppercase;
+    }
+    table.findings td {
+      padding: 5px;
+      border: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+    table.findings tr { page-break-inside: avoid; }
+    .mono { font-family: "DejaVu Sans Mono", monospace; font-size: 8pt; }
+    .sev {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 7.5pt;
+      font-weight: bold;
+      color: #fff;
+      text-transform: uppercase;
+    }
+    .sev-critical { background: #dc2626; }
+    .sev-high { background: #ea580c; }
+    .sev-medium { background: #d97706; }
+    .sev-low { background: #16a34a; }
+    .sev-info, .sev-none { background: #64748b; }
+    .risk { font-weight: bold; }
+    .footer {
+      margin-top: 28px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 10px;
+      font-size: 7.5pt;
+      color: #94a3b8;
+    }
+    .empty { color: #94a3b8; font-style: italic; }
+    .detail {
+      border: 1px solid #e2e8f0;
+      border-left: 3px solid #94a3b8;
+      border-radius: 6px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+      page-break-inside: avoid;
+    }
+    .detail.s-critical { border-left-color: #dc2626; }
+    .detail.s-high { border-left-color: #ea580c; }
+    .detail.s-medium { border-left-color: #d97706; }
+    .detail.s-low { border-left-color: #2563eb; }
+    .detail .dt { font-weight: bold; font-size: 10pt; color: #0f172a; }
+    .detail .tags { font-size: 8pt; color: #475569; margin: 3px 0 6px; }
+    .detail .lbl {
+      font-size: 7.5pt; text-transform: uppercase; letter-spacing: .03em;
+      color: #64748b; font-weight: bold; margin-top: 6px;
+    }
+    .detail p { margin: 2px 0 0; font-size: 9pt; }
+    .detail .rem {
+      background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 5px;
+      padding: 7px 9px; margin-top: 6px;
+    }
+    .detail .rem .lbl { color: #15803d; }
+    .detail .refs { font-size: 7.5pt; color: #2563eb; word-break: break-all; margin-top: 4px; }
+    .kev { color: #b91c1c; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>{{ app_name }} — Güvenlik Raporu</h1>
+    {% if batch %}<div class="meta">Tarama işi: {{ batch.name }} · {{ batch_targets|length }} hedef · {{ batch.mode.value }}</div>
+    {% elif scan %}<div class="meta">Tarama #{{ scan.id }} · {{ scan.target }} · {{ scan.scan_type.value }}</div>{% endif %}
+    <div class="meta">Oluşturulma: {{ generated_at }}</div>
+  </div>
+
+  <h2>Özet</h2>
+  <table class="summary">
+    <tr>
+      <td>
+        <div class="num">{{ asset_count }}</div>
+        <div class="lbl">Varlık</div>
+      </td>
+      <td>
+        <div class="num num-critical">{{ severity_counts.get('critical', 0) }}</div>
+        <div class="lbl">Kritik</div>
+      </td>
+      <td>
+        <div class="num num-high">{{ severity_counts.get('high', 0) }}</div>
+        <div class="lbl">Yüksek</div>
+      </td>
+      <td>
+        <div class="num">{{ findings|length }}</div>
+        <div class="lbl">Toplam Bulgu</div>
+      </td>
+    </tr>
+  </table>
+
+  {# Yerel AI yönetici özeti (#184) — yalnız üretilmişse statik gömülür (PDF'te buton yok).
+     report_pdf.html doğrudan render edilir (t() context processor yok) → sabit Türkçe. #}
+  {% if ai_summary %}
+  <h2>AI Yönetici Özeti</h2>
+  <div style="white-space:pre-wrap; line-height:1.5; font-size:13px; padding:10px 12px; background:#f5f5f7; border:1px solid #ddd; border-radius:6px;">{{ ai_summary }}</div>
+  <p style="font-size:11px; color:#888; font-style:italic; margin-top:4px;">AI üretti — uygulamadan önce doğrulayın.{% if ai_summary_model %} · {{ ai_summary_model }}{% endif %}</p>
+  {% endif %}
+
+  {% if report_hosts %}
+  <h2>Bulunan Hostlar ({{ report_hosts|length }})</h2>
+  <table class="findings">
+    <thead>
+      <tr>
+        <th>IP</th>
+        <th>Cihaz / Hostname</th>
+        <th>İşletim sistemi</th>
+        <th>Açık portlar / servisler</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for h in report_hosts %}
+      <tr>
+        <td class="mono">{{ h.ip }}{% if h.is_up %} (ayakta){% endif %}</td>
+        <td>{% if h.name and h.name != h.ip %}{{ h.name }}{% else %}—{% endif %}{% if h.hostname and h.hostname != h.name %} ({{ h.hostname }}){% endif %}</td>
+        <td>{{ h.os or '—' }}</td>
+        <td class="mono">
+          {%- if h.services -%}
+          {% for s in h.services %}{{ s.port }}/{{ s.protocol }}{% if s.service_name %} {{ s.service_name }}{% endif %}{% if s.product %} ({{ s.product }}{% if s.version %} {{ s.version }}{% endif %}){% endif %}{% if not loop.last %}, {% endif %}{% endfor %}
+          {%- else -%}<span class="empty">port taranmadı (yalnız keşif)</span>{%- endif -%}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  {% if dir_findings %}
+  <h2>Bulunan Yollar (dizin taraması)</h2>
+  <table class="findings">
+    <thead><tr><th>Önem</th><th>Yol</th></tr></thead>
+    <tbody>
+      {% for f in dir_findings %}
+      {% set sev = (f.severity.value if f.severity is not string else f.severity) | lower %}
+      <tr>
+        <td><span class="sev sev-{{ sev }}">{{ sev }}</span></td>
+        <td class="mono">{{ f.title.replace('Bulunan yol: ', '') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <h2>Bulgular</h2>
+  {% if exploit_overview %}
+  <p style="margin:0 0 8px; font-size:11px;"><strong>Exploitation durumu:</strong>
+    {% if exploit_overview.status == 'ran' %}Çalıştırıldı — {{ exploit_overview.attempts }} deneme, {{ exploit_overview.successes }} başarılı (sömürüldü){% elif exploit_overview.status == 'skipped' %}Çalışmadı — agresif moddu ama deneme kaydı yok (Metasploit kapalı ya da eşleşen exploit modülü yok){% else %}Çalıştırılmadı — güvenli/normal tarama (yalnız tespit; gerçek exploit denenmez){% endif %}</p>
+  {% endif %}
+  {% if exploitdb_staged %}
+  <p style="margin:0 0 4px; font-size:11px;"><strong>Exploit-DB denemeleri (PoC):</strong>
+    {{ exploitdb_staged|length }} eşleşme — operatör labda denedi/deneyecek (otomatik çalıştırılmaz).</p>
+  <table style="font-size:10px; margin:0 0 10px;">
+    <thead><tr><th>Host</th><th>CVE</th><th>Exploit-DB</th><th>Önerilen komut</th></tr></thead>
+    <tbody>
+      {% for s in exploitdb_staged %}
+      <tr><td>{{ s.host }}</td><td>{{ s.cve_id }}</td><td>EDB-{{ s.edb_id }}</td><td>{{ s.command or '-' }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+  {% if not findings_main %}
+  <p class="empty">Bulgu yok.</p>
+  {% else %}
+  <table class="findings">
+    <thead>
+      <tr>
+        <th>Önem</th>
+        <th>CVE</th>
+        <th>CVSS</th>
+        <th>Risk</th>
+        <th>Exploit</th>
+        <th>Başlık</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for grp in findings_main_by_host %}
+      <tr>
+        <td colspan="6" style="background:#eef2ff; font-weight:bold; padding:5px 7px;">
+          {% if grp.asset_id is none %}Sunucu atanmamış (genel){% else %}{{ grp.label }}{% endif %}{% if grp.ip and grp.ip != grp.label %} — {{ grp.ip }}{% endif %} ({{ grp['items']|length }})
+        </td>
+      </tr>
+      {% for f in grp['items'] %}
+      {% set cve = cve_map.get(f.cve_id) %}
+      {% set sev = (f.severity.value if f.severity is not string else f.severity) | lower %}
+      <tr>
+        <td><span class="sev sev-{{ sev }}">{{ sev }}</span></td>
+        <td class="mono">{{ f.cve_id or '-' }}</td>
+        <td>{{ cve.cvss_score if cve and cve.cvss_score is not none else '-' }}</td>
+        <td class="risk">{{ f.risk_score if f.risk_score is not none else '-' }}</td>
+        <td>
+          {% set ex = exploit_map.get(f.cve_id) %}
+          {% if ex and ex.count > 0 %}{% if ex.edb_count %}EDB {{ ex.edb_count }}{% endif %}{% if ex.msf_count %}{% if ex.edb_count %} · {% endif %}MSF {{ ex.msf_count }}{% endif %}{% else %}-{% endif %}
+        </td>
+        <td>{{ f.title }}</td>
+      </tr>
+      {% endfor %}
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Bulgu Detayları ve Çözümler</h2>
+  {% for grp in findings_main_by_host %}
+  <h3 style="margin:14px 0 6px; padding-bottom:3px; border-bottom:1.5px solid #c7d2fe; font-size:12px;">
+    {% if grp.asset_id is none %}Sunucu atanmamış (genel){% else %}{{ grp.label }}{% endif %}{% if grp.ip and grp.ip != grp.label %} — {{ grp.ip }}{% endif %}
+  </h3>
+  {% for f in grp['items'] %}
+  {% set cve = cve_map.get(f.cve_id) %}
+  {% set rem = remediation_map.get(f.id) %}
+  {% set ex = exploit_map.get(f.cve_id) %}
+  {% set sev = (f.severity.value if f.severity is not string else f.severity) | lower %}
+  {% set desc = f.description or (cve.description if cve else None) %}
+  <div class="detail s-{{ sev }}">
+    <div class="dt"><span class="sev sev-{{ sev }}">{{ sev }}</span> {{ f.title }}</div>
+    <div class="tags">
+      {% if is_os_package_title(f.title) %}<span style="color:#d97706; font-weight:bold;">OS Paketi · OSV.dev</span>{% if f.cve_id %} · {% endif %}{% endif %}
+      {% if f.cve_id %}{{ f.cve_id }}{% endif %}
+      {% if cve and cve.cvss_score is not none %} · CVSS {{ cve.cvss_score }}{% endif %}
+      {% if rem and rem.kev %} · <span class="kev">KEV (aktif sömürü)</span>{% endif %}
+      {% if rem and rem.epss_pct %} · EPSS {{ rem.epss_pct }}{% endif %}
+      {% set est = exploit_overview.state_of(f.cve_id, f.asset_id) if exploit_overview else none %}
+      {% if est == 'exploited' %} · <span class="kev">SÖMÜRÜLDÜ</span>{% elif est == 'attempted' %} · DENENDİ (başarısız){% endif %}
+    </div>
+    {% if ex and ex.details %}
+    <div class="lbl">Exploit kaynağı{% if ex.verified_count %} · {{ ex.verified_count }} doğrulanmış{% endif %}</div>
+    {% for d in ex.details %}
+    <p class="mono" style="font-size:10px;">{% if d.source == 'metasploit' %}Metasploit{% else %}Exploit-DB{% endif %}: {{ d.external_id }}{% if d.title %} — {{ d.title }}{% endif %}{% if d.type %} [{{ d.type }}]{% endif %}{% if d.rank %} · {{ d.rank }}{% endif %}{% if d.verified %} · ✓ doğrulanmış{% endif %}</p>
+    {% endfor %}
+    {% endif %}
+    {% if desc %}<div class="lbl">Açıklama</div><p>{{ desc }}</p>{% endif %}
+    {% if rem %}
+    <div class="lbl">Neden</div><p class="mono">{{ rem.cause }}</p>
+    <div class="rem">
+      <div class="lbl">Çözüm</div><p>{{ rem.summary }}</p>
+      {% if rem.references %}<div class="refs">{% for ref in rem.references %}{{ ref }}{% if not loop.last %} · {% endif %}{% endfor %}</div>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+  {% endfor %}
+  {% endif %}
+
+  <div class="footer">
+    Bu rapor {{ app_name }} tarafından otomatik oluşturulmuştur. Yalnızca yetkili
+    kapsamda yapılan taramaları içerir. Gizli — yetkisiz dağıtımı yasaktır.
+  </div>
+</body>
+</html>

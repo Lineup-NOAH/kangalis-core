@@ -1,0 +1,32 @@
+{# X-3: Denetim panellerinde (DB/SNMP/SMB/LDAP/Telnet) tekil host'a ek toplu hedef seçimi.
+   Tekil host alanı korunur; bu makro IP zone (envanterdeki ayakta varlıklar) + kimlik
+   bölgesi pop-up'ını ekler. ``pid`` her panel için benzersiz önek (db/snmp/smb/ldap/telnet).
+   ``with context`` ile çağrıldığından t/zones/assets/credential_zones/icon erişilebilir. #}
+{% macro audit_zone_popup(pid, show_creds=True) %}
+  <div style="display:flex; align-items:center; gap:12px; width:100%;">
+    <button type="button" class="kg-btn kg-btn-subtle kg-btn-sm" onclick="popOpen('{{ pid }}-zones')">{{ icon('target', 15) }} {{ t('audit_zone_btn') }}</button>
+    <span class="k-sm" id="{{ pid }}-zones-sum" style="color:var(--fg2)">{{ t('audit_zone_sum_none') }}</span>
+  </div>
+  <div id="pop-{{ pid }}-zones" class="kg-modal-overlay" onclick="if(event.target===this)popClose('{{ pid }}-zones')">
+    <div class="kg-modal">
+      <div class="kg-modal-head"><div class="kg-modal-title">{{ icon('target', 18) }} {{ t('audit_zone_title') }}</div>
+        <button type="button" class="kg-iconbtn" onclick="popClose('{{ pid }}-zones')">{{ icon('x', 18) }}</button></div>
+      <p class="k-sm" style="margin:0 0 8px;">{{ t('audit_zone_sub') }}</p>
+      {% if zones %}<div class="kg-field-label">{{ t('nav_zones') }}</div>
+      <div class="wiz-list">
+        {% for z in zones %}<label class="wiz-check" title="{{ z.cidrs|join(', ') }}"><input type="checkbox" name="zone_ids" value="{{ z.id }}" onchange="auditZoneCount('{{ pid }}')"><span class="font-mono">{{ z.name }}</span> <span class="k-sm">({{ z.cidrs|length }} {{ t('blocks') }})</span></label>{% endfor %}
+      </div>{% endif %}
+      {% if assets %}<div class="kg-field-label" style="margin-top:12px;">{{ t('inv_assets_title') }}</div>
+      <div class="wiz-list">
+        {% for a in assets %}<label class="wiz-check"><input type="checkbox" name="asset_ids" value="{{ a.id }}" onchange="auditZoneCount('{{ pid }}')"><span class="font-mono">{{ a.ip }}</span>{% if a.hostname %} <span class="k-sm">{{ a.hostname }}</span>{% endif %}</label>{% endfor %}
+      </div>{% endif %}
+      {% if show_creds and credential_zones %}<div class="kg-field-label" style="margin-top:12px;">{{ t('credential_zone') }}</div>
+      <div class="wiz-list">{% for cz in credential_zones %}<label class="wiz-check" title="{{ credzone_users.get(cz.id, '') }}"><input type="checkbox" name="credential_zone_ids" value="{{ cz.id }}" onchange="auditZoneCount('{{ pid }}')"><span>{{ cz.name }}</span> <span class="k-sm">({{ cz.credential_ids|length }})</span></label>{% endfor %}</div>{% endif %}
+      {% if not zones and not assets and (not show_creds or not credential_zones) %}<p class="k-sm" style="color:var(--fg2)">{{ t('wiz_no_creds') }} <a href="/zones" style="color:var(--accent)">{{ t('nav_zones') }}</a></p>{% endif %}
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:16px;">
+        <a href="/zones" target="_blank" rel="noopener" class="kg-btn kg-btn-subtle kg-btn-sm">{{ icon('edit', 14) }} {{ t('audit_zone_edit') }}</a>
+        <button type="button" class="kg-btn kg-btn-primary" onclick="popClose('{{ pid }}-zones')">{{ icon('check', 15) }} {{ t('wiz_confirm') }}</button>
+      </div>
+    </div>
+  </div>
+{% endmacro %}

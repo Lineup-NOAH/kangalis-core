@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ t('nav_users') }} · {{ app_name }}{% endblock %}
+
+{% block content %}
+<h1 class="k-h1" style="margin-bottom:6px;">{{ t('users_title') }}</h1>
+<p class="k-sm" style="margin-bottom:18px; max-width:720px;">{{ t('users_sub') }}</p>
+
+{% if error %}<div class="kg-alert kg-alert-error" style="margin-bottom:16px;">{{ error }}</div>{% endif %}
+{% if message %}<div class="kg-alert kg-alert-ok" style="margin-bottom:16px;">{{ message }}</div>{% endif %}
+
+<form method="post" action="/users/create" class="kg-card" style="padding:20px; margin-bottom:18px; display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap;">
+  <div style="flex:1; min-width:160px;">
+    <label class="kg-field-label" for="u-name">{{ t('login_user') }}</label>
+    <input id="u-name" name="username" required autocomplete="off" class="kg-input" />
+  </div>
+  <div style="flex:1; min-width:140px;">
+    <label class="kg-field-label" for="u-pass">{{ t('login_pass') }}</label>
+    <input id="u-pass" name="password" type="password" required autocomplete="new-password" class="kg-input" />
+  </div>
+  <div style="flex:1; min-width:160px;">
+    <label class="kg-field-label" for="u-email">{{ t('label_email') }}</label>
+    <input id="u-email" name="email" type="email" autocomplete="off" class="kg-input" />
+  </div>
+  <div>
+    <label class="kg-field-label" for="u-role">{{ t('label_role') }}</label>
+    <select id="u-role" name="role" class="kg-select">
+      {% for r in roles %}<option value="{{ r }}">{{ t('role_' + r) }}</option>{% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="kg-btn kg-btn-primary">{{ t('add_user') }}</button>
+</form>
+
+<div class="kg-table-wrap">
+  <table class="kg-table">
+    <thead>
+      <tr><th>{{ t('th_user') }}</th><th>{{ t('th_email') }}</th><th>{{ t('label_role') }}</th><th>{{ t('th_source') }}</th><th>{{ t('h_status') }}</th><th>{{ t('h_action') }}</th></tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td style="font-weight:500;">{{ u.username }}{% if u.id == user.id %}<span class="k-sm" style="margin-left:6px;">{{ t('you_label') }}</span>{% endif %}</td>
+        <td style="color:var(--fg2)">{{ u.email or '—' }}</td>
+        <td><span style="color:var(--fg2)">{{ t('role_' + u.role.value) }}</span></td>
+        <td style="color:var(--fg2)">{{ u.auth_source.value }}</td>
+        <td>{% if u.is_active %}<span class="kg-status kg-status-completed">{{ t('active') }}</span>{% else %}<span class="kg-status kg-status-pending">{{ t('passive') }}</span>{% endif %}</td>
+        <td>
+          <a href="/users/{{ u.id }}/edit" class="kg-btn kg-btn-ghost kg-btn-sm">{{ icon('settings', 14) }} {{ t('edit') }}</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<hr class="kg-divider" style="margin:26px 0 22px;" />
+
+<!-- LDAP'tan içe aktar -->
+<h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 12px;">{{ icon('globe', 18) }} {{ t('ldap_import_section') }}</h2>
+<div style="display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; align-items:center;">
+  <form method="get" action="/users" style="display:flex; gap:10px; max-width:480px; flex:1; min-width:260px;">
+    <input name="q" value="{{ query }}" placeholder="{{ t('ldap_search_ph') }}" class="kg-input" />
+    <button type="submit" class="kg-btn kg-btn-primary" {{ 'disabled' if not ldap_config or not ldap_config.base_dn else '' }}>{{ icon('search', 15) }} {{ t('ldap_search_btn') }}</button>
+  </form>
+  <a href="/users?show=groups" class="kg-btn kg-btn-ghost">{{ icon('users', 15) }} {{ t('ldap_see_groups') }}</a>
+</div>
+
+{% if groups is not none or ous is not none %}
+<div class="kg-card" style="padding:18px 20px; margin-bottom:18px;">
+  <h3 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 6px;">{{ icon('zones', 16) }} {{ t('ldap_groups_title') }}</h3>
+  <p class="k-sm" style="margin:0 0 12px;">{{ t('ldap_group_import_note') }}</p>
+  {% if ous %}
+  <div style="margin-bottom:12px;">
+    <div class="kg-field-label">{{ t('ldap_ous_title') }}</div>
+    <div style="display:flex; flex-wrap:wrap; gap:6px;">
+      {% for o in ous %}<span class="kg-chip font-mono">{{ o.name }}</span>{% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  {% if not groups %}
+  <p class="k-sm" style="color:var(--fg2);">{{ t('ldap_no_groups') }}</p>
+  {% else %}
+  <div class="kg-table-wrap">
+    <table class="kg-table kg-zebra">
+      <thead><tr><th>{{ t('th_username') }}</th><th>{{ t('cred_count') }}</th><th>{{ t('th_role') }}</th><th></th></tr></thead>
+      <tbody>
+        {% for g in groups %}
+        <tr>
+          <td class="font-mono">{{ g.name }}</td>
+          <td>{{ g.member_count }}</td>
+          <td colspan="2">
+            <form method="post" action="/ldap/import-group" style="display:flex; gap:8px; align-items:center; justify-content:flex-end;">
+              <input type="hidden" name="group_dn" value="{{ g.dn }}" />
+              <input type="hidden" name="group_name" value="{{ g.name }}" />
+              <select name="role" class="kg-select" style="width:auto;">
+                {% for r in roles %}<option value="{{ r }}" {{ 'selected' if ldap_config and ldap_config.default_role == r else '' }}>{{ t('role_' + r) }}</option>{% endfor %}
+              </select>
+              <button type="submit" class="kg-btn kg-btn-primary kg-btn-sm">{{ t('ldap_import_group') }}</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if not ldap_config or not ldap_config.server_uri %}
+<div class="kg-card" style="padding:24px; text-align:center; color:var(--fg2);">{{ t('ldap_not_configured') }}</div>
+{% elif results is none %}
+<p class="k-sm" style="color:var(--fg2);">{{ t('ldap_no_results') }}</p>
+{% elif not results %}
+<div class="kg-card" style="padding:24px; text-align:center; color:var(--fg2);">{{ t('ldap_no_results') }}</div>
+{% else %}
+<div class="kg-card kg-table-wrap" style="padding:0;">
+  <table class="kg-table kg-zebra">
+    <thead><tr>
+      <th>{{ t('th_username') }}</th><th>{{ t('th_displayname') }}</th><th>{{ t('th_email') }}</th>
+      <th>{{ t('th_role') }}</th><th></th>
+    </tr></thead>
+    <tbody>
+      {% for u in results %}
+      <tr>
+        <td class="font-mono">{{ u.username }}</td>
+        <td>{{ u.display_name or '—' }}</td>
+        <td class="font-mono" style="font-size:13px;">{{ u.email or '—' }}</td>
+        <td colspan="2">
+          <form method="post" action="/ldap/import" style="display:flex; gap:8px; align-items:center; justify-content:flex-end;">
+            <input type="hidden" name="username" value="{{ u.username }}" />
+            <input type="hidden" name="email" value="{{ u.email or '' }}" />
+            <input type="hidden" name="display_name" value="{{ u.display_name or '' }}" />
+            <select name="role" class="kg-select" style="width:auto;">
+              {% for r in roles %}<option value="{{ r }}" {{ 'selected' if ldap_config.default_role == r else '' }}>{{ t('role_' + r) }}</option>{% endfor %}
+            </select>
+            <button type="submit" class="kg-btn kg-btn-primary kg-btn-sm">{{ t('ldap_import') }}</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

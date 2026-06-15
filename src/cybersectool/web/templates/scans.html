@@ -1,0 +1,627 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_audit_zone_popup.html" import audit_zone_popup with context %}
+{% from "_audit_card.html" import audit_head %}
+{% block title %}{{ t('nav_scans') }} · {{ app_name }}{% endblock %}
+
+{% block content %}
+<h1 class="k-h1" style="margin-bottom:20px;">{{ t('nav_scans') }}</h1>
+
+{% if error %}<div class="kg-alert kg-alert-error" style="margin-bottom:16px;">{{ error }}</div>{% endif %}
+{% if message %}<div class="kg-alert kg-alert-ok" style="margin-bottom:16px;">{{ message }}</div>{% endif %}
+
+<style>
+.kg-seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.kg-seg-btn{padding:6px 16px;background:transparent;border:0;color:var(--fg2);cursor:pointer;font-size:13px}
+.kg-seg-btn.active{background:var(--accent);color:#fff}
+.scan-step-head{font-weight:600;margin:0 0 10px;font-size:14px;display:flex;align-items:center;gap:8px}
+.scan-step{margin-bottom:16px}
+#scan-form.view-flat .scan-step{padding-bottom:16px;border-bottom:1px solid var(--line)}
+#scan-form.view-flat .scan-step:last-of-type{border-bottom:0;padding-bottom:0}
+#scan-form.view-steps .scan-step{display:none}
+#scan-form.view-steps .scan-step.active{display:block}
+#scan-form.view-flat #scan-step-nav{display:none !important}
+.scan-collapse>summary{cursor:pointer;color:var(--accent);font-size:13px;list-style:none}
+.scan-collapse[open]>summary{margin-bottom:8px}
+</style>
+
+<!-- SCAN-MERGE: birleşik Tarama paneli — Hızlı (tek ekran) ↔ Adım-adım; tek backend /scans/start -->
+<form method="post" action="/scans/start" id="scan-form" class="kg-card view-flat" style="padding:20px; margin-bottom:16px;">
+  <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:4px;">
+    <h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0;">{{ icon('target', 18) }} {{ t('scan_panel_title') }}</h2>
+    <div class="kg-seg" role="group" aria-label="{{ t('view_label') }}">
+      <button type="button" id="view-flat-btn" class="kg-seg-btn active" onclick="scanView('flat')">{{ t('view_quick') }}</button>
+      <button type="button" id="view-steps-btn" class="kg-seg-btn" onclick="scanView('steps')">{{ t('view_step') }}</button>
+    </div>
+  </div>
+  <p class="k-sm" style="margin:0 0 16px;">{{ t('scan_panel_sub') }}</p>
+
+  <!-- ADIM: Hedef -->
+  <div class="scan-step active" data-step="target">
+    <div class="scan-step-head">{{ icon('target', 15) }} {{ t('wiz_s1') }}</div>
+    <textarea id="targets" name="targets" rows="2" placeholder="10.0.0.5, 10.0.0.6, 192.168.1.0/24 · https://site"
+              class="kg-input font-mono" style="height:auto; padding:10px 12px; font-size:13px;"></textarea>
+    <div class="k-sm" style="color:var(--fg2); margin-top:4px;">{{ t('targets_url_hint') }}</div>
+    {% if zones or assets %}
+    <details class="scan-collapse" style="margin-top:10px;">
+      <summary>{{ icon('target', 13) }} {{ t('target_inventory') }}</summary>
+      {% if zones %}<div class="kg-field-label">{{ t('nav_zones') }}</div>
+      <div class="wiz-list">{% for z in zones %}<div style="display:flex; align-items:center; gap:6px;"><label class="wiz-check" title="{{ z.cidrs|join(', ') }}" style="flex:1;"><input type="checkbox" name="zone_ids" value="{{ z.id }}"><span class="font-mono">{{ z.name }}</span> <span class="k-sm">({{ z.cidrs|length }} {{ t('blocks') }})</span></label>{% if user.role.value == "admin" %}<a href="/zones/{{ z.id }}/edit?from=scans" class="kg-btn kg-btn-ghost kg-btn-sm" title="{{ t('edit_zone') }}">{{ icon('edit', 13) }}</a>{% endif %}</div>{% endfor %}</div>{% endif %}
+      {% if assets %}<div class="kg-field-label" style="margin-top:12px;">{{ t('inv_assets_title') }}</div>
+      <div class="wiz-list">{% for a in assets %}<div style="display:flex; align-items:center; gap:6px;"><label class="wiz-check" style="flex:1;"><input type="checkbox" name="asset_ids" value="{{ a.id }}"><span class="font-mono">{{ a.ip }}</span>{% if a.hostname %} <span class="k-sm">{{ a.hostname }}</span>{% endif %}</label><a href="/assets" class="kg-btn kg-btn-ghost kg-btn-sm" title="{{ t('edit_asset') }}">{{ icon('edit', 13) }}</a></div>{% endfor %}</div>{% endif %}
+    </details>
+    {% endif %}
+  </div>
+
+  {% if user.role.value == "admin" %}
+  <!-- ADIM: Kimlik (opsiyonel, admin) — IP/varlık gibi inline liste + düzenle -->
+  <div class="scan-step" data-step="kimlik">
+    <div class="scan-step-head">{{ icon('vault', 15) }} {{ t('wiz_s2') }} <span class="k-sm" style="color:var(--fg2)">({{ t('optional') }})</span></div>
+    {% if credential_zones or credentials %}
+    <details class="scan-collapse">
+      <summary>{{ icon('vault', 13) }} {{ t('quick_creds_btn') }}</summary>
+      {% if credential_zones %}<div class="kg-field-label">{{ t('credential_zone') }}</div>
+      <div class="wiz-list">{% for cz in credential_zones %}<div style="display:flex; align-items:center; gap:6px;"><label class="wiz-check" title="{{ credzone_users.get(cz.id, '') }}" style="flex:1;"><input type="checkbox" name="credential_zone_ids" value="{{ cz.id }}"><span>{{ cz.name }}</span> <span class="k-sm">({{ cz.credential_ids|length }})</span></label><a href="/credential-zones/{{ cz.id }}/edit?from=scans" class="kg-btn kg-btn-ghost kg-btn-sm" title="{{ t('edit_credzone') }}">{{ icon('edit', 13) }}</a></div>{% endfor %}</div>{% endif %}
+      {% if credentials %}<div class="kg-field-label" style="margin-top:12px;">{{ t('inv_creds_title') }}</div>
+      <div class="wiz-list">{% for c in credentials %}<div style="display:flex; align-items:center; gap:6px;"><label class="wiz-check" title="{{ cred_user_by_id.get(c.id, '') }}" style="flex:1;"><input type="checkbox" name="credential_ids" value="{{ c.id }}"><span>{{ c.name }}</span> <span class="kg-chip {% if c.cred_type.value != 'ssh' %}kg-chip-accent{% endif %}">{{ c.cred_type.value | upper }}</span></label><a href="/credentials/{{ c.id }}/edit?from=scans" class="kg-btn kg-btn-ghost kg-btn-sm" title="{{ t('edit_cred') }}">{{ icon('edit', 13) }}</a></div>{% endfor %}</div>{% endif %}
+    </details>
+    {% else %}<p class="k-sm" style="color:var(--fg2)">{{ t('wiz_no_creds') }} <a href="/credentials" style="color:var(--accent)">{{ t('nav_vault') }}</a></p>{% endif %}
+  </div>
+  {% endif %}
+
+  <!-- ADIM: Mod + port -->
+  <div class="scan-step" data-step="mode">
+    <div class="scan-step-head">{{ icon('scans', 15) }} {{ t('wiz_s3') }}</div>
+    <div style="display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap;">
+      <div>
+        <label class="kg-field-label" for="q-mode">{{ t('wiz_s3') }}</label>
+        <select id="q-mode" name="mode" class="kg-select" onchange="scanMode()">
+          <option value="network">{{ t('wmode_network') }}</option>
+          <option value="ping">{{ t('wmode_ping') }}</option>
+          <option value="cve_safe">{{ t('wmode_cve_safe') }}</option>
+          {% if user.role.value == "admin" %}<option value="cve_aggressive">{{ t('wmode_cve_aggr') }}</option>{% endif %}
+          <option value="web">{{ t('type_web') }}</option>
+          {% if user.role.value == "admin" %}<option value="web_aggressive">{{ t('wmode_web_cve') }}</option>{% endif %}
+        </select>
+      </div>
+      <div id="q-ports-wrap">
+        <label class="kg-field-label" for="ports">{{ t('scan_ports') }}</label>
+        <select id="ports" name="ports" class="kg-select" onchange="scanPorts()">
+          <option value="top">{{ t('ports_top') }}</option>
+          <option value="all">{{ t('ports_all') }}</option>
+          <option value="custom">{{ t('ports_custom') }}</option>
+        </select>
+      </div>
+      <div id="q-ports-custom-wrap" style="display:none;">
+        <label class="kg-field-label" for="ports_custom">{{ t('ports_custom') }}</label>
+        <input id="ports_custom" name="ports_custom" class="kg-input font-mono" placeholder="{{ t('ports_custom_ph') }}" />
+      </div>
+      <div id="q-udp-wrap" style="align-self:flex-end;">
+        <label class="wiz-check" title="{{ t('udp_scan_hint') }}"><input type="checkbox" id="q-udp" name="udp_scan" value="on"> {{ t('udp_scan_label') }}</label>
+      </div>
+    </div>
+    <div id="q-dirscan-row" style="display:none; margin-top:14px;">
+      <label class="wiz-check" style="align-items:flex-start;">
+        <input type="checkbox" id="q-dirscan" name="web_dirscan" value="on" onchange="dirWordlistToggle()">
+        <span><strong>{{ t('web_dirscan_label') }}</strong><br><span class="k-sm" style="color:var(--fg2);">{{ t('web_dirscan_hint') }}</span></span>
+      </label>
+      <div id="q-wordlist-sub" style="display:none; margin-top:10px; padding-left:28px;">
+        <label class="kg-field-label" for="q-wordlist">{{ t('web_wordlist_label') }}</label>
+        <select id="q-wordlist" name="web_wordlist_id" class="kg-select" style="max-width:360px;">
+          <option value="">{{ t('web_wordlist_builtin') }}</option>
+          {% for w in web_wordlists %}<option value="{{ w.id }}">{{ w.name }} ({{ w.entries|length }})</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    {% if user.role.value == "admin" %}
+    <div id="q-external-row" style="display:none; margin-top:14px;">
+      <label class="wiz-check" style="align-items:flex-start;">
+        <input type="checkbox" id="q-external" name="web_external" value="on">
+        <span><strong>{{ t('web_external_label') }}</strong><br><span class="k-sm" style="color:var(--fg2);">{{ t('web_external_hint') }}</span></span>
+      </label>
+    </div>
+    {% endif %}
+    <div id="q-ack-box" class="kg-danger" style="display:none; margin-top:14px;">
+      <span style="color:var(--sev-critical); flex:0 0 auto; margin-top:1px;">{{ icon('alert', 20, 2) }}</span>
+      <div>
+        <div class="kg-danger-title" id="q-ack-title">{{ t('danger_title') }}</div>
+        <div class="k-sm" style="line-height:1.6;" id="q-ack-body">{{ t('danger_body') }}</div>
+        <label class="wiz-check" style="margin-top:12px; align-items:flex-start;"><input type="checkbox" id="q-ack" name="aggressive_ack" value="on" onchange="scanMode()"> <strong>{{ t('quick_ack') }}</strong></label>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ADIM: Kategori -->
+  <div class="scan-step" data-step="kategori">
+    <div class="scan-step-head">{{ icon('exploit', 15) }} {{ t('wiz_s4') }}</div>
+    <details class="scan-collapse">
+      <summary>{{ t('wiz_cat_all') }} / {{ t('wiz_select') }}</summary>
+      <div class="wiz-list" style="max-height:none;">
+        <label class="wiz-check"><input type="checkbox" id="wiz-cat-all" checked onchange="scanCatAll()"> <strong>{{ t('wiz_cat_all') }}</strong></label>
+        {% for cat in scan_categories %}<label class="wiz-check"><input type="checkbox" class="wiz-cat" name="categories" value="{{ cat }}" onchange="scanCatOne()"> {{ t('cat_' + cat) }}</label>{% endfor %}
+      </div>
+      <p class="k-sm" style="color:var(--fg2); margin-top:8px;">{{ t('wiz_cat_note') }}</p>
+    </details>
+  </div>
+
+  <!-- ADIM: Zamanlama (opsiyonel) -->
+  <div class="scan-step" data-step="zamanlama">
+    <div class="scan-step-head">{{ icon('schedules', 15) }} {{ t('wiz_s5') }} <span class="k-sm" style="color:var(--fg2)">({{ t('optional') }})</span></div>
+    <details class="scan-collapse">
+      <summary>{{ t('sched_run_now') }} / {{ t('sched_scheduled') }}</summary>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <label class="wiz-check"><input type="radio" name="sched_mode" value="run_now" checked onchange="scanSched()"> {{ t('sched_run_now') }}</label>
+        <label class="wiz-check"><input type="radio" name="sched_mode" value="schedule" onchange="scanSched()"> {{ t('sched_scheduled') }}</label>
+      </div>
+      <div id="wiz-sched-opts" style="display:none; margin-top:12px;">
+        <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+          <div>
+            <label class="kg-field-label" for="wiz-sched-period">{{ t('sched_period') }}</label>
+            <select id="wiz-sched-period" name="sched_period" class="kg-select" onchange="scanSchedInt(this.value)">
+              <option value="daily">{{ t('period_daily') }}</option>
+              <option value="weekly">{{ t('period_weekly') }}</option>
+              <option value="monthly">{{ t('period_monthly') }}</option>
+              <option value="once">{{ t('period_once') }}</option>
+              <option value="interval">{{ t('period_interval') }}</option>
+            </select>
+          </div>
+          <div id="wiz-sched-int-wrap" style="display:none;">
+            <label class="kg-field-label" for="wiz-sched-int">{{ t('sched_interval') }}</label>
+            <input id="wiz-sched-int" name="sched_interval_minutes" type="number" value="1440" min="1" class="kg-input font-mono" style="width:120px;" />
+          </div>
+          <div>
+            <label class="kg-field-label" for="wiz-sched-start">{{ t('sched_start_at') }}</label>
+            <input id="wiz-sched-start" name="sched_start_at" type="datetime-local" class="kg-input" />
+          </div>
+        </div>
+        <p class="k-sm" style="color:var(--fg2); margin-top:8px;">{{ t('sched_inventory_only') }}</p>
+      </div>
+    </details>
+  </div>
+
+  <!-- ADIM: Onay (atama + isim + başlat) -->
+  <div class="scan-step" data-step="onay">
+    <div class="scan-step-head">{{ icon('check', 15) }} {{ t('step_confirm') }}</div>
+    {% if user.role.value == 'admin' and all_users %}
+    <div style="display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap; margin-bottom:12px;">
+      <div style="min-width:200px;">
+        <label class="kg-field-label" for="q-assign">{{ t('assign_to_user') }}</label>
+        <select id="q-assign" name="assigned_user_id" class="kg-select">
+          <option value="">{{ t('no_assignment') }}</option>
+          {% for u in all_users %}<option value="{{ u.id }}">{{ u.username }}{% if u.email %} ({{ u.email }}){% endif %}</option>{% endfor %}
+        </select>
+      </div>
+      <label class="wiz-check"><input type="checkbox" name="notify_on_complete" value="on"> {{ t('notify_on_complete') }}</label>
+      <label class="wiz-check"><input type="checkbox" name="attach_report" value="on"> {{ t('attach_report') }}</label>
+    </div>
+    {% endif %}
+    <div style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+      <div style="flex:1; min-width:200px;">
+        <label class="kg-field-label" for="q-name">{{ t('quick_name') }}</label>
+        <input id="q-name" name="name" class="kg-input" placeholder="{{ t('quick_name_ph') }}" />
+      </div>
+      <button type="submit" id="scan-start" class="kg-btn kg-btn-primary">{{ t('start_scan') }}</button>
+    </div>
+  </div>
+
+  <!-- Adım navigasyonu (yalnız Adım-adım görünümünde) -->
+  <div id="scan-step-nav" style="margin-top:16px; display:flex; justify-content:space-between; gap:10px;">
+    <button type="button" class="kg-btn kg-btn-subtle" id="step-back-btn" onclick="scanStep(-1)">{{ t('step_back') }}</button>
+    <button type="button" class="kg-btn kg-btn-primary" id="step-next-btn" onclick="scanStep(1)">{{ t('step_next') }}</button>
+  </div>
+
+</form>
+
+<style>
+  .audit-head{list-style:none;cursor:pointer;display:flex;align-items:center;gap:13px;}
+  .audit-head::-webkit-details-marker{display:none;}
+  .audit-ico{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:10px;flex-shrink:0;}
+  .audit-text{display:flex;flex-direction:column;gap:1px;flex:1;min-width:0;}
+  .audit-title{font-weight:600;font-size:14.5px;line-height:1.3;}
+  .audit-desc{font-size:12.5px;color:var(--fg2);line-height:1.35;}
+  .audit-tag{flex-shrink:0;font-size:10.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;padding:3px 9px;border:1px solid var(--border);border-radius:999px;white-space:nowrap;}
+  .audit-chev{flex-shrink:0;color:var(--fg2);transition:transform .18s ease;}
+  details[open]>.audit-head .audit-chev{transform:rotate(90deg);}
+  .audit-card{transition:border-color .15s ease, box-shadow .15s ease;}
+  .audit-card:hover{border-color:color-mix(in srgb, var(--accent) 32%, var(--border));box-shadow:0 1px 7px color-mix(in srgb, var(--fg) 7%, transparent);}
+</style>
+
+<h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:26px 0 4px;">{{ icon('vault', 18) }} {{ t('audit_section_title') }}</h2>
+<p class="k-sm" style="margin:0 0 14px; color:var(--fg2); max-width:760px;">{{ t('audit_section_sub') }}</p>
+
+<details class="kg-card audit-card" style="padding:16px 18px; margin-bottom:12px;">
+  {{ audit_head('exploit', t('sca_title'), t('sca_desc'), t('tag_readonly'), '#d97706') }}
+  <div style="margin-top:14px;"></div>
+  <form method="post" action="/scans/sca" enctype="multipart/form-data">
+    <div style="margin-bottom:12px;">
+      <label class="kg-field-label" for="sca-eco">{{ t('ecosystem') }}</label>
+      <select id="sca-eco" name="ecosystem" class="kg-select" style="width:auto;">
+        <option value="PyPI">PyPI (requirements.txt)</option>
+        <option value="npm">npm (package.json)</option>
+      </select>
+    </div>
+    <label class="kg-field-label" for="sca-content">{{ t('sca_paste_label') }}</label>
+    <textarea id="sca-content" name="content" rows="5" placeholder="django==2.2.0&#10;requests==2.6.0"
+              class="kg-input font-mono" style="height:auto; padding:10px 12px; font-size:13px; margin-bottom:10px;"></textarea>
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+      <span style="flex:1; height:1px; background:var(--border);"></span>
+      <span class="k-sm" style="color:var(--fg2);">{{ t('sca_or') }}</span>
+      <span style="flex:1; height:1px; background:var(--border);"></span>
+    </div>
+    <label class="kg-field-label" for="sca-file">{{ t('sca_upload_label') }}</label>
+    <input id="sca-file" type="file" name="manifest_file" accept=".txt,.json,.lock"
+           class="kg-input" style="margin-bottom:12px;" />
+    <button type="submit" class="kg-btn kg-btn-primary">{{ t('sca_scan_btn') }}</button>
+  </form>
+</details>
+
+{% if user.role.value == "admin" %}
+<details class="kg-card audit-card" style="padding:16px 18px; margin-bottom:12px;">
+  {{ audit_head('vault', t('db_audit_title'), t('db_audit_desc'), t('tag_credentialed'), '#2563eb') }}
+  <div style="margin-top:14px;"></div>
+  {% set db_creds = credentials | selectattr('cred_type.value', 'in', ['postgres', 'mysql', 'mssql', 'oracle']) | list %}
+  {% if not db_creds %}
+  <p class="k-sm" style="color:var(--fg2);">{{ t('db_audit_no_cred') }}
+    <a href="/credentials" style="color:var(--accent)">{{ t('nav_vault') }}</a></p>
+  {% else %}
+  <form method="post" action="/scans/db" style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+    <div style="width:130px;">
+      <label class="kg-field-label" for="db-engine">{{ t('db_engine') }}</label>
+      <select id="db-engine" name="engine" class="kg-select" onchange="dbEngine()">
+        <option value="postgres">PostgreSQL</option>
+        <option value="mysql">MySQL / MariaDB</option>
+        <option value="mssql">MSSQL (SQL Server)</option>
+        <option value="oracle">Oracle</option>
+      </select>
+    </div>
+    <div style="flex:1; min-width:140px;">
+      <label class="kg-field-label" for="db-host">{{ t('db_host') }}</label>
+      <input id="db-host" name="host" placeholder="10.0.0.20" class="kg-input font-mono" />
+    </div>
+    <div style="width:90px;">
+      <label class="kg-field-label" for="db-port">{{ t('db_port') }}</label>
+      <input id="db-port" name="port" type="number" value="5432" class="kg-input font-mono" />
+    </div>
+    <div style="flex:1; min-width:120px;">
+      <label class="kg-field-label" for="db-name">{{ t('db_name') }}</label>
+      <input id="db-name" name="database" value="postgres" placeholder="postgres" class="kg-input font-mono" />
+    </div>
+    <div style="flex:1; min-width:150px;">
+      <label class="kg-field-label" for="db-cred">{{ t('db_credential') }}</label>
+      <select id="db-cred" name="credential_id" class="kg-select">
+        {% for c in db_creds %}<option value="{{ c.id }}" data-engine="{{ c.cred_type.value }}">{{ c.name }} ({{ c.cred_type.value }})</option>{% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="kg-btn kg-btn-primary">{{ t('db_audit_btn') }}</button>
+    {{ audit_zone_popup('db', show_creds=False) }}
+  </form>
+  <p class="k-sm" style="margin-top:8px; color:var(--fg2); max-width:780px;">{{ t('db_name_hint') }}</p>
+  <script>
+  function dbEngine() {
+    var eng = document.getElementById('db-engine').value;
+    var PORTS = { postgres: '5432', mysql: '3306', mssql: '1433', oracle: '1521' };
+    var DBS = { postgres: 'postgres', mysql: '', mssql: 'master', oracle: 'FREEPDB1' };
+    var DBPH = { postgres: 'postgres', mysql: '(opsiyonel)', mssql: 'master', oracle: 'FREEPDB1' };
+    document.getElementById('db-port').value = PORTS[eng] || '5432';
+    document.getElementById('db-name').value = DBS[eng] !== undefined ? DBS[eng] : 'postgres';
+    document.getElementById('db-name').placeholder = DBPH[eng] || 'postgres';
+    var sel = document.getElementById('db-cred'), first = null;
+    for (var i = 0; i < sel.options.length; i++) {
+      var o = sel.options[i], match = o.getAttribute('data-engine') === eng;
+      o.hidden = !match; o.disabled = !match;
+      if (match && first === null) first = o;
+    }
+    var cur = sel.selectedOptions[0];
+    if ((!cur || cur.getAttribute('data-engine') !== eng) && first) sel.value = first.value;
+  }
+  document.addEventListener('DOMContentLoaded', dbEngine);
+  </script>
+  {% endif %}
+</details>
+{% endif %}
+
+{% if user.role.value == "admin" %}
+<details class="kg-card audit-card" style="padding:16px 18px; margin-bottom:12px;">
+  {{ audit_head('router', t('snmp_audit_title'), t('snmp_audit_desc'), t('tag_readonly'), '#0d9488') }}
+  <div style="margin-top:14px;"></div>
+  <form method="post" action="/scans/snmp" style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+    <div style="flex:1; min-width:140px;">
+      <label class="kg-field-label" for="snmp-host">{{ t('snmp_host') }}</label>
+      <input id="snmp-host" name="host" placeholder="10.0.0.30" class="kg-input font-mono" />
+    </div>
+    <div style="width:90px;">
+      <label class="kg-field-label" for="snmp-port">{{ t('db_port') }}</label>
+      <input id="snmp-port" name="port" type="number" value="161" class="kg-input font-mono" />
+    </div>
+    <button type="submit" class="kg-btn kg-btn-primary">{{ t('snmp_audit_btn') }}</button>
+    {{ audit_zone_popup('snmp', show_creds=False) }}
+  </form>
+  <p class="k-sm" style="margin:12px 0 0; color:var(--fg2);">{{ t('snmp_auto_version_note') }}</p>
+</details>
+{% endif %}
+
+{% if user.role.value == "admin" %}
+<details class="kg-card audit-card" style="padding:16px 18px; margin-bottom:12px;">
+  {{ audit_head('server', t('smb_audit_title'), t('smb_audit_desc'), t('tag_readonly'), '#4f46e5') }}
+  <div style="margin-top:14px;"></div>
+  {% set smb_creds = credentials | selectattr('cred_type.value', 'equalto', 'smb') | list %}
+  <form method="post" action="/scans/smb" style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+    <div style="flex:1; min-width:140px;">
+      <label class="kg-field-label" for="smb-host">{{ t('smb_host') }}</label>
+      <input id="smb-host" name="host" placeholder="10.0.0.40" class="kg-input font-mono" />
+    </div>
+    <div style="width:90px;">
+      <label class="kg-field-label" for="smb-port">{{ t('db_port') }}</label>
+      <input id="smb-port" name="port" type="number" value="445" class="kg-input font-mono" />
+    </div>
+    <div style="flex:1; min-width:170px;">
+      <label class="kg-field-label" for="smb-cred">{{ t('smb_credential') }}</label>
+      <select id="smb-cred" name="credential_id" class="kg-select">
+        <option value="">{{ t('smb_anon_only') }}</option>
+        {% for c in smb_creds %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div style="flex:1; min-width:170px;">
+      <label class="kg-field-label" for="smb-wordlist">{{ t('smb_wordlist_label') }}</label>
+      <select id="smb-wordlist" name="smb_wordlist_id" class="kg-select">
+        <option value="">{{ t('smb_wordlist_none') }}</option>
+        {% for w in smb_wordlists %}<option value="{{ w.id }}">{{ w.name }} ({{ w.entries|length }})</option>{% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="kg-btn kg-btn-primary">{{ t('smb_audit_btn') }}</button>
+    {{ audit_zone_popup('smb') }}
+  </form>
+  <p class="k-sm" style="margin:12px 0 0; color:var(--fg2);">{{ t('smb_anon_note') }} {{ t('smb_wordlist_hint') }}</p>
+</details>
+{% endif %}
+
+{% if user.role.value == "admin" %}
+<details class="kg-card audit-card" style="padding:16px 18px; margin-bottom:12px;">
+  {{ audit_head('users', t('ldap_audit_title'), t('ldap_audit_desc'), t('tag_readonly'), '#7c3aed') }}
+  <div style="margin-top:14px;"></div>
+  {% set ldap_creds = credentials | selectattr('cred_type.value', 'equalto', 'ldap') | list %}
+  <form method="post" action="/scans/ldap" style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+    <div style="flex:1; min-width:140px;">
+      <label class="kg-field-label" for="ldap-host">{{ t('ldap_host') }}</label>
+      <input id="ldap-host" name="host" placeholder="10.0.0.50" class="kg-input font-mono" />
+    </div>
+    <div style="width:90px;">
+      <label class="kg-field-label" for="ldap-port">{{ t('db_port') }}</label>
+      <input id="ldap-port" name="port" type="number" value="389" class="kg-input font-mono" />
+    </div>
+    <div style="flex:1; min-width:170px;">
+      <label class="kg-field-label" for="ldap-cred">{{ t('ldap_credential') }}</label>
+      <select id="ldap-cred" name="credential_id" class="kg-select">
+        <option value="">{{ t('ldap_anon_only') }}</option>
+        {% for c in ldap_creds %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="kg-btn kg-btn-primary">{{ t('ldap_audit_btn') }}</button>
+    {{ audit_zone_popup('ldap') }}
+  </form>
+  <p class="k-sm" style="margin:12px 0 0; color:var(--fg2);">{{ t('ldap_anon_note') }}</p>
+</details>
+{% endif %}
+
+{% if user.role.value == "admin" %}
+<details class="kg-card audit-card" style="padding:16px 18px; margin-bottom:12px;">
+  {{ audit_head('router', t('telnet_audit_title'), t('telnet_audit_desc'), t('tag_readonly'), '#0891b2') }}
+  <div style="margin-top:14px;"></div>
+  {% set telnet_creds = credentials | selectattr('cred_type.value', 'equalto', 'telnet') | list %}
+  <form method="post" action="/scans/telnet" style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+    <div style="flex:1; min-width:140px;">
+      <label class="kg-field-label" for="telnet-host">{{ t('telnet_host') }}</label>
+      <input id="telnet-host" name="host" placeholder="10.0.0.60" class="kg-input font-mono" />
+    </div>
+    <div style="width:90px;">
+      <label class="kg-field-label" for="telnet-port">{{ t('db_port') }}</label>
+      <input id="telnet-port" name="port" type="number" value="23" class="kg-input font-mono" />
+    </div>
+    <div style="flex:1; min-width:170px;">
+      <label class="kg-field-label" for="telnet-cred">{{ t('telnet_credential') }}</label>
+      <select id="telnet-cred" name="credential_id" class="kg-select">
+        <option value="">{{ t('telnet_anon_only') }}</option>
+        {% for c in telnet_creds %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="kg-btn kg-btn-primary">{{ t('telnet_audit_btn') }}</button>
+    {{ audit_zone_popup('telnet') }}
+  </form>
+  <p class="k-sm" style="margin:12px 0 0; color:var(--fg2);">{{ t('telnet_anon_note') }}</p>
+</details>
+{% endif %}
+
+{% if user.role.value == "admin" %}
+<details class="kg-card audit-card" style="padding:16px 18px; margin-bottom:12px;">
+  {{ audit_head('router', t('cisco_audit_title'), t('cisco_audit_desc'), t('tag_readonly'), '#0891b2') }}
+  <div style="margin-top:14px;"></div>
+  {% set cisco_creds = credentials | selectattr('cred_type.value', 'equalto', 'ssh') | list %}
+  <form method="post" action="/scans/cisco" style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+    <div style="flex:1; min-width:140px;">
+      <label class="kg-field-label" for="cisco-host">{{ t('cisco_host') }}</label>
+      <input id="cisco-host" name="host" placeholder="10.0.0.61" class="kg-input font-mono" />
+    </div>
+    <div style="width:90px;">
+      <label class="kg-field-label" for="cisco-port">{{ t('db_port') }}</label>
+      <input id="cisco-port" name="port" type="number" value="22" class="kg-input font-mono" />
+    </div>
+    <div style="flex:1; min-width:170px;">
+      <label class="kg-field-label" for="cisco-cred">{{ t('cisco_credential') }}</label>
+      <select id="cisco-cred" name="credential_id" class="kg-select">
+        <option value="">{{ t('cisco_cred_placeholder') }}</option>
+        {% for c in cisco_creds %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="kg-btn kg-btn-primary">{{ t('cisco_audit_btn') }}</button>
+    {{ audit_zone_popup('cisco') }}
+  </form>
+  <p class="k-sm" style="margin:12px 0 0; color:var(--fg2);">{{ t('cisco_audit_note') }}</p>
+</details>
+{% endif %}
+
+{% if user.role.value == "admin" %}
+<details class="kg-card audit-card" style="padding:16px 18px; margin-bottom:12px;">
+  {{ audit_head('server', t('esxi_audit_title'), t('esxi_audit_desc'), t('tag_readonly'), '#6366f1') }}
+  <div style="margin-top:14px;"></div>
+  <form method="post" action="/scans/esxi" style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+    <div style="flex:1; min-width:160px;">
+      <label class="kg-field-label" for="esxi-host">{{ t('esxi_host') }}</label>
+      <input id="esxi-host" name="host" placeholder="10.0.0.100" class="kg-input font-mono" />
+    </div>
+    <div style="width:90px;">
+      <label class="kg-field-label" for="esxi-port">{{ t('db_port') }}</label>
+      <input id="esxi-port" name="port" type="number" value="443" class="kg-input font-mono" />
+    </div>
+    <button type="submit" class="kg-btn kg-btn-primary">{{ t('esxi_audit_btn') }}</button>
+    {{ audit_zone_popup('esxi', show_creds=False) }}
+  </form>
+  <p class="k-sm" style="margin:12px 0 0; color:var(--fg2);">{{ t('esxi_audit_note') }}</p>
+</details>
+{% endif %}
+
+{% include "scans_table.html" %}
+
+<script>
+/* Dizin taraması kelime-listesi alt-seçicisi: yalnız "Dizin taraması" işaretliyken görünür. */
+function dirWordlistToggle() {
+  var chk = document.getElementById('q-dirscan');
+  var sub = document.getElementById('q-wordlist-sub');
+  if (!sub) return;
+  var on = chk && chk.checked;
+  sub.style.display = on ? '' : 'none';
+  if (!on) { var wl = document.getElementById('q-wordlist'); if (wl) wl.value = ''; }
+}
+
+/* --- SCAN-MERGE: birleşik Tarama paneli — mod show/hide + görünüm (Hızlı↔Adım) --- */
+function scanMode() {
+  var sel = document.getElementById('q-mode');
+  var mv = sel ? sel.value : 'network';
+  document.getElementById('q-ports-wrap').style.display = (mv === 'network') ? '' : 'none';
+  // UDP servis taraması (#143): port taraması yapan modlarda (ağ + CVE) anlamlı.
+  var udpW = document.getElementById('q-udp-wrap');
+  if (udpW) udpW.style.display = (mv === 'network' || mv === 'cve_safe' || mv === 'cve_aggressive') ? '' : 'none';
+  if (mv === 'network') { scanPorts(); }
+  else { var pc = document.getElementById('q-ports-custom-wrap'); if (pc) pc.style.display = 'none'; }
+  // SR-3b: web modları (Web / Web CVE / Web Sömürü) — URL/dirscan/external alanları ortak.
+  var isWeb = (mv === 'web' || mv === 'web_aggressive');
+  var extRow = document.getElementById('q-external-row');
+  if (extRow) {
+    extRow.style.display = isWeb ? '' : 'none';
+    if (!isWeb) { var extChk = document.getElementById('q-external'); if (extChk) extChk.checked = false; }
+  }
+  var dirRow = document.getElementById('q-dirscan-row');
+  if (dirRow) {
+    dirRow.style.display = isWeb ? '' : 'none';
+    if (!isWeb) { var dirChk = document.getElementById('q-dirscan'); if (dirChk) dirChk.checked = false; }
+    dirWordlistToggle();
+  }
+  // SR-3b: sade "Web" PASİF → onay istemez (DAST "Web CVE" modunda). Yalnız agresif onay ister.
+  var needsAck = (mv === 'cve_aggressive') || (mv === 'web_aggressive');
+  if (needsAck) {
+    var ackTitle = document.getElementById('q-ack-title');
+    var ackBody = document.getElementById('q-ack-body');
+    if (isWeb) {
+      ackTitle.textContent = {{ t('danger_web_title') | tojson }};
+      ackBody.textContent = {{ t('danger_web_body') | tojson }};
+    } else {
+      ackTitle.textContent = {{ t('danger_title') | tojson }};
+      ackBody.textContent = {{ t('danger_body') | tojson }};
+    }
+  }
+  document.getElementById('q-ack-box').style.display = needsAck ? 'flex' : 'none';
+  var ack = document.getElementById('q-ack');
+  if (!needsAck && ack) ack.checked = false;
+  // web (güvenli) ack'siz başlayabilir (DAST opsiyonel); agresif modlar ack zorunlu.
+  document.getElementById('scan-start').disabled =
+    (mv === 'cve_aggressive' || mv === 'web_aggressive')
+    && !(ack && ack.checked);
+}
+function scanPorts() {
+  var custom = document.getElementById('ports').value === 'custom';
+  document.getElementById('q-ports-custom-wrap').style.display = custom ? '' : 'none';
+}
+function qcredCount() {
+  var n = document.querySelectorAll(
+    'input[name="credential_zone_ids"]:checked, input[name="credential_ids"]:checked').length;
+  var el = document.getElementById('q-creds-sum');
+  if (el) el.textContent = n
+    ? {{ t('wiz_sum_cred') | tojson }}.replace('{n}', n) : {{ t('wiz_sum_optnone') | tojson }};
+}
+function popOpen(name) { var e = document.getElementById('pop-' + name); if (e) e.classList.add('open'); }
+function popClose(name) { var e = document.getElementById('pop-' + name); if (e) e.classList.remove('open'); }
+
+/* Kategori: "Tümü" ↔ tekil seçim (karşılıklı dışlama). */
+function scanCatAll() {
+  if (document.getElementById('wiz-cat-all').checked) {
+    document.querySelectorAll('.wiz-cat').forEach(function (c) { c.checked = false; });
+  }
+}
+function scanCatOne() {
+  var any = document.querySelectorAll('.wiz-cat:checked').length > 0;
+  document.getElementById('wiz-cat-all').checked = !any;
+}
+/* Zamanlama: 'Zamanla' seçilince periyot/aralık alanlarını göster. */
+function scanSched() {
+  var sm = document.querySelector('input[name="sched_mode"]:checked');
+  document.getElementById('wiz-sched-opts').style.display =
+    (sm && sm.value === 'schedule') ? 'block' : 'none';
+}
+function scanSchedInt(v) {
+  document.getElementById('wiz-sched-int-wrap').style.display = (v === 'interval') ? 'block' : 'none';
+}
+
+/* X-3: Denetim panellerinde toplu hedef sayacı (DOKUNULMADI). */
+var AUDIT_ZONE_T = {{ {'none': t('audit_zone_sum_none'), 'sum': t('audit_zone_sum')} | tojson }};
+function auditZoneCount(pid) {
+  var pop = document.getElementById('pop-' + pid + '-zones');
+  var n = pop ? pop.querySelectorAll('input[type="checkbox"]:checked').length : 0;
+  var el = document.getElementById(pid + '-zones-sum');
+  if (el) el.textContent = n ? AUDIT_ZONE_T.sum.replace('{n}', n) : AUDIT_ZONE_T.none;
+}
+
+/* Görünüm anahtarı (Hızlı = hepsi tek ekran; Adım-adım = tek tek) + adım navigasyonu. */
+var scanStepIdx = 0;
+function scanStepsAll() {
+  return Array.prototype.slice.call(document.querySelectorAll('#scan-form .scan-step'));
+}
+function scanView(v) {
+  var form = document.getElementById('scan-form');
+  form.className = (form.className.replace(/view-(flat|steps)/g, '').trim() + ' view-' + v).trim();
+  document.getElementById('view-flat-btn').classList.toggle('active', v === 'flat');
+  document.getElementById('view-steps-btn').classList.toggle('active', v === 'steps');
+  if (v === 'steps') { scanStepIdx = 0; scanStepShow(); }
+}
+function scanStepShow() {
+  var steps = scanStepsAll();
+  steps.forEach(function (s, i) { s.classList.toggle('active', i === scanStepIdx); });
+  var back = document.getElementById('step-back-btn');
+  var next = document.getElementById('step-next-btn');
+  if (back) back.style.visibility = (scanStepIdx === 0) ? 'hidden' : 'visible';
+  if (next) next.style.display = (scanStepIdx >= steps.length - 1) ? 'none' : '';
+}
+function scanStep(delta) {
+  var steps = scanStepsAll();
+  scanStepIdx = Math.max(0, Math.min(steps.length - 1, scanStepIdx + delta));
+  scanStepShow();
+}
+
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') ['qcreds',
+    'db-zones', 'snmp-zones', 'smb-zones', 'ldap-zones', 'telnet-zones'].forEach(popClose);
+});
+// F2: Tarama formlarında Enter tuşu İSTEMEDEN tarama başlatmasın — yalnız "Tara" butonu
+// gönderir. textarea hariç (çok-satırlı hedef girişinde Enter satır ekler).
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Enter') return;
+  var el = e.target;
+  if (!el || el.tagName === 'TEXTAREA') return;
+  if (el.tagName !== 'INPUT' && el.tagName !== 'SELECT') return;
+  var form = el.form;
+  var action = form && form.getAttribute('action');
+  if (action && action.indexOf('/scans') === 0) e.preventDefault();
+});
+scanMode();
+scanView('flat');
+</script>
+{% endblock %}

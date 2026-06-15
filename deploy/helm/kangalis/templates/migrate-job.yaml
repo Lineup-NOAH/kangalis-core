@@ -1,0 +1,49 @@
+{{- if .Values.migrations.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "kangalis.fullname" . }}-migrate
+  labels:
+    {{- include "kangalis.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migrate
+  annotations:
+    # Her kurulum/yükseltmede şema göçünü (alembic upgrade head) BİR KEZ koştur.
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 6
+  template:
+    metadata:
+      labels:
+        {{- include "kangalis.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: migrate
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ include "kangalis.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.postgres.enabled }}
+      initContainers:
+        - name: wait-for-db
+          image: {{ include "kangalis.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              until python -c "import socket; socket.create_connection(('{{ include "kangalis.postgresHost" . }}', 5432), 2)" 2>/dev/null; do echo 'db bekleniyor'; sleep 2; done
+      {{- end }}
+      containers:
+        - name: migrate
+          image: {{ include "kangalis.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["alembic", "upgrade", "head"]
+          envFrom:
+            - configMapRef:
+                name: {{ include "kangalis.fullname" . }}-config
+            - secretRef:
+                name: {{ include "kangalis.fullname" . }}-secret
+{{- end }}

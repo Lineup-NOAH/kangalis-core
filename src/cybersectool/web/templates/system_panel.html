@@ -1,0 +1,76 @@
+{% from "_icons.html" import icon %}
+{% macro bar(pct, danger=85) %}
+<div class="kg-progress" style="height:8px;"><div class="kg-progress-bar" style="width:{{ [pct, 100]|min if pct is not none else 0 }}%; background:{{ 'var(--sev-critical)' if pct is not none and pct >= danger else 'var(--accent)' }};"></div></div>
+{% endmacro %}
+
+<!-- Özet kartları: host disk · host RAM · docker veri -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; margin-bottom:16px;">
+  {% if health.disk %}
+  <div class="kg-card" style="padding:14px 16px;">
+    <div class="k-label" style="display:flex; align-items:center; gap:6px;">{{ icon('server', 13) }} {{ t('sys_disk') }}</div>
+    <div style="display:flex; align-items:baseline; gap:8px; margin:6px 0 6px;">
+      <span class="kg-statnum" style="font-size:24px;">%{{ health.disk.pct }}</span>
+      <span class="k-sm" style="color:var(--fg2);">{{ health.disk.used | filesizeformat(true) }} / {{ health.disk.total | filesizeformat(true) }}</span>
+    </div>
+    {{ bar(health.disk.pct) }}
+  </div>
+  {% endif %}
+  {% if health.mem_total %}
+  {% set mpct = (health.mem_used / health.mem_total * 100) | round(1) if health.mem_used is not none else none %}
+  <div class="kg-card" style="padding:14px 16px;">
+    <div class="k-label" style="display:flex; align-items:center; gap:6px;">{{ icon('dashboard', 13) }} {{ t('sys_ram') }}</div>
+    <div style="display:flex; align-items:baseline; gap:8px; margin:6px 0 6px;">
+      <span class="kg-statnum" style="font-size:24px;">{% if mpct is not none %}%{{ mpct }}{% else %}—{% endif %}</span>
+      <span class="k-sm" style="color:var(--fg2);">{% if health.mem_used is not none %}{{ health.mem_used | filesizeformat(true) }} / {% endif %}{{ health.mem_total | filesizeformat(true) }}</span>
+    </div>
+    {{ bar(mpct) }}
+  </div>
+  {% endif %}
+  {% if health.docker_disk %}
+  <div class="kg-card" style="padding:14px 16px;">
+    <div class="k-label" style="display:flex; align-items:center; gap:6px;">{{ icon('exploit', 13) }} {{ t('sys_docker_disk') }}</div>
+    <div style="margin:6px 0;"><span class="kg-statnum" style="font-size:24px;">{{ health.docker_disk | filesizeformat(true) }}</span></div>
+  </div>
+  {% endif %}
+</div>
+
+{% if not health.available %}
+<div class="kg-alert kg-alert-error" style="margin-bottom:16px;">{{ health.error or t('sys_unavailable') }}</div>
+{% endif %}
+
+{% if health.containers %}
+<div class="kg-card kg-table-wrap" style="padding:0;">
+  <table class="kg-table kg-zebra">
+    <thead><tr><th>{{ t('sys_image') }}</th><th>{{ t('sys_status') }}</th><th style="width:200px;">{{ t('sys_cpu') }}</th><th style="width:240px;">{{ t('sys_mem') }}</th></tr></thead>
+    <tbody>
+      {% for c in health.containers %}
+      <tr>
+        <td>
+          <div style="font-weight:600; font-size:13px;">{{ c.name }}</div>
+          <div class="k-sm font-mono" style="color:var(--fg2); font-size:11px;">{{ c.image }}</div>
+        </td>
+        <td>
+          {% if c.state == 'running' %}<span class="kg-status kg-status-completed">● {{ t('sys_up') }}</span>{% else %}<span class="kg-status kg-status-pending">○ {{ t('sys_down') }}</span>{% endif %}
+          <div class="k-sm" style="color:var(--fg2); font-size:11px; margin-top:2px;">{{ c.status }}</div>
+        </td>
+        <td>
+          {% if c.cpu_pct is not none %}
+          <div style="display:flex; align-items:center; gap:8px;"><span class="font-mono" style="font-size:12px; min-width:46px;">%{{ c.cpu_pct }}</span>{{ bar(c.cpu_pct) }}</div>
+          {% else %}<span style="color:var(--fg2);">—</span>{% endif %}
+        </td>
+        <td>
+          {% if c.mem_used is not none %}
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="font-mono" style="font-size:11px; min-width:96px;">{{ c.mem_used | filesizeformat(true) }}{% if c.mem_limit %} / {{ c.mem_limit | filesizeformat(true) }}{% endif %}</span>
+            {{ bar(c.mem_pct) }}
+          </div>
+          {% else %}<span style="color:var(--fg2);">—</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% elif health.available %}
+<p class="k-sm" style="color:var(--fg2);">{{ t('sys_no_containers') }}</p>
+{% endif %}

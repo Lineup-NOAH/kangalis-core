@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ t('trends_title') }} · {{ app_name }}{% endblock %}
+
+{% block content %}
+<h1 class="k-h1" style="margin-bottom:6px;">{{ t('trends_title') }}</h1>
+<p class="k-sm" style="margin-bottom:18px; max-width:680px;">{{ t('trends_sub') }}</p>
+
+<!-- Özet -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:20px;">
+  <div class="kg-mini"><div class="kg-mininum" style="color:var(--sev-critical)">{{ trend.open_total }}</div><div class="k-label">{{ t('stat_open') }}</div></div>
+  <div class="kg-mini"><div class="kg-mininum" style="color:var(--ok, #16a34a)">{{ trend.resolved_total }}</div><div class="k-label">{{ t('stat_resolved') }}</div></div>
+  <div class="kg-mini"><div class="kg-mininum" style="color:var(--ok, #16a34a)">+{{ lifecycle.new_7d }}</div><div class="k-label">{{ t('lc_new_7d') }}</div></div>
+  <div class="kg-mini"><div class="kg-mininum">−{{ lifecycle.resolved_7d }}</div><div class="k-label">{{ t('lc_resolved_7d') }}</div></div>
+  <div class="kg-mini"><div class="kg-mininum">{{ trend.mttr_days if trend.mttr_days is not none else '—' }}</div><div class="k-label">{{ t('lc_mttr') }}</div></div>
+</div>
+
+{# Yerel AI trend anlatısı (Dalga 3) — gerçek trend sayılarından yönetici özeti (DURUM/SON 7 GÜN/
+   8 HAFTALIK YÖN/ODAK); grounded, komut/CVE üretmez. #}
+{% if ai_enabled %}
+<div style="margin-bottom:20px;">
+  <div id="ai-trend-box"></div>
+  <button type="button" class="kg-btn kg-btn-subtle"
+          hx-post="/ai/trend" hx-target="#ai-trend-box" hx-swap="innerHTML"
+          hx-indicator="#ai-trend-spin" hx-disabled-elt="this">{{ icon('sparkles', 14) }} {{ t('ai_trend_btn') }}</button>
+  <span id="ai-trend-spin" class="htmx-indicator k-sm" style="margin-left:8px; color:var(--fg2);">{{ t('ai_generating') }}</span>
+</div>
+{% endif %}
+
+<!-- Haftalık açık zafiyet trendi -->
+<div class="kg-card" style="padding:20px; margin-bottom:20px;">
+  <h2 class="k-h3" style="margin-bottom:16px;">{{ t('trend_weekly_open') }}</h2>
+  {% set opens = trend.points | map(attribute='open') | list %}
+  {% set max_open = (opens | max) if opens else 1 %}
+  {% if not max_open %}{% set max_open = 1 %}{% endif %}
+  <div style="display:flex; align-items:flex-end; gap:10px; height:180px; padding-top:10px;">
+    {% for p in trend.points %}
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%;">
+      <div style="flex:1; display:flex; align-items:flex-end; width:100%;">
+        <div title="{{ t('stat_open') }}: {{ p.open }}"
+             style="width:100%; background:var(--sev-critical); border-radius:4px 4px 0 0; height:{{ (p.open / max_open * 100) | round(1) }}%; min-height:2px;"></div>
+      </div>
+      <div class="k-sm" style="font-weight:600;">{{ p.open }}</div>
+      <div style="font-size:11px;">
+        <span style="color:var(--sev-high)">+{{ p.new }}</span> /
+        <span style="color:var(--ok, #16a34a)">−{{ p.resolved }}</span>
+      </div>
+      <div style="color:var(--fg2); font-size:11px;">{{ p.label }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  <p class="k-sm" style="margin-top:12px; color:var(--fg2);">{{ t('trend_legend') }}</p>
+</div>
+
+<!-- Aging (açık zafiyet yaşı) -->
+<div class="kg-card" style="padding:20px;">
+  <h2 class="k-h3" style="margin-bottom:14px;">{{ t('trend_aging') }}</h2>
+  {% set ag = trend.aging %}
+  {% set ag_total = (ag.fresh + ag.recent + ag.old) or 1 %}
+  <div style="display:flex; flex-direction:column; gap:10px;">
+    {% for key, label, color in [('fresh', t('aging_fresh'), 'var(--ok, #16a34a)'), ('recent', t('aging_recent'), 'var(--sev-medium)'), ('old', t('aging_old'), 'var(--sev-critical)')] %}
+    <div style="display:flex; align-items:center; gap:10px;">
+      <div style="width:150px;" class="k-sm">{{ label }}</div>
+      <div style="flex:1; background:var(--bg2); border-radius:6px; height:22px; overflow:hidden;">
+        <div style="height:100%; background:{{ color }}; width:{{ (ag[key] / ag_total * 100) | round(1) }}%;"></div>
+      </div>
+      <div style="width:40px; text-align:right; font-weight:600;">{{ ag[key] }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

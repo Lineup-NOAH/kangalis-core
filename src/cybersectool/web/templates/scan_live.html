@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ t('live_title') }} · {{ app_name }}{% endblock %}
+
+{% block content %}
+<a href="/scans" class="kg-chip kg-chip-link" style="margin-bottom:10px; display:inline-flex;">&larr; {{ t('nav_scans') }}</a>
+<h1 class="k-h1" style="margin-bottom:4px;">{{ t('live_title') }} — <span class="font-mono">{{ scan.target }}</span></h1>
+<p class="k-sm" style="margin-bottom:18px;">{{ scan.scan_type.value }} · {{ scan.mode.value }} · #{{ scan.id }}</p>
+
+{% include "scan_live_panel.html" %}
+{% endblock %}

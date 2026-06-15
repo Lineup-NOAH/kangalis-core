@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Kangalis mark">
+  
+  
+  <path d="M17 17 L9 3 L27 12 Z" fill="currentColor"></path>
+  <path d="M47 17 L55 3 L37 12 Z" fill="currentColor"></path>
+  
+  <path d="M16 15 L48 15 L48 33 C48 43 42 49 32 57 C22 49 16 43 16 33 Z" fill="currentColor"></path>
+  
+  <circle cx="25" cy="29" r="2.4" fill="var(--logo-bg, #0b0f14)"></circle>
+  <circle cx="39" cy="29" r="2.4" fill="var(--logo-bg, #0b0f14)"></circle>
+  
+  <path d="M32 36 L27 44 C29 47 35 47 37 44 Z" fill="var(--logo-bg, #0b0f14)"></path>
+</svg>

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ t('nav_zones') }} · {{ app_name }}{% endblock %}
+
+{% block content %}
+<h1 class="k-h1" style="margin-bottom:6px;">{{ t('zones_title') }}</h1>
+<p class="k-sm" style="margin-bottom:20px; max-width:680px;">{{ t('zones_sub') }}</p>
+
+{% if error %}<div class="kg-alert kg-alert-error" style="margin-bottom:16px;">{{ error }}</div>{% endif %}
+{% if message %}<div class="kg-alert kg-alert-ok" style="margin-bottom:16px;">{{ message }}</div>{% endif %}
+
+<!-- ===================== BÖLÜM 1: IP Zone'ları ===================== -->
+<h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:8px 0 12px;">{{ icon('zones', 18) }} {{ t('inv_zones_section') }}</h2>
+
+{% if user.role.value == "admin" %}
+<form method="post" action="/zones/create" class="kg-card" style="padding:20px; margin-bottom:14px;">
+  <h3 class="k-h3" style="margin-bottom:14px;">{{ t('create_zone') }}</h3>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; align-items:start;">
+    <div>
+      <label class="kg-field-label" for="z-name">{{ t('zone_name') }}</label>
+      <input id="z-name" name="name" required placeholder="DMZ" class="kg-input" />
+    </div>
+    <div>
+      <label class="kg-field-label" for="z-desc">{{ t('zone_desc') }}</label>
+      <input id="z-desc" name="description" class="kg-input" />
+    </div>
+    <div>
+      <label class="kg-field-label" for="z-cidrs">{{ t('zone_cidrs') }}</label>
+      <textarea id="z-cidrs" name="cidrs" required rows="3"
+                placeholder="10.0.0.0/24&#10;192.168.1.10&#10;http://192.168.1.50:8080"
+                class="kg-input font-mono" style="height:auto; padding:10px 12px; font-size:13px;"></textarea>
+      <p class="k-sm" style="margin-top:6px; color:var(--k-text-dim);">{{ t('zone_cidrs_hint') }}</p>
+    </div>
+  </div>
+  <button type="submit" class="kg-btn kg-btn-primary" style="margin-top:14px;">{{ t('create_zone_btn') }}</button>
+</form>
+{% endif %}
+
+{% if not zones %}
+<div class="kg-card" style="padding:24px; text-align:center; color:var(--fg2);">{{ t('no_zones') }}</div>
+{% endif %}
+<div style="display:flex; flex-direction:column; gap:12px;">
+  {% for zone in zones %}
+  <div class="kg-card" style="padding:18px 20px;">
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px;">
+      <div style="flex:1;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="k-h3">{{ zone.name }}</span>
+          <span class="kg-chip">{{ zone.cidrs|length }} {{ t('blocks') }}</span>
+        </div>
+        {% if zone.description %}<p class="k-sm" style="margin-top:4px;">{{ zone.description }}</p>{% endif %}
+        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;">
+          {% for cidr in zone.cidrs %}<span class="kg-chip font-mono">{{ cidr }}</span>{% endfor %}
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+        <a href="/scans" class="kg-btn kg-btn-ghost kg-btn-sm">{{ t('scan_in_scans') }}</a>
+        {% if user.role.value == "admin" %}
+        <a href="/zones/{{ zone.id }}/edit" class="kg-btn kg-btn-subtle kg-btn-sm">{{ icon('edit', 14) }} {{ t('edit') }}</a>
+        <form method="post" action="/zones/{{ zone.id }}/delete" onsubmit="return confirm('?');">
+          <button type="submit" class="kg-btn kg-btn-sm" style="color:var(--sev-critical); border:1px solid var(--danger-line); background:transparent;">{{ t('delete') }}</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<p class="k-sm" style="margin-top:18px; color:var(--fg2);">
+  {{ icon('server', 14) }} {{ t('assets_moved_note') }} <a href="/assets" style="color:var(--accent)">{{ t('assets_title') }}</a>
+</p>
+{% endblock %}

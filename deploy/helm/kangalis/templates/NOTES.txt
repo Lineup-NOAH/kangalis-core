@@ -1,0 +1,38 @@
+Kangalis (CyberSecTool) kuruldu: {{ .Release.Name }} (namespace: {{ .Release.Namespace }})
+
+Bileşenler:
+  • app    ({{ .Values.app.replicas }} replica)  — web/API :8000
+  • worker ({{ if .Values.worker.autoscaling.enabled }}HPA {{ .Values.worker.autoscaling.minReplicas }}-{{ .Values.worker.autoscaling.maxReplicas }}{{ else }}{{ .Values.worker.replicas }} replica{{ end }})  — tarama (Celery){{ if .Values.worker.hostNetwork }} · hostNetwork AÇIK{{ end }}
+  • beat   — zamanlayıcı{{ if .Values.postgres.enabled }}
+  • postgres (küme içi, PVC {{ .Values.postgres.storage }}){{ else }}
+  • postgres: DIŞ ({{ "externalDatabaseUrl" }}){{ end }}{{ if .Values.redis.enabled }}
+  • redis (küme içi){{ else }}
+  • redis: DIŞ{{ end }}
+
+Web arayüzüne erişim:
+{{- if .Values.app.ingress.enabled }}
+  http://{{ .Values.app.ingress.host }}/
+{{- else }}
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "kangalis.fullname" . }}-app {{ .Values.app.service.port }}:{{ .Values.app.service.port }}
+  → http://localhost:{{ .Values.app.service.port }}/
+{{- end }}
+
+Worker'ları ölçekle (throughput):
+  kubectl -n {{ .Release.Namespace }} scale deploy/{{ include "kangalis.fullname" . }}-worker --replicas=N
+
+{{ if eq .Values.appEnv "production" -}}
+{{- if or (eq .Values.secrets.secretKey "dev-secret") (not .Values.secrets.credentialEncryptionKey) }}
+⚠️  GÜVENLİK UYARISI (production):
+{{- if eq .Values.secrets.secretKey "dev-secret" }}
+   • secrets.secretKey hâlâ varsayılan ("dev-secret") — güçlü rastgele bir değerle override edin.
+{{- end }}
+{{- if not .Values.secrets.credentialEncryptionKey }}
+   • secrets.credentialEncryptionKey boş — kasa şifreleme için production'da ZORUNLU.
+{{- end }}
+   • postgres.password / dış DB kimliklerini de override edin.
+   Örn: helm upgrade ... --set secrets.secretKey=$(openssl rand -hex 32) ...
+{{- end }}
+{{- end }}
+
+NOT: Tarayıcının hedef VLAN'lara erişmesi için worker.hostNetwork=true (veya Multus) gerekir;
+tek-tarama worker fan-out'u (blokları pod'lara dağıtma) ayrı bir adımdır (Faz 2b).

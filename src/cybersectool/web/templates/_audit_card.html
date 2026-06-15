@@ -1,0 +1,11 @@
+{% from "_icons.html" import icon %}
+{#- Denetim / özel tarama kartının başlığı (açılır <details> kartının <summary>'si).
+    ic=ikon adı, title=kısa başlık, desc=tek satır açıklama, tag=tür etiketi, color=vurgu. -#}
+{% macro audit_head(ic, title, desc='', tag='', color='var(--accent)') -%}
+<summary class="audit-head">
+  <span class="audit-ico" style="background:color-mix(in srgb, {{ color }} 16%, transparent); color:{{ color }};">{{ icon(ic, 18) }}</span>
+  <span class="audit-text"><span class="audit-title">{{ title }}</span>{% if desc %}<span class="audit-desc">{{ desc }}</span>{% endif %}</span>
+  {% if tag %}<span class="audit-tag" style="color:{{ color }}; border-color:color-mix(in srgb, {{ color }} 45%, var(--border)); background:color-mix(in srgb, {{ color }} 10%, transparent);">{{ tag }}</span>{% endif %}
+  <svg class="audit-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+</summary>
+{%- endmacro %}

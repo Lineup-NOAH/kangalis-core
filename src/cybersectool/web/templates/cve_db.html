@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ t('nav_cve') }} · {{ app_name }}{% endblock %}
+
+{% block content %}
+{% set cat_labels = {'windows':'Windows','linux':'Linux','macos':'macOS','web':'Web','database':'Database','network':('Ağ' if lang=='tr' else 'Network'),'iot':'IoT','cloud':'Cloud','mobile':('Mobil' if lang=='tr' else 'Mobile')} %}
+{# Sayfalama linkleri için TÜM filtreleri koru #}
+{% set keep %}{% if q %}&q={{ q | urlencode }}{% endif %}{% if severity %}&severity={{ severity }}{% endif %}{% if framework %}&framework={{ framework | urlencode }}{% endif %}{% if category %}&category={{ category }}{% endif %}{% if kev_only %}&kev=1{% endif %}&per={{ per }}{% endset %}
+
+<div style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:6px;">
+  <h1 class="k-h1">{{ t('nav_cve') }}</h1>
+  {% if user.role.value == "admin" %}
+  <form method="post" action="/cve-db/sync"><button type="submit" class="kg-btn kg-btn-primary kg-btn-sm">{{ icon('refresh', 16) }} {{ t('update_db') }}</button></form>
+  {% endif %}
+</div>
+<p class="k-sm" style="margin-bottom:10px; max-width:820px;">{{ t('cvedb_sub') }}</p>
+
+{% if freshness %}
+<div class="k-sm" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
+  {% if freshness.never %}
+  <span class="kg-chip" style="color:var(--fg2);">{{ icon('refresh', 13) }} {{ t('db_fresh_never') }}</span>
+  {% elif freshness.up_to_date %}
+  <span class="kg-chip" style="color:var(--ok, #16a34a); border-color:var(--ok, #16a34a);">{{ icon('check', 13) }} {{ t('db_fresh_current') }}</span>
+  {% else %}
+  <span class="kg-chip kg-sev-high">{{ icon('refresh', 13) }} {{ t('db_fresh_stale') }}</span>
+  {% endif %}
+  {% if freshness.last_sync %}<span style="color:var(--fg2);">{{ t('db_last_sync') }}: {{ freshness.last_sync | localdt }}</span>{% endif %}
+</div>
+{% endif %}
+
+{% if message %}<div class="kg-alert kg-alert-ok" style="margin-bottom:14px;">{{ message }}</div>{% endif %}
+
+<div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;">
+  <span class="kg-chip">{{ t('cvedb_total_cve') }}: <b style="color:var(--fg)">{{ "{:,}".format(cve_total) }}</b></span>
+  <span class="kg-chip">{{ t('cvedb_total_cpe') }}: <b style="color:var(--fg)">{{ "{:,}".format(cpe_total) }}</b></span>
+  <span class="kg-chip" style="color:var(--accent); border-color:var(--accent)33;">{{ t('cvedb_filtered') }}: <b>{{ "{:,}".format(total) }}</b></span>
+  <a href="/settings#nvd" class="kg-chip kg-chip-link" style="margin-left:auto;">{{ icon('refresh', 13) }} {{ t('cvedb_manage') }}</a>
+</div>
+
+<form method="get" action="/cve-db" style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; margin-bottom:14px;">
+  <div style="flex:1; min-width:220px;">
+    <label class="kg-field-label" for="q">{{ t('cvedb_search_label') }}</label>
+    <input id="q" name="q" value="{{ q }}" placeholder="CVE-2021-44228 · log4j · openssl" class="kg-input font-mono" />
+  </div>
+  <div>
+    <label class="kg-field-label" for="severity">{{ t('criticality') }}</label>
+    <select id="severity" name="severity" class="kg-select">
+      <option value="" {% if not severity %}selected{% endif %}>{{ t('all') }}</option>
+      {% for s in sevs %}<option value="{{ s }}" {% if severity == s %}selected{% endif %}>{{ t('sev_' + s) }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="kg-field-label" for="category">{{ t('label_category') }}</label>
+    <select id="category" name="category" class="kg-select">
+      <option value="" {% if not category %}selected{% endif %}>{{ t('all') }}</option>
+      {% for c in categories %}<option value="{{ c }}" {% if category == c %}selected{% endif %}>{{ cat_labels.get(c, c) }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="kg-field-label" for="framework">{{ t('compliance_framework') }}</label>
+    <select id="framework" name="framework" class="kg-select">
+      <option value="" {% if not framework %}selected{% endif %}>{{ t('all') }}</option>
+      {% for fw in frameworks %}<option value="{{ fw }}" {% if framework == fw %}selected{% endif %}>{{ fw }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="kg-field-label" for="per">{{ t('cvedb_per_page') }}</label>
+    <select id="per" name="per" class="kg-select">
+      {% for p in per_choices %}<option value="{{ p }}" {% if per == p %}selected{% endif %}>{{ p }}</option>{% endfor %}
+    </select>
+  </div>
+  <label class="wiz-check" style="margin-bottom:6px;"><input type="checkbox" name="kev" value="1" {% if kev_only %}checked{% endif %}> {{ icon('flame', 13) }} {{ t('cvedb_kev_only') }}</label>
+  <button type="submit" class="kg-btn kg-btn-primary">{{ t('search_btn') }}</button>
+</form>
+
+<!-- Kategori hızlı filtresi (exploit DB ile aynı) -->
+<div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;">
+  {% set keepc = "" %}
+  {% if severity %}{% set keepc = keepc + "&severity=" + severity %}{% endif %}
+  {% if framework %}{% set keepc = keepc + "&framework=" + (framework | urlencode) %}{% endif %}
+  {% if kev_only %}{% set keepc = keepc + "&kev=1" %}{% endif %}
+  {% if q %}{% set keepc = keepc + "&q=" + (q | urlencode) %}{% endif %}
+  {% for cat in categories %}{% if by_category.get(cat) %}
+  <a href="/cve-db?category={{ cat }}{{ keepc }}&per={{ per }}" class="kg-chip kg-chip-link {% if category == cat %}kg-chip-accent{% endif %}">{{ cat_labels[cat] }} <b style="color:var(--fg)">{{ by_category.get(cat, 0) }}</b></a>
+  {% endif %}{% endfor %}
+  {% if category %}<a href="/cve-db?{{ keepc[1:] }}&per={{ per }}" class="kg-chip kg-chip-link">{{ icon('x', 12) }} {{ t('remove_cat_filter') }}</a>{% endif %}
+</div>
+
+<!-- Uyum çerçevesi hızlı filtresi (exploit DB ile aynı) -->
+<div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:16px;">
+  <span class="k-sm" style="color:var(--fg2); margin-right:2px;">{{ t('compliance_framework') }}:</span>
+  {% set keepf = "" %}
+  {% if severity %}{% set keepf = keepf + "&severity=" + severity %}{% endif %}
+  {% if kev_only %}{% set keepf = keepf + "&kev=1" %}{% endif %}
+  {% if q %}{% set keepf = keepf + "&q=" + (q | urlencode) %}{% endif %}
+  {% for fw in frameworks %}
+  <a href="/cve-db?framework={{ fw | urlencode }}{{ keepf }}&per={{ per }}" class="kg-chip kg-chip-link {% if framework == fw %}kg-chip-accent{% endif %}">{{ fw }}</a>
+  {% endfor %}
+  {% if framework %}<a href="/cve-db?{{ keepf[1:] }}&per={{ per }}" class="kg-chip kg-chip-link">{{ icon('x', 12) }} {{ t('remove_fw_filter') }}</a>{% endif %}
+</div>
+
+{% if total == 0 %}
+<div class="kg-card" style="padding:32px; text-align:center; color:var(--fg2);">{{ t('cvedb_empty') }}</div>
+{% else %}
+<div class="kg-table-wrap">
+  <table class="kg-table">
+    <thead>
+      <tr><th>{{ t('h_cve') }}</th><th>{{ t('criticality') }}</th><th>CVSS</th><th>EPSS</th><th>CPE</th><th>{{ t('h_exploitable') }}</th><th>{{ t('h_title') }}</th><th>{{ t('h_compliance') }}</th></tr>
+    </thead>
+    <tbody>
+      {% for c in cves %}
+      <tr style="vertical-align:top;">
+        <td class="font-mono" style="white-space:nowrap;">
+          <a href="https://nvd.nist.gov/vuln/detail/{{ c.cve_id }}" target="_blank" rel="noopener" style="color:var(--fg)">{{ c.cve_id }}</a>
+          {% if c.kev_flag %}<br><span class="kg-chip kg-chip-accent" style="margin-top:4px;">{{ icon('flame', 11) }} KEV</span>{% endif %}
+        </td>
+        <td>{% if c.severity %}<span class="kg-sev kg-sev-{{ c.severity.value }}">{{ t('sev_' + c.severity.value) }}</span>{% else %}<span style="color:var(--fg2)">-</span>{% endif %}</td>
+        <td class="font-mono">{% if c.cvss_score is not none %}{{ c.cvss_score }}{% else %}<span style="color:var(--fg2)">-</span>{% endif %}</td>
+        <td class="font-mono k-sm">{% if c.epss_score is not none %}{{ '%.1f' | format(c.epss_score * 100) }}%{% else %}<span style="color:var(--fg2)">-</span>{% endif %}</td>
+        <td class="font-mono">{{ cpe_counts.get(c.cve_id, 0) }}</td>
+        <td style="white-space:nowrap;">
+          {% set sig = exploit_signals.get(c.cve_id) %}
+          {% if sig == 'msf' %}<span class="kg-chip" style="color:var(--sev-critical); border-color:rgba(239,68,68,.3); font-weight:600;" title="{{ t('cve_exploitable_msf_tip') }}">{{ icon('flame', 11) }} MSF</span>
+          {% elif sig == 'poc' %}<span class="kg-chip" style="color:var(--fg2);" title="{{ t('cve_exploitable_poc_tip') }}">PoC</span>
+          {% else %}<span style="color:var(--fg2)">-</span>{% endif %}
+        </td>
+        <td><div title="{{ c.description or '' }}" style="max-width:440px; overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; color:var(--fg2);">{{ c.description or '—' }}</div></td>
+        <td>
+          {% set fws = frameworks_for_cve_row(c) %}
+          {% for fw in fws %}<span class="kg-chip" style="font-size:11px;" title="{{ t('cve_fw_tip') }}">{{ fw }}</span> {% endfor %}
+          {% if not fws %}<span style="color:var(--fg2)">-</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:14px; flex-wrap:wrap;">
+  <span class="k-sm" style="color:var(--fg2);">{{ t('cvedb_page_of').replace('{p}', page|string).replace('{n}', pages|string) }}</span>
+  <div style="display:flex; gap:8px;">
+    {% if page > 1 %}<a href="/cve-db?page={{ page - 1 }}{{ keep }}" class="kg-btn kg-btn-subtle kg-btn-sm">{{ icon('chevron-left', 14) }} {{ t('prev') }}</a>{% endif %}
+    {% if page < pages %}<a href="/cve-db?page={{ page + 1 }}{{ keep }}" class="kg-btn kg-btn-subtle kg-btn-sm">{{ t('next') }} {{ icon('chevron-right', 14) }}</a>{% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

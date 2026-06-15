@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ t('nav_audit') }} · {{ app_name }}{% endblock %}
+
+{% block content %}
+<h1 class="k-h1" style="margin-bottom:6px;">{{ t('audit_title') }}</h1>
+<p class="k-sm" style="margin-bottom:16px;">{{ t('audit_sub') }}</p>
+
+<!-- Hızlı zaman dilimi + indirme -->
+<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+    <span class="k-sm" style="color:var(--fg2);">{{ t('audit_time_range') }}:</span>
+    {% for rk in ['day', 'week', 'month', 'all'] %}
+    <a href="/audit?range={{ rk }}" class="kg-btn kg-btn-sm {{ 'kg-btn-primary' if range == rk and not date_from and not date_to else 'kg-btn-subtle' }}">{{ t('audit_range_' + rk) }}</a>
+    {% endfor %}
+  </div>
+  <div style="display:flex; gap:8px;">
+    <a href="/audit/export?range={{ range }}&fmt=csv" class="kg-btn kg-btn-ghost kg-btn-sm">{{ icon('download', 15) }} {{ t('audit_download_csv') }}</a>
+    <a href="/audit/export?range={{ range }}&fmt=json" class="kg-btn kg-btn-ghost kg-btn-sm">{{ icon('download', 15) }} {{ t('audit_download_json') }}</a>
+  </div>
+</div>
+
+<!-- Gelişmiş filtreler: tarih aralığı + anahtar kelime + event_id (X-7) -->
+<form method="get" action="/audit" class="kg-card" style="padding:14px; margin-bottom:16px; display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;">
+  <input type="hidden" name="range" value="{{ range }}" />
+  <div style="display:flex; flex-direction:column; gap:4px;">
+    <label class="k-sm" style="color:var(--fg2);">{{ t('audit_date_from') }}</label>
+    <input type="date" name="date_from" value="{{ date_from }}" class="kg-input" />
+  </div>
+  <div style="display:flex; flex-direction:column; gap:4px;">
+    <label class="k-sm" style="color:var(--fg2);">{{ t('audit_date_to') }}</label>
+    <input type="date" name="date_to" value="{{ date_to }}" class="kg-input" />
+  </div>
+  <div style="display:flex; flex-direction:column; gap:4px; flex:1; min-width:200px;">
+    <label class="k-sm" style="color:var(--fg2);">{{ t('audit_keyword') }}</label>
+    <input type="search" name="q" value="{{ q }}" placeholder="{{ t('audit_keyword_ph') }}" class="kg-input" />
+  </div>
+  <div style="display:flex; flex-direction:column; gap:4px; min-width:200px;">
+    <label class="k-sm" style="color:var(--fg2);">{{ t('audit_event_id') }}</label>
+    <input type="text" name="event_id" list="audit-eid-list" value="{{ event_id_sel }}" placeholder="{{ t('audit_event_id_ph') }}" class="kg-input" />
+    <datalist id="audit-eid-list">
+      {% for c in event_choices %}
+      <option value="{{ c.event_id }}">{{ c.event_id }} — {{ c.action }} ({{ c.category }})</option>
+      {% endfor %}
+    </datalist>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <button type="submit" class="kg-btn kg-btn-primary kg-btn-sm">{{ icon('search', 15) }} {{ t('audit_search') }}</button>
+    <a href="/audit" class="kg-btn kg-btn-ghost kg-btn-sm">{{ t('audit_clear') }}</a>
+  </div>
+</form>
+
+<div class="kg-card kg-table-wrap" style="padding:0;">
+  <table class="kg-table kg-zebra">
+    <thead>
+      <tr>
+        <th style="width:56px;">{{ t('th_id') }}</th>
+        <th style="width:80px;">{{ t('th_event_id') }}</th>
+        <th style="width:110px;">{{ t('th_category') }}</th>
+        <th>{{ t('th_when') }}</th>
+        <th>{{ t('th_user') }}</th>
+        <th>{{ t('th_event') }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in logs %}
+      <tr>
+        <td class="font-mono" style="color:var(--fg2)">{{ log.id }}</td>
+        <td class="font-mono" style="font-weight:600;">{{ log.event_id }}</td>
+        <td><span class="kg-badge kg-badge-subtle">{{ t('audit_cat_' + audit_category(log.action)) }}</span></td>
+        <td class="k-sm" style="color:var(--fg2)">{{ log.created_at | localdt }}</td>
+        <td>{{ name_by_id.get(log.user_id, '—') }}</td>
+        <td style="font-size:13px;">{{ audit_message(log, name_by_id.get(log.user_id), lang) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" style="text-align:center; color:var(--fg2); padding:24px;">{{ t('no_logs') }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- SIEM parser regex (X-7c): üretilen syslog satırını alanlara ayırır -->
+<div class="kg-card" style="padding:16px; margin-top:20px;">
+  <h2 class="k-h2" style="margin-bottom:4px;">{{ t('audit_siem_title') }}</h2>
+  <p class="k-sm" style="margin-bottom:12px; max-width:760px;">{{ t('audit_siem_desc') }}</p>
+  <p class="k-sm" style="margin-bottom:14px; color:var(--fg2);">
+    {{ t('audit_siem_active') }}: <span class="font-mono" style="font-weight:600; color:var(--accent);">{{ active_syslog_fmt | upper }}</span>
+  </p>
+  {% for fmt, rx in parser_regexes.items() %}
+  <div style="margin-bottom:14px;">
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+      <span class="font-mono k-sm" style="font-weight:600;">{{ fmt | upper }}</span>
+      {% if fmt == active_syslog_fmt %}<span class="kg-badge kg-badge-primary">{{ t('audit_siem_active_badge') }}</span>{% endif %}
+      <button type="button" onclick="copyRegex('rx-{{ fmt }}')" class="kg-btn kg-btn-subtle kg-btn-sm" style="margin-left:auto;">{{ icon('copy', 14) }} {{ t('copy') }}</button>
+    </div>
+    <textarea id="rx-{{ fmt }}" readonly rows="3" class="kg-input font-mono" style="width:100%; font-size:12px; white-space:pre; overflow-x:auto;">{{ rx }}</textarea>
+  </div>
+  {% endfor %}
+</div>
+
+<script>
+  function copyRegex(id) {
+    var el = document.getElementById(id);
+    el.select();
+    navigator.clipboard.writeText(el.value);
+  }
+</script>
+{% endblock %}

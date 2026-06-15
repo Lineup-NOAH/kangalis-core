@@ -1,0 +1,56 @@
+{% from "_icons.html" import icon %}
+<div id="scan-table" hx-get="/scans/table" hx-trigger="every 3s" hx-swap="outerHTML">
+  <p class="k-sm" style="color:var(--fg2); margin-bottom:8px;">{{ t('scans_table_hint') }}</p>
+  <div class="kg-table-wrap">
+    <table class="kg-table">
+      <thead>
+        <tr>
+          <th style="width:60px;">{{ t('th_id') }}</th>
+          <th>{{ t('th_name') }}</th>
+          <th>{{ t('th_type') }}</th>
+          <th>{{ t('th_target') }}</th>
+          <th>{{ t('th_status') }}</th>
+          <th style="width:140px;">{{ t('live_progress') }}</th>
+          <th style="width:1%;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for scan in scans %}
+        {% set sv = scan.status.value %}
+        {% set tv = scan.scan_type.value %}
+        <tr style="cursor:pointer;" onclick="location.href='/scans/{{ scan.id }}/live'">
+          <td class="font-mono" style="color:var(--fg2)">{{ scan.id }}</td>
+          <td class="k-sm">{{ batch_names.get(scan.batch_id) or '—' }}</td>
+          <td><span class="kg-chip">{{ t('scantype_' + tv) }}</span></td>
+          <td class="font-mono" style="font-size:13px;">{{ scan.target }}</td>
+          <td><span class="kg-status kg-status-{{ sv }}">{{ t('st_' + sv) }}</span>
+            {% if sv == 'failed' and scan.error_reason %}<br><span class="k-sm" style="color:var(--crit); display:inline-block; max-width:260px; white-space:normal;">{{ scan.error_reason }}</span>{% endif %}
+          </td>
+          <td>
+            {% if sv in ['pending', 'running'] %}
+            <div class="kg-progress" style="height:6px;"><div class="kg-progress-bar" style="width:{{ scan.progress }}%;"></div></div>
+            <span class="k-sm" style="color:var(--fg2);">%{{ scan.progress }}</span>
+            {% else %}<span class="k-sm" style="color:var(--fg2);">—</span>{% endif %}
+          </td>
+          <td style="text-align:right; white-space:nowrap;">
+            <a href="/scans/{{ scan.id }}/live" class="kg-btn kg-btn-ghost kg-btn-sm" onclick="event.stopPropagation()">{{ icon('eye', 14) }} {{ t('live_track') }}</a>
+            {% if tv in ['network', 'ping', 'vuln', 'web'] %}
+            <form method="post" action="/scans/{{ scan.id }}/rescan" style="display:inline" onclick="event.stopPropagation()">
+              <button type="submit" class="kg-btn kg-btn-ghost kg-btn-sm" title="{{ t('rescan') }}">{{ icon('refresh', 14) }} {{ t('rescan') }}</button>
+            </form>
+            {% endif %}
+            {% if user and user.role.value == 'admin' %}
+            <form method="post" action="/scans/{{ scan.id }}/delete" style="display:inline"
+                  onclick="event.stopPropagation()" onsubmit="return confirm('{{ t('scan_delete_confirm') }}')">
+              <button type="submit" class="kg-btn kg-btn-ghost kg-btn-sm" style="color:var(--crit)" title="{{ t('delete') }}">{{ icon('trash', 14) }}</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" style="text-align:center; color:var(--fg2); padding:24px;">{{ t('no_scans') }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>

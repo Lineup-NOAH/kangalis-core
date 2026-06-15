@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ wordlist.name }} · {{ app_name }}{% endblock %}
+
+{% block content %}
+<div style="display:flex; align-items:center; gap:10px; margin-bottom:6px; flex-wrap:wrap;">
+  <a href="/wordlists" class="kg-btn kg-btn-ghost kg-btn-sm">{{ icon('chevron-left', 16) }} {{ t('nav_wordlists') }}</a>
+  <h1 class="k-h1" style="margin:0;">{{ wordlist.name }}</h1>
+  <span class="kg-chip kg-chip-accent">{{ t('wlkind_' + wordlist.kind.value) }}</span>
+  <span class="kg-chip">{{ wordlist.entries|length }} {{ t('wl_line_count') }}</span>
+  {% if wordlist.is_builtin %}<span class="kg-chip">{{ t('wl_builtin') }}</span>{% endif %}
+</div>
+<p class="k-sm" style="margin-bottom:14px; color:var(--fg2);">{{ t('wl_view_sub') }}</p>
+
+{% if wordlist.description %}<p class="k-sm" style="margin-bottom:12px;">{{ wordlist.description }}</p>{% endif %}
+
+<div class="kg-card" style="padding:0; max-width:680px;">
+  <textarea readonly class="kg-input font-mono" rows="22"
+            style="width:100%; border:none; background:transparent; resize:vertical;">{{ entries_joined }}</textarea>
+</div>
+
+{% if not wordlist.is_builtin %}
+<div style="margin-top:14px;">
+  <a href="/wordlists/{{ wordlist.id }}/edit" class="kg-btn kg-btn-primary">{{ icon('edit', 15) }} {{ t('edit') }}</a>
+</div>
+{% endif %}
+{% endblock %}

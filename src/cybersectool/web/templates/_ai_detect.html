@@ -1,0 +1,34 @@
+{% import '_icons.html' as ic %}
+{# Yerel AI kurulum sihirbazı (Faz 1 çatısı) — /settings/ai/detect HTMX yanıtı.
+   Erişilebilir motorları (host-native Ollama/LM Studio + gömülü container + kayıtlı) listeler,
+   önerilen yolu işaretler. "Bu endpoint'i kullan" formu doldurur (admin yine Kaydet'e basar). #}
+<div class="kg-card" style="margin-top:10px; padding:14px;">
+  <div class="k-label" style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
+    {{ ic.icon('sparkles', 14) }} {{ t('set_ai_detect_result') }}
+  </div>
+  {% for c in detect.candidates %}
+  <div style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border);">
+    <span title="{{ t('set_ai_detect_ok') if c.ok else t('set_ai_detect_down') }}">{{ '🟢' if c.ok else '🔴' }}</span>
+    <div style="flex:1; min-width:0;">
+      <div class="k-sm" style="font-weight:600;">
+        {{ c.label }}
+        {% if c.key == detect.recommended %}<span class="kg-chip" style="font-size:10px; color:var(--accent);">{{ t('set_ai_detect_recommended') }}</span>{% endif %}
+      </div>
+      <div class="k-xs font-mono" style="color:var(--fg2); overflow:hidden; text-overflow:ellipsis;">
+        {{ c.endpoint }}{% if c.ok and c.models %} — {{ c.models | join(', ') }}{% endif %}
+      </div>
+    </div>
+    {% if c.ok %}
+    <button type="button" class="kg-btn kg-btn-ghost kg-btn-sm"
+            onclick="document.getElementById('ai-endpoint').value='{{ c.endpoint }}'; document.getElementById('ai-enabled').checked=true;">
+      {{ t('set_ai_detect_use') }}
+    </button>
+    {% endif %}
+  </div>
+  {% endfor %}
+  {% if detect.recommended == 'install-companion' %}
+  <div class="k-sm" style="margin-top:10px; color:var(--fg2);">{{ ic.icon('info', 13) }} {{ t('set_ai_detect_install_hint') }}</div>
+  {% elif detect.recommended == 'install' %}
+  <div class="k-sm" style="margin-top:10px; color:var(--fg2);">{{ ic.icon('info', 13) }} {{ t('set_ai_detect_none_hint') }}</div>
+  {% endif %}
+</div>

@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ t('assets_title') }} · {{ app_name }}{% endblock %}
+
+{% block content %}
+<h1 class="k-h1" style="margin-bottom:6px;">{{ t('assets_title') }}</h1>
+<p class="k-sm" style="margin-bottom:20px;">{{ t('assets_sub') }}</p>
+
+{% if message %}<div class="kg-alert kg-alert-ok" style="margin-bottom:16px;">{{ message }}</div>{% endif %}
+{% if error %}<div class="kg-alert kg-alert-error" style="margin-bottom:16px;">{{ error }}</div>{% endif %}
+
+{% if can_edit %}
+<form method="post" action="/assets/add" class="kg-card" style="padding:18px 20px; margin-bottom:16px; display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap;">
+  <div style="flex:1; min-width:150px;">
+    <label class="kg-field-label" for="a-ip">{{ t('asset_ip_label') }}</label>
+    <input id="a-ip" name="ip" required placeholder="10.0.0.42  /  https://app.local:8443" class="kg-input font-mono" />
+  </div>
+  <div style="flex:1; min-width:150px;">
+    <label class="kg-field-label" for="a-name">{{ t('asset_name_label') }}</label>
+    <input id="a-name" name="name" placeholder="{{ t('asset_name_ph') }}" class="kg-input" />
+  </div>
+  <div style="flex:1; min-width:150px;">
+    <label class="kg-field-label" for="a-host">{{ t('asset_hostname_label') }}</label>
+    <input id="a-host" name="hostname" placeholder="srv-db-01" class="kg-input" />
+  </div>
+  <button type="submit" class="kg-btn kg-btn-primary">{{ t('add_asset_btn') }}</button>
+</form>
+{% endif %}
+
+{% if hidden_count and hidden_count > 0 %}
+<p class="k-sm" style="margin-bottom:14px; color:var(--fg2);">
+  {{ t('assets_hidden_note') }} ({{ hidden_count }}) ·
+  <a href="/assets?all=1" style="color:var(--accent)">{{ t('assets_show_all') }}</a>
+</p>
+{% elif show_all %}
+<p class="k-sm" style="margin-bottom:14px; color:var(--fg2);">
+  {{ t('assets_showing_all') }} · <a href="/assets" style="color:var(--accent)">{{ t('assets_show_real') }}</a>
+</p>
+{% endif %}
+
+{% if not assets %}
+<div class="kg-card" style="padding:32px; text-align:center; color:var(--fg2);">
+  {{ t('no_assets') }} <a href="/scans" style="color:var(--accent)">{{ t('new_scan') }}</a>
+</div>
+{% endif %}
+
+<div style="display:flex; flex-direction:column; gap:12px;">
+  {% for asset in assets %}
+  {% set svcs = services_by_asset.get(asset.id, []) %}
+  <details class="kg-card" style="padding:0;">
+    <summary style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:14px 18px; cursor:pointer; list-style:none;">
+      {{ icon('server', 16) }}
+      <span style="font-weight:600; font-size:15px;">{{ asset.display_name }}</span>
+      {% if asset.name or asset.hostname %}<span class="k-sm font-mono" style="color:var(--fg2)">{{ asset.ip or asset.url }}</span>{% endif %}
+      {% if asset.url %}<span class="kg-chip">URL</span>{% endif %}
+      {% if asset.os %}<span class="kg-chip">{{ asset.os }}</span>{% endif %}
+      <div style="flex:1"></div>
+      <span class="kg-chip">{{ svcs|length }} {{ t('services_label') }}</span>
+    </summary>
+    <div style="padding:0 18px 16px;">
+      {% if can_edit %}
+      <form method="post" action="/assets/{{ asset.id }}/name" style="display:flex; align-items:center; gap:6px; margin:0 0 12px;">
+        <input type="text" name="name" value="{{ asset.name or '' }}"
+               placeholder="{{ asset.hostname or asset.ip or asset.url }}" maxlength="120"
+               class="kg-input" style="width:240px; font-size:14px;"
+               aria-label="{{ t('asset_name_label') }}" />
+        <button type="submit" class="kg-btn kg-btn-subtle kg-btn-sm" title="{{ t('save') }}">{{ icon('check', 15) }}</button>
+      </form>
+      {% endif %}
+      {% if svcs %}
+      <div class="kg-table-wrap" style="border:0; border-top:1px solid var(--border); border-radius:0;">
+        <table class="kg-table" style="font-size:13px;">
+          <thead>
+            <tr><th>{{ t('th_port') }}</th><th>{{ t('th_service') }}</th><th>{{ t('th_product') }}</th><th>{{ t('th_version') }}</th></tr>
+          </thead>
+          <tbody>
+            {% for svc in svcs %}
+            <tr>
+              <td class="font-mono">{{ svc.port }}/{{ svc.protocol }}</td>
+              <td>{{ svc.service_name or '-' }}</td>
+              <td>{{ svc.product or '-' }}</td>
+              <td class="font-mono" style="color:var(--fg2)">{{ svc.version or '-' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="k-sm" style="color:var(--fg2); margin:0;">{{ t('asset_no_services') }}</p>
+      {% endif %}
+    </div>
+  </details>
+  {% endfor %}
+</div>
+{% endblock %}

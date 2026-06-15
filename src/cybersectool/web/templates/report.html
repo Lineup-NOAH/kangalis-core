@@ -1,0 +1,402 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon, logo %}
+{% block title %}{{ t('report_title') }} · {{ app_name }}{% endblock %}
+
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:18px;">
+  <div>
+    {% if scan or batch %}<a href="/report" class="kg-chip kg-chip-link" style="margin-bottom:10px; display:inline-flex;">&larr; {{ t('back_to_reports') }}</a>{% endif %}
+    <div style="display:flex; align-items:center; gap:10px;">
+      {{ logo(26) }}<span class="kg-wordmark" style="font-size:15px;">KANGALIS</span>
+    </div>
+    <h1 class="k-h1" style="margin-top:6px;">{{ t('report_title') }}{% if batch %} — <span class="font-mono">{{ batch.name }}</span>{% elif scan %} — <span class="font-mono">{{ scan.target }}</span>{% endif %}</h1>
+    <p class="k-sm" style="margin-top:4px;">
+      {% if batch %}{{ batch_targets|length }} {{ t('wiz_s1') | lower }} · {{ batch.mode.value }} · {% elif scan %}<span class="kg-status kg-status-{{ scan.status.value }}">{{ t('st_' + scan.status.value) }}</span> · {{ scan.scan_type.value }} · #{{ scan.id }} · {% endif %}{{ t('report_generated') }}: {{ generated_at }}</p>
+    {% if batch and batch_targets %}
+    <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;">
+      {% for tg in batch_targets %}<span class="kg-chip font-mono">{{ tg }}</span>{% endfor %}
+    </div>
+    {% endif %}
+    {% if selected_categories %}
+    <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:8px;">
+      <span class="k-sm" style="color:var(--fg2);">{{ icon('filter', 13) }} {{ t('report_cat_filter') }}:</span>
+      {% for cat in selected_categories %}<span class="kg-chip kg-chip-accent">{{ t('cat_' + cat) }}</span>{% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  <div class="print:hidden" style="display:flex; gap:8px;">
+    <a href="{% if batch %}/report/batch/{{ batch.id }}/pdf{% elif scan %}/report/{{ scan.id }}/pdf{% else %}/report/pdf{% endif %}" class="kg-btn kg-btn-primary kg-btn-sm">{{ icon('download', 16) }} {{ t('pdf_download') }}</a>
+    <button onclick="window.print()" class="kg-btn kg-btn-ghost kg-btn-sm">{{ icon('reports', 16) }} {{ t('print') }}</button>
+  </div>
+</div>
+
+<!-- Özet dashboard -->
+<h2 class="k-h3" style="margin-bottom:12px;">{{ t('summary') }}</h2>
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px; margin-bottom:28px;">
+  <div class="kg-card" style="padding:16px;"><div class="kg-statnum">{{ asset_count }}</div><div class="k-label" style="margin-top:6px;">{{ t('stat_assets') }}</div></div>
+  <div class="kg-card" style="padding:16px;"><div class="kg-statnum">{{ findings|length }}</div><div class="k-label" style="margin-top:6px;">{{ t('total_findings') }}</div></div>
+  <div class="kg-card" style="padding:16px;"><div class="kg-statnum" style="color:var(--sev-critical)">{{ severity_counts.get('critical', 0) }}</div><div class="k-label" style="margin-top:6px;">{{ t('sev_critical') }}</div></div>
+  <div class="kg-card" style="padding:16px;"><div class="kg-statnum" style="color:var(--sev-high)">{{ severity_counts.get('high', 0) }}</div><div class="k-label" style="margin-top:6px;">{{ t('sev_high') }}</div></div>
+  <div class="kg-card" style="padding:16px;"><div class="kg-statnum" style="color:var(--accent)">{{ kev_count }}</div><div class="k-label" style="margin-top:6px;">{{ t('stat_kev') }}</div></div>
+  <div class="kg-card" style="padding:16px;"><div class="kg-statnum" style="color:var(--accent)">{{ exploit_count }}</div><div class="k-label" style="margin-top:6px;">{{ t('stat_exploits') }}</div></div>
+</div>
+
+{# Yerel AI yönetici özeti (#184) — talep üzerine, önbellekli; üretilmişse ön-yüklü gelir. #}
+{% if ai_enabled %}
+<div style="margin-bottom:18px;">
+  <div id="ai-summary-box">
+    {% if ai_summary %}
+    <div class="kg-card" style="padding:16px 18px; background:color-mix(in srgb, var(--accent) 8%, transparent); border:1px solid color-mix(in srgb, var(--accent) 28%, transparent);">
+      <div class="k-label" style="color:var(--accent); display:flex; align-items:center; gap:6px;">{{ icon('sparkles', 14) }} {{ t('ai_summary_label') }}</div>
+      <div class="k-sm" style="margin-top:6px; white-space:pre-wrap; line-height:1.55;">{{ ai_summary }}</div>
+      <p class="k-sm" style="margin-top:8px; color:var(--fg2); font-style:italic;">⚠ {{ t('ai_verify_note') }}{% if ai_summary_model %} · {{ ai_summary_model }}{% endif %}</p>
+    </div>
+    {% endif %}
+  </div>
+  {% if not ai_summary %}
+  <button type="button" class="kg-btn kg-btn-subtle"
+          hx-post="/ai/summary" hx-vals='{"scope": "{{ ai_summary_scope }}", "scope_id": {{ ai_summary_id }}}'
+          hx-target="#ai-summary-box" hx-swap="innerHTML"
+          hx-indicator="#ai-summary-spin" hx-disabled-elt="this">{{ icon('sparkles', 14) }} {{ t('ai_summary_btn') }}</button>
+  <span id="ai-summary-spin" class="htmx-indicator k-sm" style="margin-left:8px; color:var(--fg2);">{{ t('ai_generating') }}</span>
+  {% endif %}
+</div>
+{% endif %}
+
+{# Yerel AI müşteri özeti (Dalga 1c) — müşteriye TESLİM tonu; aynı veri, farklı ton (:exec). #}
+{% if ai_enabled %}
+<div style="margin-bottom:18px;">
+  <div id="ai-summary-exec-box">
+    {% if ai_summary_exec %}
+    <div class="kg-card" style="padding:16px 18px; background:color-mix(in srgb, var(--accent) 8%, transparent); border:1px solid color-mix(in srgb, var(--accent) 28%, transparent);">
+      <div class="k-label" style="color:var(--accent); display:flex; align-items:center; gap:6px;">{{ icon('reports', 14) }} {{ t('ai_summary_exec_label') }}</div>
+      <div class="k-sm" style="margin-top:6px; white-space:pre-wrap; line-height:1.55;">{{ ai_summary_exec }}</div>
+      <p class="k-sm" style="margin-top:8px; color:var(--fg2); font-style:italic;">⚠ {{ t('ai_verify_note') }}{% if ai_summary_exec_model %} · {{ ai_summary_exec_model }}{% endif %}</p>
+    </div>
+    {% endif %}
+  </div>
+  {% if not ai_summary_exec %}
+  <button type="button" class="kg-btn kg-btn-subtle"
+          hx-post="/ai/summary" hx-vals='{"scope": "{{ ai_summary_scope }}", "scope_id": {{ ai_summary_id }}, "audience": "customer"}'
+          hx-target="#ai-summary-exec-box" hx-swap="innerHTML"
+          hx-indicator="#ai-summary-exec-spin" hx-disabled-elt="this">{{ icon('reports', 14) }} {{ t('ai_summary_exec_btn') }}</button>
+  <span id="ai-summary-exec-spin" class="htmx-indicator k-sm" style="margin-left:8px; color:var(--fg2);">{{ t('ai_generating') }}</span>
+  {% endif %}
+</div>
+{% endif %}
+
+{# Yerel AI düzeltme önceliklendirmesi (Dalga 1b) — sıra DETERMİNİSTİK (risk), AI gerekçelendirir. #}
+{% if ai_enabled %}
+<div style="margin-bottom:18px;">
+  <div id="ai-priorities-box">
+    {% if ai_priorities %}
+    <div class="kg-card" style="padding:16px 18px; background:color-mix(in srgb, var(--accent) 8%, transparent); border:1px solid color-mix(in srgb, var(--accent) 28%, transparent);">
+      <div class="k-label" style="color:var(--accent); display:flex; align-items:center; gap:6px;">{{ icon('list', 14) }} {{ t('ai_priorities_label') }}</div>
+      <div class="k-sm" style="margin-top:6px; white-space:pre-wrap; line-height:1.55;">{{ ai_priorities }}</div>
+      <p class="k-sm" style="margin-top:8px; color:var(--fg2); font-style:italic;">⚠ {{ t('ai_verify_note') }}{% if ai_priorities_model %} · {{ ai_priorities_model }}{% endif %}</p>
+    </div>
+    {% endif %}
+  </div>
+  {% if not ai_priorities %}
+  <button type="button" class="kg-btn kg-btn-subtle"
+          hx-post="/ai/priorities" hx-vals='{"scope": "{{ ai_summary_scope }}", "scope_id": {{ ai_summary_id }}}'
+          hx-target="#ai-priorities-box" hx-swap="innerHTML"
+          hx-indicator="#ai-priorities-spin" hx-disabled-elt="this">{{ icon('list', 14) }} {{ t('ai_priorities_btn') }}</button>
+  <span id="ai-priorities-spin" class="htmx-indicator k-sm" style="margin-left:8px; color:var(--fg2);">{{ t('ai_generating') }}</span>
+  {% endif %}
+</div>
+{% endif %}
+
+{# Yerel AI sömürü-zinciri özeti (Dalga 3) — bulgu + GERÇEKLEŞMİŞ sömürü verisinden saldırı-zinciri
+   anlatısı (GİRİŞ NOKTASI/ZİNCİR ADIMLARI/ETKİ/KIRILMA NOKTASI); grounded, komut üretmez. #}
+{% if ai_enabled and findings %}
+<div style="margin-bottom:18px;">
+  <div id="ai-exploit-chain-box"></div>
+  <button type="button" class="kg-btn kg-btn-subtle"
+          hx-post="/ai/exploit-chain" hx-vals='{"scope": "{{ ai_summary_scope }}", "scope_id": {{ ai_summary_id }}}'
+          hx-target="#ai-exploit-chain-box" hx-swap="innerHTML"
+          hx-indicator="#ai-exploit-chain-spin" hx-disabled-elt="this">{{ icon('sparkles', 14) }} {{ t('ai_exploit_chain_btn') }}</button>
+  <span id="ai-exploit-chain-spin" class="htmx-indicator k-sm" style="margin-left:8px; color:var(--fg2);">{{ t('ai_generating') }}</span>
+</div>
+{% endif %}
+
+<!-- Bulunan Hostlar (envanter): IP + ad/hostname + OS + açık portlar -->
+{% if report_hosts %}
+<h2 class="k-h3" style="margin-bottom:6px;">{{ t('rep_hosts') }} <span class="k-sm" style="color:var(--fg2); font-weight:400;">({{ report_hosts|length }})</span></h2>
+<p class="k-sm" style="margin:0 0 12px; color:var(--fg2);">{{ t('rep_hosts_sub') }}</p>
+<div class="kg-card kg-table-wrap" style="padding:0; margin-bottom:24px;">
+  <table class="kg-table kg-zebra">
+    <thead><tr><th>{{ t('rep_host_ip') }}</th><th>{{ t('rep_host_device') }}</th><th>{{ t('rep_host_os') }}</th><th>{{ t('rep_host_ports') }}</th></tr></thead>
+    <tbody>
+      {% for h in report_hosts %}
+      <tr>
+        <td class="font-mono k-sm">{{ h.ip }}{% if h.is_up %} <span class="kg-chip kg-chip-accent" style="font-size:10px;">{{ t('rep_host_up') }}</span>{% endif %}</td>
+        <td class="k-sm">{% if h.name and h.name != h.ip %}{{ h.name }}{% else %}<span style="color:var(--fg2);">—</span>{% endif %}{% if h.hostname and h.hostname != h.name %} <span class="k-sm" style="color:var(--fg2);">({{ h.hostname }})</span>{% endif %}</td>
+        <td class="k-sm">{{ h.os or '—' }}</td>
+        <td class="k-sm">
+          {% if h.services %}
+          <div style="display:flex; flex-wrap:wrap; gap:4px;">
+            {% for s in h.services %}<span class="kg-chip font-mono" style="font-size:11px;">{{ s.port }}/{{ s.protocol }}{% if s.service_name %} {{ s.service_name }}{% endif %}{% if s.product %} · {{ s.product }}{% if s.version %} {{ s.version }}{% endif %}{% endif %}</span>{% endfor %}
+          </div>
+          {% else %}<span style="color:var(--fg2);">{{ t('rep_host_noports') }}</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- Uyum (CIS) — VII-1a + KVKK/ISO/PCI raporu VII-1c -->
+{% if compliance_summary %}
+<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+  <h2 class="k-h3" style="margin:0;">{{ t('rep_compliance') }}</h2>
+  {% if scan %}<a href="/report/{{ scan.id }}/compliance.pdf" class="kg-btn kg-btn-subtle kg-btn-sm print:hidden">{{ icon('download', 14) }} {{ t('rep_compliance_pdf') }}</a>{% endif %}
+</div>
+<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+  {% for fw, b in compliance_summary.items() %}
+  <div class="kg-card" style="padding:14px 18px;">
+    <div style="font-weight:600; margin-bottom:4px;">{{ fw }}</div>
+    <span class="kg-chip {{ 'kg-sev-critical' if b['score'] < 60 else ('kg-sev-medium' if b['score'] < 90 else 'kg-chip-accent') }}">{{ t('rep_score') }}: {{ b['score'] }}% · {{ b['pass'] }}/{{ b['total'] }} {{ t('rep_passed') }}</span>
+  </div>
+  {% endfor %}
+</div>
+{# Yerel AI uyum anlatısı (Dalga 3) — CIS + KVKK/ISO/PCI skorlarından yönetici özeti; skor üretmez. #}
+{% if ai_enabled %}
+<div style="margin-bottom:18px;">
+  <div id="ai-compliance-box"></div>
+  <button type="button" class="kg-btn kg-btn-subtle"
+          hx-post="/ai/compliance" hx-vals='{"scope": "{{ ai_summary_scope }}", "scope_id": {{ ai_summary_id }}}'
+          hx-target="#ai-compliance-box" hx-swap="innerHTML"
+          hx-indicator="#ai-compliance-spin" hx-disabled-elt="this">{{ icon('sparkles', 14) }} {{ t('ai_compliance_btn') }}</button>
+  <span id="ai-compliance-spin" class="htmx-indicator k-sm" style="margin-left:8px; color:var(--fg2);">{{ t('ai_generating') }}</span>
+</div>
+{% endif %}
+<div class="kg-card kg-table-wrap" style="padding:0; margin-bottom:24px;">
+  <table class="kg-table kg-zebra">
+    <thead><tr><th>{{ t('rep_framework') }}</th><th>{{ t('rep_control') }}</th><th>{{ t('h_title') }}</th><th>{{ t('h_status') }}</th></tr></thead>
+    <tbody>
+      {% for c in compliance_checks %}
+      <tr>
+        <td class="k-sm">{{ c.framework }}</td>
+        <td class="font-mono k-sm">{{ c.control_id }}</td>
+        <td>{{ c.title }}</td>
+        <td>{% if c.status == 'pass' %}<span class="kg-status kg-status-completed">{{ t('rep_pass') }}</span>{% else %}<span class="kg-sev kg-sev-{{ (c.severity.value if c.severity else 'high') }}">{{ t('rep_fail') }}</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- Bulunan Yollar (dizin/içerik taraması) — keşfedilen erişilebilir yollar -->
+{% if dir_findings %}
+<h2 class="k-h3" style="margin-bottom:6px;">{{ t('rep_paths') }} <span class="k-sm" style="color:var(--fg2); font-weight:400;">({{ dir_findings|length }})</span></h2>
+<p class="k-sm" style="margin:0 0 12px; color:var(--fg2);">{{ t('rep_paths_sub') }}</p>
+<div class="kg-card kg-table-wrap" style="padding:0; margin-bottom:24px;">
+  <table class="kg-table kg-zebra">
+    <thead><tr><th style="width:120px;">{{ t('h_severity') }}</th><th>{{ t('rep_path_col') }}</th></tr></thead>
+    <tbody>
+      {% for f in dir_findings %}
+      {% set sev = (f.severity.value if f.severity is not string else f.severity) %}
+      <tr>
+        <td><span class="kg-sev kg-sev-{{ sev }}">{{ t('sev_' + sev) }}</span></td>
+        <td class="font-mono k-sm">{{ f.title.replace('Bulunan yol: ', '') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- Bulgular ve Çözümler (dizin yolları hariç — onlar yukarıda) -->
+<h2 class="k-h3" style="margin-bottom:12px;">{{ t('rep_findings_sol') }}</h2>
+{% if exploit_arsenal %}
+<div class="kg-card" style="padding:11px 16px; margin-bottom:14px; border-left:3px solid var(--accent);">
+  <div class="k-label" style="display:flex; align-items:center; gap:6px;">{{ icon('exploit', 14) }} {{ t('exploit_arsenal_label') }} <span class="kg-chip kg-chip-accent">{{ exploit_arsenal.cve_count }}</span></div>
+  <p class="k-sm" style="margin:5px 0 0;">{{ t('exploit_arsenal_summary').format(n=exploit_arsenal.cve_count, m=exploit_arsenal.msf_cve_count, p=exploit_arsenal.poc_only_cve_count) }}{% if exploit_arsenal.verified_count %}{{ t('exploit_arsenal_verified').format(v=exploit_arsenal.verified_count) }}{% endif %}</p>
+  <p class="k-sm" style="margin:4px 0 0; color:var(--fg2); font-style:italic;">{% if arsenal_runs_exploit %}{{ t('exploit_arsenal_run_note') }}{% else %}{{ t('exploit_arsenal_safe_note') }}{% endif %}</p>
+</div>
+{% endif %}
+{% if exploit_overview %}
+<div class="kg-card" style="padding:11px 16px; margin-bottom:14px; border-left:3px solid {{ 'var(--sev-critical)' if exploit_overview.successes else ('var(--accent)' if exploit_overview.status == 'ran' else 'var(--border)') }};">
+  <div class="k-label" style="display:flex; align-items:center; gap:6px;">{{ icon('flame', 13) }} {{ t('exploit_status_label') }}</div>
+  <p class="k-sm" style="margin:4px 0 0;">{% if exploit_overview.status == 'ran' %}{{ t('exploit_st_ran').format(n=exploit_overview.attempts, s=exploit_overview.successes) }}{% elif exploit_overview.status == 'skipped' %}{{ t('exploit_st_skipped') }}{% else %}{{ t('exploit_st_na') }}{% endif %}</p>
+</div>
+{% endif %}
+{% if exploitdb_staged %}
+<div class="kg-card" style="padding:11px 16px; margin-bottom:14px; border-left:3px solid var(--accent);">
+  <div class="k-label" style="display:flex; align-items:center; gap:6px;">{{ icon('exploit', 13) }} {{ t('exploitdb_staged_label') }} <span class="kg-chip">{{ exploitdb_staged|length }}</span></div>
+  <p class="k-sm" style="margin:4px 0 4px; color:var(--fg2);">{{ t('exploitdb_staged_sub') }}</p>
+  <p class="k-sm" style="margin:0 0 8px; color:var(--fg2); font-style:italic;">{{ t('exploitdb_staged_cap') }}</p>
+  <div class="kg-table-wrap">
+    <table class="kg-table">
+      <thead><tr><th>{{ t('h_host') }}</th><th>{{ t('h_cve') }}</th><th>Exploit-DB</th><th>{{ t('exploitdb_run_cmd') }}</th></tr></thead>
+      <tbody>
+        {% for s in exploitdb_staged %}
+        <tr style="vertical-align:top;">
+          <td class="font-mono" style="white-space:nowrap;">{{ s.host }}</td>
+          <td class="font-mono">{{ s.cve_id }}</td>
+          <td class="font-mono" style="white-space:nowrap;"><a href="{{ s.url }}" target="_blank" rel="noopener" style="color:var(--accent)">EDB-{{ s.edb_id }}</a></td>
+          <td>
+            <div style="display:flex; gap:6px; align-items:flex-start;">
+              <code class="font-mono k-sm" style="flex:1; overflow-wrap:anywhere;">{{ s.command or '-' }}</code>
+              {% if s.command %}<button type="button" class="kg-btn kg-btn-ghost kg-btn-sm" data-copy="{{ s.command }}" onclick="kgCopy(this)" title="{{ t('copy') }}" aria-label="{{ t('copy') }}">{{ icon('copy', 13) }}</button>{% endif %}
+            </div>
+            {% if s.destructive %}
+            <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:5px;">
+              <span class="kg-chip" style="color:var(--sev-critical); border-color:rgba(239,68,68,.4);">{{ icon('alert', 12) }} {{ t('exploitdb_dos_blocked') }}</span>
+            </div>
+            {% endif %}
+            {% if s.output and s.status in ('success', 'failed', 'running') %}
+            <details style="margin-top:4px;"><summary class="k-sm" style="cursor:pointer; color:var(--fg2);">{{ t('exploitdb_output') }}</summary>
+              <pre class="font-mono" style="font-size:11px; white-space:pre-wrap; overflow-wrap:anywhere; max-height:200px; overflow:auto; background:color-mix(in srgb, var(--accent) 5%, transparent); padding:6px 8px; border-radius:6px; margin:4px 0 0;">{{ s.output }}</pre>
+            </details>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% if not findings_main %}
+<p class="k-sm">{{ t('no_findings_short') }}</p>
+{% else %}
+{% for grp in findings_main_by_host %}
+<div style="display:flex; align-items:center; gap:8px; margin:22px 0 10px; padding-bottom:6px; border-bottom:2px solid var(--border);">
+  {{ icon('server', 16) }}
+  <span style="font-weight:700; font-size:15px;">{% if grp.asset_id is none %}{{ t('rep_host_unassigned') }}{% else %}{{ grp.label }}{% endif %}</span>
+  {% if grp.ip and grp.ip != grp.label %}<span class="kg-chip font-mono">{{ grp.ip }}</span>{% endif %}
+  <div style="flex:1"></div>
+  {# Varlık risk hikâyesi (Dalga 2c) — yalnız bu cihazın bulgularına dayalı AI anlatısı. #}
+  {% if ai_enabled and grp.asset_id is not none and not (ai_story_map and ai_story_map.get(grp.asset_id)) %}
+  <button type="button" class="kg-btn kg-btn-subtle kg-btn-sm"
+          hx-post="/ai/asset-story" hx-vals='{"asset_id": {{ grp.asset_id }}, "scope": "{{ ai_summary_scope }}", "scope_id": {{ ai_summary_id }}}'
+          hx-target="#ai-story-{{ grp.asset_id }}" hx-swap="innerHTML"
+          hx-indicator="#ai-story-spin-{{ grp.asset_id }}" hx-disabled-elt="this">{{ icon('sparkles', 13) }} {{ t('ai_story_btn') }}</button>
+  <span id="ai-story-spin-{{ grp.asset_id }}" class="htmx-indicator k-sm" style="color:var(--fg2);">{{ t('ai_generating') }}</span>
+  {% endif %}
+  <span class="kg-chip">{{ grp['items']|length }}</span>
+</div>
+{% if ai_enabled and grp.asset_id is not none %}
+<div id="ai-story-{{ grp.asset_id }}" style="margin-bottom:12px;">
+  {% set _story = ai_story_map.get(grp.asset_id) if ai_story_map else None %}
+  {% if _story %}{% with content=_story.content, model=_story.model, cached=True, error=None %}{% include '_ai_explanation.html' %}{% endwith %}{% endif %}
+</div>
+{% endif %}
+{% for f in grp['items'] %}
+{% set cve = cve_map.get(f.cve_id) %}
+{% set rem = remediation_map.get(f.id) %}
+{% set ex = exploit_map.get(f.cve_id) %}
+{% set sev = (f.severity.value if f.severity is not string else f.severity) %}
+{% set desc = f.description or (cve.description if cve else None) %}
+<div class="kg-card" style="padding:18px 20px; margin-bottom:12px; border-left:3px solid var(--sev-{{ sev }});">
+  <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap;">
+    <div style="flex:1; min-width:240px;">
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <span class="kg-sev kg-sev-{{ sev }}">{{ t('sev_' + sev) }}</span>
+        {% if f.title.startswith('EXPLOITED') %}<span class="kg-sev kg-sev-critical" title="{{ t('rep_exploited_tip') }}">{{ icon('flame', 12) }} {{ t('rep_exploited') }}</span>{% endif %}
+        {% if f.title.startswith('Yetki yükseltme DOĞRULANDI') %}<span class="kg-sev kg-sev-critical" title="{{ t('rep_privesc_tip') }}">{{ icon('flame', 12) }} {{ t('rep_privesc') }}</span>{% endif %}
+        <span style="font-weight:600;">{{ f.title }}</span>
+      </div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">
+        {% if is_os_package_title(f.title) %}<span class="kg-chip" style="color:#d97706; border-color:color-mix(in srgb, #d97706 40%, transparent);" title="{{ t('rep_ospkg_tip') }}">{{ icon('vuln', 12) }} {{ t('vcat_os_package') }} · OSV.dev</span>{% endif %}
+        {% if f.cve_id %}<a href="https://nvd.nist.gov/vuln/detail/{{ f.cve_id }}" target="_blank" rel="noopener" class="kg-chip kg-chip-link font-mono">{{ f.cve_id }}</a>{% endif %}
+        {% if cve and cve.cvss_score is not none %}<span class="kg-chip">CVSS {{ cve.cvss_score }}</span>{% endif %}
+        {% if rem and rem.kev %}<span class="kg-chip kg-chip-accent">{{ icon('flame', 12) }} KEV</span>{% endif %}
+        {% if rem and rem.epss_pct %}<span class="kg-chip">EPSS {{ rem.epss_pct }}</span>{% endif %}
+        {% if ex and ex.count > 0 %}<span class="kg-chip kg-chip-accent" title="{{ t('rep_exploit_tip') }}">{{ icon('exploit', 12) }} {{ t('rep_exploit_avail') }}{% if ex.edb_count %} · EDB {{ ex.edb_count }}{% endif %}{% if ex.msf_count %} · MSF {{ ex.msf_count }}{% endif %}</span>{% endif %}
+        {% set est = exploit_overview.state_of(f.cve_id, f.asset_id) if exploit_overview else none %}
+        {% set emod = exploit_overview.module_of(f.cve_id, f.asset_id) if exploit_overview else none %}
+        {% if est == 'exploited' %}<span class="kg-chip" style="background:var(--sev-critical); color:#fff; border-color:var(--sev-critical);" title="{{ t('exploit_done_tip') }}">{{ icon('flame', 12) }} {{ t('exploit_done') }}</span>{% elif est == 'attempted' %}<span class="kg-chip" title="{{ t('exploit_tried_tip') }}">{{ icon('exploit', 12) }} {{ t('exploit_tried') }}</span>{% endif %}
+        {% if est and emod %}<span class="kg-chip font-mono" style="font-size:11px;" title="{{ t('exploit_used_source') }}">Metasploit · {{ emod }}</span>{% endif %}
+        {% set echan = exploit_overview.channel_of(f.cve_id, f.asset_id) if exploit_overview else none %}
+        {% if echan %}<span class="kg-chip" title="{{ t('exploit_channel_tip') }}">{% if echan == 'reverse' %}↩ {{ t('exploit_channel_reverse') }}{% else %}→ {{ t('exploit_channel_bind') }}{% endif %}</span>{% endif %}
+        {% for fw in frameworks_for_finding(f, cve) %}<span class="kg-chip" title="{{ t('cve_fw_tip') }}">{{ fw }}</span>{% endfor %}
+      </div>
+    </div>
+    {% if f.risk_score is not none %}<div style="text-align:right;"><div class="kg-statnum" style="font-size:22px;">{{ f.risk_score }}</div><div class="k-label">{{ t('h_risk') }}</div></div>{% endif %}
+  </div>
+
+  {% if desc %}
+  <div style="margin-top:12px;">
+    <div class="k-label">{{ t('rep_description') }}</div>
+    <p class="k-sm" style="margin-top:3px;">{{ desc }}</p>
+  </div>
+  {% endif %}
+
+  {% if ex and ex.details %}
+  <div style="margin-top:10px;">
+    <div class="k-label">{{ t('exploit_sources_label') }}{% if ex.verified_count %} <span class="kg-chip" style="font-size:10px; color:var(--ok, #16a34a); border-color:rgba(22,163,74,.4);" title="{{ t('exploit_verified_tip') }}">{{ icon('check', 10) }} {{ ex.verified_count }} {{ t('exploit_verified') }}</span>{% endif %}</div>
+    <div style="display:flex; flex-direction:column; gap:4px; margin-top:4px;">
+      {% for d in ex.details %}
+      {% set is_msf = d.source == 'metasploit' %}
+      <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+        {% if is_msf %}<span class="kg-chip font-mono" style="font-size:11px; color:var(--ok, #16a34a); border-color:rgba(22,163,74,.4);">Metasploit · {{ d.external_id }}</span>{% else %}<a href="{{ d.url or ('https://www.exploit-db.com/exploits/' ~ (d.external_id | replace('EDB-', ''))) }}" target="_blank" rel="noopener" class="kg-chip kg-chip-link font-mono" style="font-size:11px;">Exploit-DB · {{ d.external_id }}</a>{% endif %}
+        {% if d.title %}<span class="k-sm" style="color:var(--fg2); max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{{ d.title }}">{{ d.title }}</span>{% endif %}
+        {% if d.type %}<span class="kg-chip" style="font-size:10px;">{{ d.type }}</span>{% endif %}
+        {% if d.platform %}<span class="kg-chip" style="font-size:10px; color:var(--fg2);">{{ d.platform }}</span>{% endif %}
+        {% if is_msf and d.rank %}<span class="kg-chip" style="font-size:10px; color:var(--accent); border-color:rgba(99,102,241,.35);" title="{{ t('exploit_rank_label') }}">{{ d.rank }}</span>{% endif %}
+        {% if d.verified %}<span class="kg-chip" style="font-size:10px; color:var(--ok, #16a34a); border-color:rgba(22,163,74,.4);" title="{{ t('exploit_verified_tip') }}">{{ icon('check', 10) }} {{ t('exploit_verified') }}</span>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <p class="k-sm" style="color:var(--fg2); margin-top:4px;">{{ t('rep_exploit_note') }}</p>
+  </div>
+  {% endif %}
+
+  {% if rem %}
+  <div style="margin-top:10px;">
+    <div class="k-label">{{ t('rep_cause') }}</div>
+    <p class="k-sm font-mono" style="margin-top:3px;">{{ rem.cause }}</p>
+  </div>
+  <div style="margin-top:10px; padding:12px 14px; background:color-mix(in srgb, var(--ok) 10%, transparent); border-radius:var(--r-md); border:1px solid color-mix(in srgb, var(--ok) 30%, transparent);">
+    <div class="k-label" style="color:var(--ok);">{{ icon('check', 12) }} {{ t('rep_remediation') }}</div>
+    <p class="k-sm" style="margin-top:4px;">{{ rem.summary }}</p>
+    {% if rem.references %}
+    <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;">
+      {% for ref in rem.references %}<a href="{{ ref }}" target="_blank" rel="noopener" class="kg-chip kg-chip-link" style="font-size:11px;">{{ icon('external', 11) }} {{ ref | truncate(46, True) }}</a>{% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {# Yerel AI açıklama (#183) — talep üzerine, önbellekli; üretilmişse ön-yüklü gelir. #}
+  {% if ai_enabled %}
+  {% set ai_pre = ai_explain_map.get(f.id) %}
+  <div style="margin-top:8px;">
+    <div id="ai-exp-{{ f.id }}">
+      {% if ai_pre %}{% with content=ai_pre.content, model=ai_pre.model, cached=True, error=None %}{% include '_ai_explanation.html' %}{% endwith %}{% endif %}
+    </div>
+    {% if not ai_pre %}
+    <button type="button" class="kg-btn kg-btn-subtle" style="margin-top:6px;"
+            hx-post="/ai/explain" hx-vals='{"finding_id": {{ f.id }}}'
+            hx-target="#ai-exp-{{ f.id }}" hx-swap="innerHTML"
+            hx-indicator="#ai-spin-{{ f.id }}" hx-disabled-elt="this">{{ icon('sparkles', 14) }} {{ t('ai_explain_btn') }}</button>
+    <span id="ai-spin-{{ f.id }}" class="htmx-indicator k-sm" style="margin-left:8px; color:var(--fg2);">{{ t('ai_generating') }}</span>
+    {% endif %}
+  </div>
+  {# Düzeltme script taslağı (Dalga 2b) — kopyalanabilir; ASLA oto-çalışmaz, çalıştırmadan incele. #}
+  {% set ai_scr = ai_script_map.get(f.id) if ai_script_map else None %}
+  <div style="margin-top:6px;">
+    <div id="ai-scr-{{ f.id }}">
+      {% if ai_scr %}{% with content=ai_scr.content, model=ai_scr.model, cached=True, error=None %}{% include '_ai_explanation.html' %}{% endwith %}{% endif %}
+    </div>
+    {% if not ai_scr %}
+    <button type="button" class="kg-btn kg-btn-subtle"
+            hx-post="/ai/remediation-script" hx-vals='{"finding_id": {{ f.id }}}'
+            hx-target="#ai-scr-{{ f.id }}" hx-swap="innerHTML"
+            hx-indicator="#ai-scr-spin-{{ f.id }}" hx-disabled-elt="this">{{ icon('copy', 14) }} {{ t('ai_remscript_btn') }}</button>
+    <span id="ai-scr-spin-{{ f.id }}" class="htmx-indicator k-sm" style="margin-left:8px; color:var(--fg2);">{{ t('ai_generating') }}</span>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endfor %}
+{% endfor %}
+{% endif %}
+
+<p class="k-sm" style="margin-top:28px; padding-top:14px; border-top:1px solid var(--border);">{{ t('report_footer').format(app=app_name) }}</p>
+{% endblock %}

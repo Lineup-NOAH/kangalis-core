@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "_icons.html" import logo %}
+{% block title %}{{ t('login_signin') }} · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="kg-card k-fade" style="width:100%; max-width:380px; padding:32px;">
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:6px;">
+    {{ logo(36) }}
+    <div>
+      <div class="kg-wordmark" style="font-size:18px;">KANGALIS</div>
+      <div class="k-sm" style="margin-top:2px;">{{ t('brand_sub') }}</div>
+    </div>
+  </div>
+  <p class="k-sm" style="margin:8px 0 22px;">{{ t('tagline') }}</p>
+
+  {% if error %}
+  <div class="kg-alert kg-alert-error" style="margin-bottom:16px;">{{ t('login_err') }}</div>
+  {% endif %}
+
+  <form method="post" action="/login" style="display:flex; flex-direction:column; gap:14px;">
+    <div>
+      <label class="kg-field-label" for="username">{{ t('login_user') }}</label>
+      <input id="username" name="username" required autofocus autocomplete="username" class="kg-input" />
+    </div>
+    <div>
+      <label class="kg-field-label" for="password">{{ t('login_pass') }}</label>
+      <input id="password" name="password" type="password" required autocomplete="current-password" class="kg-input" />
+    </div>
+    <button type="submit" class="kg-btn kg-btn-primary" style="width:100%; margin-top:4px;">{{ t('login_signin') }}</button>
+  </form>
+
+  {% if ldap_enabled %}
+  <p class="k-sm" style="text-align:center; margin-top:16px;">{{ t('login_ldap') }}</p>
+  {% endif %}
+</div>
+{% endblock %}

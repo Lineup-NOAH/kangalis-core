@@ -1,0 +1,173 @@
+{% from "_icons.html" import icon %}
+{% set sv = scan.status.value %}
+{# Canlı = tarama sürüyor VEYA bir Exploit-DB PoC çalışıyor (sonucu otomatik güncellensin). #}
+{% set poc_running = exploitdb_staged and (exploitdb_staged | selectattr('status', 'equalto', 'running') | list | length) > 0 %}
+{% set live = sv in ['pending', 'running'] or poc_running %}
+{# Tamamlanan tarama her zaman %100 gösterir (web taraması progress yazmasa bile takılı %0 kalmasın). #}
+{% set disp_progress = 100 if sv == 'completed' else scan.progress %}
+{% set disp_phase = scan.phase or (t('live_starting') if live else t('st_' + sv)) %}
+{# HTMX yalnız CANLI iken: terminal panelde hx-get YOK → tıklama varsayılan-click ile paneli
+   yeniden ÇEKMEZ (yoksa "Çıktı" detaylarını açınca panel swap olup hemen kapanıyordu). #}
+<div id="live-panel"{% if live %} hx-get="/scans/{{ scan.id }}/live/panel" hx-swap="outerHTML" hx-trigger="every 2s"{% endif %}>
+
+  <!-- İlerleme -->
+  <div class="kg-card" style="padding:20px; margin-bottom:16px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span class="kg-status kg-status-{{ sv }}">{{ t('st_' + sv) }}</span>
+        <span class="k-sm" style="color:var(--fg2);">{{ disp_phase }}</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        {% if eta_seconds is not none %}<span class="k-sm">{{ icon('schedules', 13) }} {{ t('live_remaining') }}: ~{{ (eta_seconds // 60) }} dk {{ eta_seconds % 60 }} sn</span>{% endif %}
+        <span class="kg-statnum" style="font-size:22px;">%{{ disp_progress }}</span>
+      </div>
+    </div>
+    <div class="kg-progress"><div class="kg-progress-bar" style="width:{{ disp_progress }}%;"></div></div>
+    {% if live %}
+    <form method="post" action="/scans/{{ scan.id }}/stop" style="margin-top:14px;">
+      <button type="submit" class="kg-btn kg-btn-sm" style="color:var(--sev-critical); border:1px solid var(--danger-line); background:transparent;">{{ icon('pause', 15) }} {{ t('live_stop') }}</button>
+    </form>
+    {% else %}
+    <div style="margin-top:14px;"><a href="/report/{% if scan.batch_id %}batch/{{ scan.batch_id }}{% else %}{{ scan.id }}{% endif %}" class="kg-btn kg-btn-primary kg-btn-sm">{{ icon('reports', 15) }} {{ t('view_report') }}</a></div>
+    {% endif %}
+  </div>
+
+  <!-- Bulunan hostlar (yanıt veren IP'ler) — rapora girmeden burada -->
+  <h2 class="k-h3" style="margin:0 0 10px;">{{ icon('target', 18) }} {{ t('rep_hosts') }} <span class="kg-chip">{{ (live_hosts or [])|length }}</span></h2>
+  {% if not live_hosts %}
+  <p class="k-sm" style="color:var(--fg2); margin-bottom:18px;">{{ t('live_no_hosts') }}</p>
+  {% else %}
+  <div class="kg-card kg-table-wrap" style="padding:0; margin-bottom:18px;">
+    <table class="kg-table kg-zebra">
+      <thead><tr><th>{{ t('rep_host_ip') }}</th><th>{{ t('rep_host_device') }}</th><th>{{ t('rep_host_ports') }}</th></tr></thead>
+      <tbody>
+        {% for h in live_hosts %}
+        <tr>
+          <td class="font-mono" style="font-size:13px;">{{ h.ip }}{% if h.is_up %} <span class="kg-chip kg-chip-accent" style="font-size:10px;">{{ t('rep_host_up') }}</span>{% endif %}</td>
+          <td class="k-sm">{% if h.name and h.name != h.ip %}{{ h.name }}{% else %}—{% endif %}{% if h.hostname and h.hostname != h.name %} <span style="color:var(--fg2);">({{ h.hostname }})</span>{% endif %}</td>
+          <td class="k-sm">{% if h.services %}{% for s in h.services %}<span class="kg-chip font-mono" style="font-size:11px;">{{ s.port }}/{{ s.protocol }}{% if s.service_name %} {{ s.service_name }}{% endif %}</span> {% endfor %}{% else %}<span style="color:var(--fg2);">{{ t('rep_host_noports') }}</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- Bulunan servisler / portlar — CİHAZA göre gruplu -->
+  <h2 class="k-h3" style="margin:0 0 10px;">{{ icon('server', 18) }} {{ t('live_services') }} <span class="kg-chip">{{ services|length }}</span></h2>
+  {% if not services %}
+  <p class="k-sm" style="color:var(--fg2); margin-bottom:18px;">{{ t('live_no_services') }}</p>
+  {% else %}
+  {% for grp in services_by_host %}
+  <div class="kg-card" style="padding:0; margin-bottom:12px;">
+    <div style="display:flex; align-items:center; gap:8px; padding:10px 14px; border-bottom:1px solid var(--border);">
+      {{ icon('server', 15) }}
+      <span style="font-weight:600; font-size:14px;">{{ grp.label }}</span>
+      {% if grp.ip and grp.ip != grp.label %}<span class="kg-chip font-mono" style="font-size:11px;">{{ grp.ip }}</span>{% endif %}
+      <div style="flex:1"></div>
+      <span class="kg-chip">{{ grp['items']|length }} {{ t('services_label') }}</span>
+    </div>
+    <div class="kg-table-wrap">
+      <table class="kg-table kg-zebra">
+        <thead><tr><th>{{ t('th_port') }}</th><th>{{ t('h_service') }}</th><th>{{ t('h_product') }}</th></tr></thead>
+        <tbody>
+          {% for s in grp['items'] %}
+          <tr>
+            <td class="font-mono">{{ s.port }}/{{ s.protocol }}</td>
+            <td>{{ s.service_name or '—' }}</td>
+            <td class="k-sm">{{ s.product or '—' }}{% if s.version %} {{ s.version }}{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endfor %}
+  {% endif %}
+  <div style="margin-bottom:18px;"></div>
+
+  <!-- Kullanılabilir exploit cephaneliği (#172) — MEVCUDİYET (sömürmez); deneme ayrı bant -->
+  {% if exploit_arsenal %}
+  <div class="kg-card" style="padding:10px 14px; margin-bottom:12px; border-left:3px solid var(--accent);">
+    <div class="k-label" style="display:flex; align-items:center; gap:6px;">{{ icon('exploit', 14) }} {{ t('exploit_arsenal_label') }} <span class="kg-chip kg-chip-accent">{{ exploit_arsenal.cve_count }}</span></div>
+    <p class="k-sm" style="margin:5px 0 0;">{{ t('exploit_arsenal_summary').format(n=exploit_arsenal.cve_count, m=exploit_arsenal.msf_cve_count, p=exploit_arsenal.poc_only_cve_count) }}{% if exploit_arsenal.verified_count %}{{ t('exploit_arsenal_verified').format(v=exploit_arsenal.verified_count) }}{% endif %}</p>
+    <p class="k-sm" style="margin:4px 0 0; color:var(--fg2); font-style:italic;">{% if arsenal_runs_exploit %}{{ t('exploit_arsenal_run_note') }}{% else %}{{ t('exploit_arsenal_safe_note') }}{% endif %}</p>
+  </div>
+  {% endif %}
+
+  <!-- Exploitation durumu — "exploit var" ≠ "denendi" -->
+  {% if exploit_overview %}
+  <div class="kg-card" style="padding:10px 14px; margin-bottom:12px; border-left:3px solid {{ 'var(--sev-critical)' if exploit_overview.successes else ('var(--accent)' if exploit_overview.status == 'ran' else 'var(--border)') }};">
+    <span class="k-label" style="display:inline-flex; align-items:center; gap:6px;">{{ icon('flame', 13) }} {{ t('exploit_status_label') }}:</span>
+    <span class="k-sm">{% if exploit_overview.status == 'ran' %}{{ t('exploit_st_ran').format(n=exploit_overview.attempts, s=exploit_overview.successes) }}{% elif exploit_overview.status == 'skipped' %}{{ t('exploit_st_skipped') }}{% else %}{{ t('exploit_st_na') }}{% endif %}</span>
+  </div>
+  {% endif %}
+
+  {% if exploitdb_staged %}
+  <div class="kg-card" style="padding:10px 14px; margin-bottom:12px; border-left:3px solid var(--accent);">
+    <div class="k-label" style="display:flex; align-items:center; gap:6px;">{{ icon('exploit', 13) }} {{ t('exploitdb_staged_label') }} <span class="kg-chip">{{ exploitdb_staged|length }}</span></div>
+    <p class="k-sm" style="margin:4px 0 4px; color:var(--fg2);">{{ t('exploitdb_staged_sub') }}</p>
+    <p class="k-sm" style="margin:0 0 8px; color:var(--fg2); font-style:italic;">{{ t('exploitdb_staged_cap') }}</p>
+    {% for s in exploitdb_staged %}
+    <div style="padding:6px 0; border-top:1px solid var(--border);">
+      <div class="k-sm" style="display:flex; gap:8px; align-items:baseline; flex-wrap:wrap;">
+        <span class="font-mono">{{ s.host }}</span>
+        <span class="font-mono" style="color:var(--fg2)">{{ s.cve_id }}</span>
+        <a href="{{ s.url }}" target="_blank" rel="noopener" class="font-mono" style="color:var(--accent)">EDB-{{ s.edb_id }}</a>
+      </div>
+      {% if s.command %}
+      <div style="display:flex; gap:6px; align-items:stretch; margin-top:4px;">
+        <code class="font-mono" style="flex:1; font-size:11px; color:var(--fg2); overflow-wrap:anywhere; background:color-mix(in srgb, var(--accent) 7%, transparent); padding:5px 8px; border-radius:6px;">{{ s.command }}</code>
+        <button type="button" class="kg-btn kg-btn-ghost kg-btn-sm" data-copy="{{ s.command }}" onclick="kgCopy(this)" title="{{ t('copy') }}" aria-label="{{ t('copy') }}">{{ icon('copy', 13) }}</button>
+      </div>
+      {% endif %}
+      {% if s.destructive %}
+      <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:5px;">
+        <span class="kg-chip" style="color:var(--sev-critical); border-color:rgba(239,68,68,.4);">{{ icon('alert', 12) }} {{ t('exploitdb_dos_blocked') }}</span>
+      </div>
+      {% endif %}
+      {% if s.output and s.status in ('success', 'failed', 'running') %}
+      <details style="margin-top:4px;"><summary class="k-sm" style="cursor:pointer; color:var(--fg2);">{{ t('exploitdb_output') }}</summary>
+        <pre class="font-mono" style="font-size:11px; white-space:pre-wrap; overflow-wrap:anywhere; max-height:200px; overflow:auto; background:color-mix(in srgb, var(--accent) 5%, transparent); padding:6px 8px; border-radius:6px; margin:4px 0 0;">{{ s.output }}</pre>
+      </details>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Bulgular (CVE + web/dizin + denetim) — CİHAZA göre gruplu -->
+  <h2 class="k-h3" style="margin:0 0 10px;">{{ icon('vuln', 18) }} {{ t('live_cves') }} <span class="kg-chip">{{ findings|length }}</span></h2>
+  {% if not findings %}
+  <p class="k-sm" style="color:var(--fg2);">{{ t('live_no_cves') }}</p>
+  {% else %}
+  {% for grp in findings_by_host %}
+  <div class="kg-card" style="padding:0; margin-bottom:12px;">
+    <div style="display:flex; align-items:center; gap:8px; padding:10px 14px; border-bottom:1px solid var(--border);">
+      {{ icon('target', 15) }}
+      <span style="font-weight:600; font-size:14px;">{{ grp.label }}</span>
+      {% if grp.ip and grp.ip != grp.label %}<span class="kg-chip font-mono" style="font-size:11px;">{{ grp.ip }}</span>{% endif %}
+      <div style="flex:1"></div>
+      <span class="kg-chip">{{ grp['items']|length }}</span>
+    </div>
+    <div class="kg-table-wrap">
+      <table class="kg-table kg-zebra">
+        <thead><tr><th>{{ t('h_severity') }}</th><th>{{ t('h_cve') }}</th><th>{{ t('h_cvss') }}</th><th>{{ t('h_title') }}</th></tr></thead>
+        <tbody>
+          {% for f in grp['items'] %}
+          {% set cve = cve_map.get(f.cve_id) %}
+          {% set fsev = (f.severity.value if f.severity is not string else f.severity) %}
+          <tr>
+            <td><span class="kg-sev kg-sev-{{ fsev }}">{{ t('sev_' + fsev) }}</span></td>
+            <td class="font-mono" style="font-size:13px;">{{ f.cve_id or '—' }}</td>
+            <td class="font-mono">{{ cve.cvss_score if cve and cve.cvss_score is not none else '—' }}</td>
+            <td style="font-size:13px;">{{ f.title }}{% set ex = exploit_map.get(f.cve_id) if exploit_map else none %}{% if ex and ex.count > 0 %} <span class="kg-chip" style="font-size:10px;" title="{{ t('exploit_sources_label') }}: {% for e in ex.edb_ids %}Exploit-DB {{ e }} · {% endfor %}{% for m in ex.msf_modules %}Metasploit {{ m }} · {% endfor %}">{{ icon('exploit', 10) }}{% if ex.edb_count %} EDB {{ ex.edb_count }}{% endif %}{% if ex.msf_count %} MSF {{ ex.msf_count }}{% endif %}</span>{% endif %}{% if ex and ex.verified_count %} <span class="kg-chip" style="font-size:10px; color:var(--ok, #16a34a); border-color:rgba(22,163,74,.4);" title="{{ t('exploit_verified_tip') }}">{{ icon('check', 10) }} {{ ex.verified_count }} {{ t('exploit_verified') }}</span>{% endif %}{% set est = exploit_overview.state_of(f.cve_id, f.asset_id) if exploit_overview else none %}{% set emod = exploit_overview.module_of(f.cve_id, f.asset_id) if exploit_overview else none %}{% if est == 'exploited' %} <span class="kg-chip" style="background:var(--sev-critical); color:#fff; border-color:var(--sev-critical); font-size:10px;" title="{{ t('exploit_done_tip') }}{% if emod %} — {{ emod }}{% endif %}">{{ t('exploit_done') }}</span>{% set echan = exploit_overview.channel_of(f.cve_id, f.asset_id) if exploit_overview else none %}{% if echan %} <span class="kg-chip" style="font-size:10px;" title="{{ t('exploit_channel_tip') }}">{% if echan == 'reverse' %}↩ {{ t('exploit_channel_reverse') }}{% else %}→ {{ t('exploit_channel_bind') }}{% endif %}</span>{% endif %}{% elif est == 'attempted' %} <span class="kg-chip" style="font-size:10px;" title="{{ t('exploit_tried_tip') }}{% if emod %} — {{ emod }}{% endif %}">{{ t('exploit_tried') }}</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endfor %}
+  {% endif %}
+</div>

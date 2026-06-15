@@ -1,0 +1,179 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: cyber
+      POSTGRES_PASSWORD: cyber
+      POSTGRES_DB: cybersectool
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cyber -d cybersectool"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  app:
+    build: .
+    environment:
+      APP_ENV: development
+      SECRET_KEY: dev-secret
+      DATABASE_URL: postgresql+asyncpg://cyber:cyber@db:5432/cybersectool
+      REDIS_URL: redis://redis:6379/0
+      # Taramadan/envanterden dışlanacak ek IP'ler (aracın kendi altyapısı oto-algılanır).
+      EXCLUDE_SCAN_IPS: ${EXCLUDE_SCAN_IPS:-}
+      # Agresif (müdahaleci) tarama org-seviyesi kill-switch'i. Kod varsayılanı KAPALI
+      # (güvenli prod); dev'de açık ki agresif iş akışı (yine 'kabul ediyorum' onayıyla)
+      # kesintiye uğramasın. Üretimde devre dışı bırakmak için: ALLOW_AGGRESSIVE_SCANS=false
+      ALLOW_AGGRESSIVE_SCANS: ${ALLOW_AGGRESSIVE_SCANS:-true}
+      # YEREL AI (OpenAI-uyumlu) endpoint'i — app'in /ai/explain & /ai/summary route'ları buraya
+      # bağlanır. 'ai' profili açıksa aşağıdaki llamacpp servisine işaret eder; sıfır egress.
+      # Host'taki native motor (LM Studio vb.) için: http://host.docker.internal:<port>/v1.
+      # Yalnız VARSAYILAN: gerçek açma/model/timeout Ayarlar > AI kartından (AppSettings) yönetilir.
+      AI_ENDPOINT: ${AI_ENDPOINT:-http://llamacpp:8080/v1}
+      AI_MODEL: ${AI_MODEL:-qwen3:8b}
+      AI_TIMEOUT: ${AI_TIMEOUT:-60}
+    volumes:
+      # Sistem/Servisler paneli (admin) — konteyner durum + CPU/RAM/disk için Docker Engine
+      # API'sine SALT-OKUMA erişim. Kod yalnız GET (list/stats/df) yapar; mount edilmezse
+      # panel host disk/RAM'i yine gösterir, konteyner listesi için "soket yok" mesajı verir.
+      # GÜVENLİK NOTU: docker.sock = Docker daemon erişimi; istemiyorsan bu satırı kaldır.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "8000:8000"
+    # YEREL AI host-native yolu (Companion installer / LM Studio / Ollama host'ta): app container'ı
+    # host'a `host.docker.internal` ile ulaşır → AI_ENDPOINT=http://host.docker.internal:<port>/v1.
+    # Docker Desktop (Win/Mac) bunu zaten sağlar; LINUX'ta host-gateway eşlemesi ŞARTtır (yoksa
+    # host-native motor yolu sessizce bağlanamaz — en sık destek bileti). AI kapalıyken zararsız.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  worker:
+    build: .
+    command: celery -A cybersectool.tasks.celery_app worker --loglevel=info
+    environment:
+      APP_ENV: development
+      SECRET_KEY: dev-secret
+      DATABASE_URL: postgresql+asyncpg://cyber:cyber@db:5432/cybersectool
+      REDIS_URL: redis://redis:6379/0
+      # Tarama worker'ı: aracın kendi container IP'lerini + bu listeyi taramadan dışlar.
+      EXCLUDE_SCAN_IPS: ${EXCLUDE_SCAN_IPS:-}
+      # Agresif kill-switch (app ile AYNI olmalı): worker derinlemesine savunma için de okur.
+      ALLOW_AGGRESSIVE_SCANS: ${ALLOW_AGGRESSIVE_SCANS:-true}
+      # YEREL AI (OpenAI-uyumlu) — worker da Faz 2 exploit-hazırlama için aynı motoru kullanacak
+      # (app ile AYNI endpoint). Boş/erişilemezse her şey graceful (statik akış sürer).
+      AI_ENDPOINT: ${AI_ENDPOINT:-http://llamacpp:8080/v1}
+      AI_MODEL: ${AI_MODEL:-qwen3:8b}
+      AI_TIMEOUT: ${AI_TIMEOUT:-60}
+    # YEREL AI host-native yolu (worker Faz 2 exploit-hazırlamada aynı motoru kullanacak); app ile
+    # AYNI gerekçe — LINUX'ta host.docker.internal çözümü için host-gateway eşlemesi şart.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  beat:
+    build: .
+    command: celery -A cybersectool.tasks.celery_app beat --loglevel=info
+    environment:
+      DATABASE_URL: postgresql+asyncpg://cyber:cyber@db:5432/cybersectool
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  mcp:
+    build: .
+    command: python -m cybersectool.mcp.server
+    environment:
+      MCP_TRANSPORT: http
+      DATABASE_URL: postgresql+asyncpg://cyber:cyber@db:5432/cybersectool
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "8001:8001"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  # YEREL AI (OpenAI-uyumlu, llama.cpp server) — Kangalis'in on-prem AI asistanı (zafiyet açıklama
+  # + rapor özeti; Faz 2'de exploit hazırlama). VARSAYILAN KAPALI: yalnız 'ai' profiliyle başlar
+  # (`docker compose --profile ai up -d llamacpp`). CPU'da koşar (GPU gerekmez); model HuggingFace'ten
+  # otomatik çekilir (-hf). SIFIR EGRESS — port host'a publish EDİLMEZ (yalnız internal ağ), istemci
+  # verisi müşteri ağından çıkmaz (model indirme tek seferlik). mem_limit ile RAM kapılı (AI bursty).
+  # OpenAI ``/v1/chat/completions`` sunar → app/worker AI_ENDPOINT=http://llamacpp:8080/v1.
+  # Modeli değiştirmek için AI_GGUF_REPO (.env), Ayarlar'daki ai_model yalnız etikettir (llama.cpp
+  # tek-model sunar). Alternatif: LM Studio/LocalAI'yi host'ta çalıştırıp endpoint'i ona yönelt.
+  # PERFORMANS (#273): grounded rapor üretimi CPU'da yavaştır (özet/script ~3-5 dk sıcak modelle);
+  # bu yüzden ai_timeout varsayılanı 300 sn. llama.cpp modeli sürekli yüklü tutar. Motor OLLAMA ise
+  # OLLAMA_KEEP_ALIVE=-1 ortam değişkenini ver → model boşalmaz, soğuk-yükleme cezası (~70sn) olmaz.
+  llamacpp:
+    # Digest-pin (tedarik-zinciri sertleştirme): mutable ":server" tag'i sessizce değişebilir →
+    # OCI index digest'ine sabitlendi (multi-arch; Docker doğru platformu seçer). Güncellemek için
+    # `docker buildx imagetools inspect ghcr.io/ggml-org/llama.cpp:server` ile yeni digest al.
+    image: ghcr.io/ggml-org/llama.cpp:server@sha256:7d02b045314fbc22f8cc763fa47fb5a9e8cbfb2c7b8204a87e94c109c0a9e874
+    profiles: ["ai"]
+    command:
+      - "-hf"
+      - "${AI_GGUF_REPO:-unsloth/Qwen3-8B-GGUF:Q4_K_M}"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8080"
+      - "-c"
+      - "8192"
+    expose:
+      - "8080"
+    volumes:
+      - llamacpp_models:/root/.cache/llama.cpp
+    mem_limit: 8g
+    restart: unless-stopped
+    healthcheck:
+      # llama.cpp server /health döndürür (model yüklenince 200 OK). Model çekme+yükleme dakikalar
+      # sürebildiğinden start_period uzun tutuldu. (Image curl içerir.) Bu yalnız BİLGİLENDİRİCİDİR:
+      # app/worker AI'a depends_on ile BAĞLANMAZ (graceful degradation), böylece motor yükselirken
+      # ya da hiç açılmazken uygulama her zaman ayağa kalkar — yalnız Ayarlar'daki sağlık rozeti +
+      # `docker compose ps` bu durumu gösterir.
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 180s
+
+volumes:
+  pgdata:
+  llamacpp_models:
+
+# Köprü ağ subnet'i yapılandırılabilir (VI-7): müşteri LAN'ı ile çakışmayı önlemek için
+# .env'de DOCKER_SUBNET ayarlayın (ör. 10.89.0.0/16). Varsayılan alışılmadık bir aralık.
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: ${DOCKER_SUBNET:-172.28.0.0/16}

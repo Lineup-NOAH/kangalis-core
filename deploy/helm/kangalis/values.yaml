@@ -1,0 +1,110 @@
+# Kangalis (CyberSecTool) Helm değerleri — varsayılanlar.
+# Üretim için secrets.* ve postgres.password MUTLAKA override edilmeli (aşağıdaki NOTES uyarır).
+
+# Tüm bileşenler (app/worker/beat/mcp) AYNI imajı kullanır (Dockerfile tek; compose'da hepsi `build .`).
+image:
+  repository: cybersectool-app
+  tag: latest
+  # kind'a `kind load docker-image` ile yüklenen yerel imaj için IfNotPresent (registry'siz çalışır).
+  # Gerçek kümede registry'ye push + Always önerilir.
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# Uygulama ortamı: production | development. production'da CREDENTIAL_ENCRYPTION_KEY ZORUNLUDUR.
+appEnv: production
+
+# Sır olmayan uygulama yapılandırması (ConfigMap).
+config:
+  # Agresif (müdahaleci) tarama org-seviyesi kill-switch. Üretimde KAPALI (güvenli) önerilir.
+  allowAggressiveScans: false
+  # Taramadan/envanterden hariç tutulacak ek IP'ler (virgülle). Araç kendi pod'larını oto-dışlar.
+  excludeScanIps: ""
+
+# Sırlar (Secret). BOŞ bırakılanlar dev için varsayılır; ÜRETİMDE override et (--set / values dosyası).
+secrets:
+  # Oturum/CSRF imza anahtarı. Üretimde güçlü rastgele bir değer ver (değişirse oturumlar düşer).
+  secretKey: "dev-secret"
+  # Kasa (credential) şifreleme anahtarı (Fernet). production'da ZORUNLU; boşsa app SECRET_KEY'e düşer (yalnız dev).
+  credentialEncryptionKey: ""
+
+# --- Veritabanı (PostgreSQL) ---
+postgres:
+  # true: küme içinde StatefulSet+PVC ile çalıştır (taşınabilir, kind'da çalışır).
+  # false: dış/yönetilen DB kullan (externalDatabaseUrl ZORUNLU).
+  enabled: true
+  image: postgres:16
+  user: cyber
+  password: cyber
+  database: cybersectool
+  storage: 5Gi
+  storageClassName: ""
+  resources: {}
+# postgres.enabled=false ise tam asyncpg URL'i ver (sır → Secret'a konur):
+externalDatabaseUrl: ""
+
+# --- Redis (Celery broker + cache) ---
+redis:
+  enabled: true
+  image: redis:7
+  resources: {}
+externalRedisUrl: ""
+
+# --- Web/API (FastAPI) ---
+app:
+  replicas: 1
+  service:
+    type: ClusterIP
+    port: 8000
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    host: kangalis.local
+    tls: []
+  # Sistem/Servisler paneli için Docker soketi (k8s'te genelde YOK). Varsayılan kapalı.
+  dockerSocket: false
+  resources: {}
+
+# --- Tarama worker'ı (Celery) — ÖLÇEKLENEBİLİR (throughput) ---
+worker:
+  replicas: 2
+  # hostNetwork=true: pod, node'un ağ yığınını paylaşır → tarayıcı hedef LAN/VLAN'a NAT'sız erişir
+  # (Nessus/OpenVAS sensör modeli). Tek-tarama fan-out (Faz 2b) ile birlikte asıl hız buradan gelir.
+  # NOT: hostNetwork açıkken pod, node'un IP'sini kullanır; iç servis DNS'i yine çalışır.
+  hostNetwork: false
+  # nmap raw soket (-sS SYN / -sn host keşfi) için CAP_NET_RAW. Varsayılan açık.
+  netRaw: true
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 70
+  resources: {}
+
+# --- Zamanlayıcı (Celery beat) — TEK replica (çoğaltma çift-tetikler) ---
+beat:
+  enabled: true
+  resources: {}
+
+# --- MCP sunucusu (opsiyonel) ---
+mcp:
+  enabled: false
+  service:
+    port: 8001
+  resources: {}
+
+# --- Şema göçü (alembic upgrade head) — helm hook ile bir kez koşar ---
+migrations:
+  enabled: true
+
+serviceAccount:
+  create: true
+  name: ""
+
+podSecurityContext: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

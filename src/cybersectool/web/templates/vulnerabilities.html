@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ t('nav_vuln') }} · {{ app_name }}{% endblock %}
+
+{% set sev_order = ['critical','high','medium','low','info'] %}
+{% set st_options = ['open','confirmed','resolved','false_positive','accepted_risk'] %}
+
+{% block content %}
+<h1 class="k-h1" style="margin-bottom:6px;">{{ t('nav_vuln') }}</h1>
+<p class="k-sm" style="margin-bottom:18px; max-width:680px;">{{ t('vuln_sub') }}</p>
+
+<div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:18px;">
+  <div style="display:flex; gap:8px;">
+    <a href="/vulnerabilities?tab=active&per={{ per }}"
+       class="kg-btn kg-btn-sm {{ 'kg-btn-primary' if tab == 'active' else 'kg-btn-ghost' }}">
+      {{ t('vuln_tab_active') }} ({{ active_total }})
+    </a>
+    <a href="/vulnerabilities?tab=resolved&per={{ per }}"
+       class="kg-btn kg-btn-sm {{ 'kg-btn-primary' if tab == 'resolved' else 'kg-btn-ghost' }}">
+      {{ t('vuln_tab_resolved') }} ({{ resolved_total }})
+    </a>
+    <a href="/vulnerabilities?tab=compliance"
+       class="kg-btn kg-btn-sm {{ 'kg-btn-primary' if tab == 'compliance' else 'kg-btn-ghost' }}">
+      {{ icon('shield', 14) }} {{ t('vuln_tab_compliance') }}
+    </a>
+  </div>
+  <div style="flex:1"></div>
+  {% if tab != 'compliance' %}
+  <form method="get" action="/vulnerabilities"
+        style="display:flex; gap:8px; align-items:center;">
+    <input type="hidden" name="tab" value="{{ tab }}" />
+    <label class="k-sm" for="per" style="color:var(--fg2);">{{ t('vuln_page_size') }}</label>
+    <select id="per" name="per" class="kg-select kg-select-sm" style="width:auto;"
+            onchange="this.form.submit()">
+      {% for opt in per_options %}
+      <option value="{{ opt }}" {% if per == opt %}selected{% endif %}>{{ opt }}</option>
+      {% endfor %}
+    </select>
+  </form>
+  {% endif %}
+</div>
+
+{# Kategori filtresi (Zayıf Kimlik / CVE / Web / …) — yalnız active/resolved sekmelerinde. #}
+{% if tab != 'compliance' %}
+<div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin:-8px 0 18px;">
+  <span class="k-sm" style="color:var(--fg2);">{{ t('vuln_cat_filter') }}:</span>
+  <a href="/vulnerabilities?tab={{ tab }}&per={{ per }}"
+     class="kg-chip {{ 'kg-chip-accent' if not cat else '' }}" style="text-decoration:none;">{{ t('vuln_cat_all') }}</a>
+  {% for c in vuln_categories %}{% if cat_counts.get(c) %}
+  <a href="/vulnerabilities?tab={{ tab }}&per={{ per }}&cat={{ c }}"
+     class="kg-chip {% if cat == c %}kg-chip-accent{% endif %}"
+     style="text-decoration:none; {% if c == 'weak_credential' %}color:var(--sev-critical); border-color:var(--danger-line);{% endif %}">
+    {{ t('vcat_' + c) }} ({{ cat_counts.get(c) }})
+  </a>
+  {% endif %}{% endfor %}
+</div>
+{% endif %}
+
+{% if tab == 'compliance' %}
+<p class="k-sm" style="margin:-8px 0 16px; color:var(--fg2);">{{ t('vuln_compliance_sub') }}</p>
+{% if not compliance_data %}
+<div class="kg-card" style="padding:32px; text-align:center; color:var(--fg2);">{{ t('vuln_compliance_none') }}</div>
+{% else %}
+<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:12px; margin-bottom:22px;">
+  {% for fw, b in compliance_data.items() %}
+  {% set col = '#1F9D6B' if b.score >= 80 else ('#F59E0B' if b.score >= 50 else '#EF4444') %}
+  <div class="kg-card" style="padding:16px;">
+    <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px;">
+      <span style="font-weight:600;">{{ fw }}</span>
+      <span style="font-size:20px; font-weight:700; color:{{ col }};">%{{ b.score }}</span>
+    </div>
+    <div class="kg-progress" style="height:8px; margin-bottom:10px;"><div class="kg-progress-bar" style="width:{{ b.score }}%; background:{{ col }};"></div></div>
+    <div class="k-sm" style="color:var(--fg2);">
+      <span style="color:#1F9D6B;">{{ b['pass'] }} {{ t('h_pass') }}</span> ·
+      <span style="color:#EF4444;">{{ b['fail'] }} {{ t('h_fail') }}</span> · {{ b.total }} {{ t('total') }}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% if failed_controls %}
+<h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 12px;">{{ icon('alert', 18) }} {{ t('vuln_failed_controls') }}</h2>
+<div class="kg-table-wrap">
+  <table class="kg-table">
+    <thead><tr><th>{{ t('h_framework') }}</th><th>{{ t('h_control') }}</th><th>{{ t('h_title') }}</th><th style="width:90px;">{{ t('h_fails') }}</th></tr></thead>
+    <tbody>
+      {% for c in failed_controls %}
+      <tr>
+        <td><span class="kg-chip">{{ c.framework }}</span></td>
+        <td class="font-mono k-sm">{{ c.control_id }}</td>
+        <td>{{ c.title }}</td>
+        <td><span class="kg-sev kg-sev-high">{{ c.fails }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endif %}
+
+{% else %}
+
+{% if not groups %}
+<div class="kg-card" style="padding:32px; text-align:center; color:var(--fg2);">{{ t('vuln_none') }}</div>
+{% else %}
+{% for group in groups %}
+<details class="kg-card" style="margin-bottom:12px; padding:0;"{% if loop.first %} open{% endif %}>
+  <summary style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+                  padding:14px 16px; cursor:pointer; list-style:none;">
+    {{ icon('server', 16) }}
+    <span style="font-weight:600;">{{ group.asset.display_name if group.asset else '—' }}</span>
+    {% if group.asset %}<span class="font-mono k-sm" style="color:var(--fg2);">{{ group.asset.ip }}</span>{% endif %}
+    <div style="flex:1"></div>
+    {% set counts = sev_counts.get(group.asset_id, {}) %}
+    {% for sev in sev_order %}
+      {% set c = counts.get(sev, 0) %}
+      {% if c > 0 %}<span class="kg-sev kg-sev-{{ sev }}">{{ c }} {{ t('sev_' + sev) }}</span>{% endif %}
+    {% endfor %}
+  </summary>
+  <div class="kg-table-wrap" style="border:0; border-top:1px solid var(--border); border-radius:0;">
+    <table class="kg-table">
+      <thead>
+        <tr>
+          <th>{{ t('h_severity') }}</th>
+          <th>{{ t('h_title') }}</th>
+          <th>{{ t('h_cve') }}</th>
+          <th>{{ t('h_cvss') }}</th>
+          <th>{{ t('h_risk') }}</th>
+          <th>{{ t('th_exploitation') }}</th>
+          <th>{{ t('vuln_first_seen') }}</th>
+          <th>{{ t('vuln_last_seen') }}</th>
+          <th>{{ t('h_status') }}</th>
+          {% if can_triage %}<th>{{ t('vuln_triage') }}</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in group.vulns %}
+        {% set cve = cve_map.get(v.cve_id) %}
+        <tr>
+          <td>
+            <span class="kg-sev kg-sev-{{ v.severity.value }}">{{ t('sev_' + v.severity.value) }}</span>
+            {% if v.id in urgent_ids %}<br><span class="kg-sev kg-sev-critical" style="margin-top:4px; display:inline-block;" title="{{ t('urgent_hint') }}">{{ icon('flame', 11) }} {{ t('urgent') }}</span>{% endif %}
+          </td>
+          <td>
+            {{ v.title }}
+            {% if v.category == 'weak_credential' %}<span class="kg-chip" style="color:var(--sev-critical); border-color:var(--danger-line);">{{ t('vcat_weak_credential') }}</span>{% elif v.category == 'os_package' %}<span class="kg-chip k-sm" style="color:#d97706; border-color:color-mix(in srgb, #d97706 40%, transparent);">{{ t('vcat_os_package') }}</span>{% elif v.category in ('web','config','sca') %}<span class="kg-chip k-sm">{{ t('vcat_' + v.category) }}</span>{% endif %}
+            <br>
+            {% if v.validated %}
+            <span class="kg-chip" style="margin-top:3px; color:var(--ok, #16a34a); border-color:var(--ok, #16a34a);" title="{{ t('conf_validated_hint') }}">{{ icon('check', 11) }} {{ t('conf_validated') }}</span>
+            {% else %}
+            <span class="kg-chip k-sm" style="margin-top:3px; color:var(--fg2);" title="{{ t('conf_inferred_hint') }}">{{ t('conf_inferred') }}</span>
+            {% endif %}
+            {# Yerel AI açıklama (#183) — yalnız CVE'li satırlar; anahtar rapor ile paylaşılır. #}
+            {% if ai_enabled and v.cve_id %}
+            {% set ai_pre = ai_explain_map.get(v.id) %}
+            <div id="ai-exp-v-{{ v.id }}" style="margin-top:6px;">
+              {% if ai_pre %}{% with content=ai_pre.content, model=ai_pre.model, cached=True, error=None %}{% include '_ai_explanation.html' %}{% endwith %}{% endif %}
+            </div>
+            {% if not ai_pre %}
+            <button type="button" class="kg-btn kg-btn-subtle kg-btn-sm" style="margin-top:4px;"
+                    hx-post="/ai/explain" hx-vals='{"cve_id": "{{ v.cve_id }}", "title": {{ v.title|tojson }}}'
+                    hx-target="#ai-exp-v-{{ v.id }}" hx-swap="innerHTML"
+                    hx-indicator="#ai-spin-v-{{ v.id }}" hx-disabled-elt="this">{{ icon('sparkles', 13) }} {{ t('ai_explain_btn') }}</button>
+            <span id="ai-spin-v-{{ v.id }}" class="htmx-indicator k-sm" style="margin-left:6px; color:var(--fg2);">{{ t('ai_generating') }}</span>
+            {% endif %}
+            {% endif %}
+          </td>
+          <td class="font-mono" style="font-size:13px;">
+            {% if v.cve_id %}<a target="_blank" rel="noopener" style="color:var(--steel)" href="https://nvd.nist.gov/vuln/detail/{{ v.cve_id }}">{{ v.cve_id }}</a>{% else %}-{% endif %}
+          </td>
+          <td class="font-mono">{{ cve.cvss_score if cve and cve.cvss_score is not none else '-' }}</td>
+          <td style="font-weight:600;">{{ v.risk_score if v.risk_score is not none else '-' }}</td>
+          <td>
+            {% set ex = exploit_map.get(v.cve_id) %}
+            {% if cve and cve.kev_flag %}<span class="kg-sev kg-sev-critical" style="margin-right:4px;" title="CISA KEV">KEV</span>{% endif %}
+            {% if cve and cve.epss_score is not none %}<span class="k-sm" style="margin-right:4px;" title="EPSS">EPSS {{ (cve.epss_score * 100)|round(1) }}%</span>{% endif %}
+            {% if ex and ex.count > 0 %}<a href="/exploits?q={{ v.cve_id }}" class="kg-chip {% if ex.metasploit %}kg-sev-critical{% else %}kg-chip-accent{% endif %} kg-chip-link" title="{% if ex.edb_count %}Exploit-DB: {{ ex.edb_count }}{% endif %}{% if ex.msf_count %}{% if ex.edb_count %} · {% endif %}Metasploit modülü: {{ ex.msf_count }}{% endif %}{% if ex.verified_count %} · {{ ex.verified_count }} {{ t('exploit_verified') }}{% endif %}">{{ icon('flame', 12) }}{% if ex.edb_count %} EDB {{ ex.edb_count }}{% endif %}{% if ex.msf_count %} MSF {{ ex.msf_count }}{% endif %}{% if ex.verified_count %} {{ icon('check', 11) }}{{ ex.verified_count }}{% endif %}</a>{% endif %}
+            {% if not (cve and (cve.kev_flag or cve.epss_score is not none)) and not (ex and ex.count > 0) %}<span style="color:var(--fg2)">-</span>{% endif %}
+          </td>
+          <td class="font-mono k-sm">{{ v.first_seen | localdt('%Y-%m-%d') }}</td>
+          <td class="font-mono k-sm">{{ v.last_seen | localdt('%Y-%m-%d') }}</td>
+          <td>
+            <span class="kg-status kg-status-{{ v.status.value }}">{{ t('st_' + v.status.value) }}</span>
+            {% if v.reopened_count > 0 %}<span class="kg-sev kg-sev-high" style="margin-left:4px;" title="{{ v.reopened_count }}× {{ t('vuln_regression') }}">{{ t('vuln_regression') }}</span>{% endif %}
+          </td>
+          {% if can_triage %}
+          <td>
+            <form method="post" action="/vulnerabilities/{{ v.id }}/status"
+                  style="display:flex; gap:6px; align-items:center;">
+              <input type="hidden" name="tab" value="{{ tab }}" />
+              <input type="hidden" name="per" value="{{ per }}" />
+              <input type="hidden" name="page" value="{{ page }}" />
+              <select name="status" class="kg-select kg-select-sm" style="width:auto;">
+                {% for opt in st_options %}
+                <option value="{{ opt }}" {% if v.status.value == opt %}selected{% endif %}>{{ t('st_' + opt) }}</option>
+                {% endfor %}
+              </select>
+              <input name="note" class="kg-input kg-select-sm" style="width:150px;"
+                     placeholder="{{ t('vuln_note_ph') }}" value="{{ v.note or '' }}" />
+              <button class="kg-btn kg-btn-primary kg-btn-sm">{{ t('save') }}</button>
+            </form>
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</details>
+{% endfor %}
+
+<div style="display:flex; align-items:center; gap:12px; margin-top:16px;">
+  <span class="k-sm" style="color:var(--fg2);">
+    {{ t('vuln_page_of') }} {{ page }} / {{ page_count }} · {{ total }}
+  </span>
+  <div style="flex:1"></div>
+  {% if page > 1 %}
+  <a class="kg-btn kg-btn-sm kg-btn-ghost"
+     href="/vulnerabilities?tab={{ tab }}&per={{ per }}&page={{ page - 1 }}">{{ icon('chevron-left', 14) }} {{ t('prev') }}</a>
+  {% endif %}
+  {% if page < page_count %}
+  <a class="kg-btn kg-btn-sm kg-btn-ghost"
+     href="/vulnerabilities?tab={{ tab }}&per={{ per }}&page={{ page + 1 }}">{{ t('next') }} {{ icon('chevron-right', 14) }}</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

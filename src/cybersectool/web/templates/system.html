@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ t('sys_title') }} · {{ app_name }}{% endblock %}
+
+{% block content %}
+<h1 class="k-h1" style="margin-bottom:6px;">{{ icon('server', 22) }} {{ t('sys_title') }}</h1>
+<p class="k-sm" style="margin-bottom:18px; color:var(--fg2); max-width:780px;">{{ t('sys_sub') }}</p>
+
+<div id="sys-panel" hx-get="/system/panel" hx-trigger="load, every 5s" hx-swap="innerHTML">
+  <p class="k-sm" style="color:var(--fg2);">{{ t('sys_loading') }}</p>
+</div>
+{% endblock %}

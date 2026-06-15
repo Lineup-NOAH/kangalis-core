@@ -1,0 +1,54 @@
+{{- if .Values.beat.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kangalis.fullname" . }}-beat
+  labels:
+    {{- include "kangalis.labels" . | nindent 4 }}
+    app.kubernetes.io/component: beat
+spec:
+  # TEK replica: birden fazla beat aynı periyodik görevi çift tetikler.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "kangalis.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: beat
+  template:
+    metadata:
+      labels:
+        {{- include "kangalis.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: beat
+    spec:
+      serviceAccountName: {{ include "kangalis.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.postgres.enabled }}
+      initContainers:
+        - name: wait-for-db
+          image: {{ include "kangalis.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              until python -c "import socket; socket.create_connection(('{{ include "kangalis.postgresHost" . }}', 5432), 2)" 2>/dev/null; do echo 'db bekleniyor'; sleep 2; done
+      {{- end }}
+      containers:
+        - name: beat
+          image: {{ include "kangalis.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["celery", "-A", "cybersectool.tasks.celery_app", "beat", "--loglevel=info"]
+          envFrom:
+            - configMapRef:
+                name: {{ include "kangalis.fullname" . }}-config
+            - secretRef:
+                name: {{ include "kangalis.fullname" . }}-secret
+          {{- with .Values.beat.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}

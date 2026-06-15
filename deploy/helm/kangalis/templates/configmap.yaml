@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kangalis.fullname" . }}-config
+  labels:
+    {{- include "kangalis.labels" . | nindent 4 }}
+data:
+  APP_ENV: {{ .Values.appEnv | quote }}
+  REDIS_URL: {{ include "kangalis.redisUrl" . | quote }}
+  ALLOW_AGGRESSIVE_SCANS: {{ .Values.config.allowAggressiveScans | quote }}
+  EXCLUDE_SCAN_IPS: {{ .Values.config.excludeScanIps | quote }}
+  MCP_TRANSPORT: "http"

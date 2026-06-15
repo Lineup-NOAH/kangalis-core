@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ t('nav_tokens') }} · {{ app_name }}{% endblock %}
+
+{% block content %}
+<h1 class="k-h1" style="margin-bottom:6px;">{{ t('tokens_title') }}</h1>
+<p class="k-sm" style="margin-bottom:18px; max-width:720px;">{{ t('tokens_sub') }} {{ t('token_role_note').format(role=t('role_' + user.role.value)) }}</p>
+
+{% if error %}<div class="kg-alert kg-alert-error" style="margin-bottom:16px;">{{ error }}</div>{% endif %}
+{% if message %}<div class="kg-alert kg-alert-ok" style="margin-bottom:16px;">{{ message }}</div>{% endif %}
+
+{% if new_token %}
+<div class="kg-card k-fade" style="padding:20px; margin-bottom:20px; border-color:var(--accent-line); background:var(--accent-weak);">
+  <h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin-bottom:6px; color:var(--accent);">{{ icon('tokens', 18) }} {{ t('token_created_once') }}</h2>
+  <p class="k-sm" style="margin-bottom:12px;">{{ t('token_once_warn') }}</p>
+  <div style="display:flex; gap:8px; align-items:center;">
+    <input id="new-token" readonly value="{{ new_token }}" class="kg-input font-mono" style="flex:1;" />
+    <button type="button" onclick="copyToken()" class="kg-btn kg-btn-primary kg-btn-sm">{{ icon('copy', 15) }} {{ t('copy') }}</button>
+  </div>
+  <div style="margin-top:16px; border-top:1px solid var(--border); padding-top:14px;">
+    <div class="k-label" style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">{{ icon('tokens', 13) }} {{ t('token_how') }}</div>
+    <p class="k-sm" style="margin:0 0 12px; color:var(--fg2); max-width:680px;">{{ t('token_how_intro') }}</p>
+
+    <div style="margin-bottom:14px;">
+      <label class="kg-field-label" for="mcp-ip">1. {{ t('token_server_ip') }}</label>
+      <input id="mcp-ip" autocomplete="off" placeholder="192.168.1.50" class="kg-input font-mono" style="max-width:280px;" oninput="mcpUpdate()" />
+    </div>
+
+    <div style="margin-bottom:12px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px;">
+        <span class="k-sm" style="font-weight:600;">2. {{ t('token_claude_code') }}</span>
+        <button type="button" onclick="mcpCopy('snip-cli')" class="kg-btn kg-btn-ghost kg-btn-sm">{{ icon('copy', 13) }} {{ t('copy') }}</button>
+      </div>
+      <pre id="snip-cli" class="font-mono" style="margin:0; white-space:pre-wrap; word-break:break-all; background:var(--bg); border:1px solid var(--border); border-radius:var(--r-md); padding:10px; font-size:12px; line-height:1.6;"></pre>
+    </div>
+
+    <div>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px;">
+        <span class="k-sm" style="font-weight:600;">{{ t('token_claude_desktop') }}</span>
+        <button type="button" onclick="mcpCopy('snip-json')" class="kg-btn kg-btn-ghost kg-btn-sm">{{ icon('copy', 13) }} {{ t('copy') }}</button>
+      </div>
+      <pre id="snip-json" class="font-mono" style="margin:0; white-space:pre-wrap; word-break:break-all; background:var(--bg); border:1px solid var(--border); border-radius:var(--r-md); padding:10px; font-size:12px; line-height:1.5;"></pre>
+    </div>
+    <p class="k-sm" style="margin:10px 0 0; color:var(--fg2);">{{ t('token_how_tools') }}</p>
+  </div>
+</div>
+<script>
+  var MCP_TOKEN = "{{ new_token }}";
+  function copyToken() { var el = document.getElementById('new-token'); el.select(); navigator.clipboard.writeText(el.value); }
+  function mcpUpdate() {
+    var ipEl = document.getElementById('mcp-ip');
+    var ip = (ipEl && ipEl.value.trim()) ? ipEl.value.trim() : '<IP>';
+    var url = 'http://' + ip + ':8001/mcp';
+    var cli = 'claude mcp add --transport http kangalis ' + url + ' --header "Authorization: Bearer ' + MCP_TOKEN + '"';
+    var json = '{\n  "mcpServers": {\n    "kangalis": {\n      "type": "http",\n      "url": "' + url + '",\n      "headers": { "Authorization": "Bearer ' + MCP_TOKEN + '" }\n    }\n  }\n}';
+    document.getElementById('snip-cli').textContent = cli;
+    document.getElementById('snip-json').textContent = json;
+  }
+  function mcpCopy(id) { navigator.clipboard.writeText(document.getElementById(id).textContent); }
+  mcpUpdate();
+</script>
+{% endif %}
+
+<form method="post" action="/tokens/create" class="kg-card" style="padding:20px; margin-bottom:18px; display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap;">
+  <div style="flex:1; min-width:200px;">
+    <label class="kg-field-label" for="t-name">{{ t('token_name') }}</label>
+    <input id="t-name" name="name" required autocomplete="off" placeholder="mcp-claude · ci-pipeline" class="kg-input" />
+  </div>
+  <div style="width:170px;">
+    <label class="kg-field-label" for="t-exp">{{ t('token_expiry') }}</label>
+    <input id="t-exp" name="expires_days" type="number" min="0" value="0" placeholder="{{ t('token_expiry_ph') }}" class="kg-input font-mono" />
+  </div>
+  <button type="submit" class="kg-btn kg-btn-primary">{{ t('token_create') }}</button>
+</form>
+
+<div class="kg-table-wrap">
+  <table class="kg-table">
+    <thead>
+      <tr><th>{{ t('label_name') }}</th><th>{{ t('th_created') }}</th><th>{{ t('th_last_used') }}</th><th>{{ t('th_expiry') }}</th><th>{{ t('h_status') }}</th><th>{{ t('h_action') }}</th></tr>
+    </thead>
+    <tbody>
+      {% for tok in tokens %}
+      <tr>
+        <td style="font-weight:500;">{{ tok.name }}</td>
+        <td style="color:var(--fg2)">{{ tok.created_at | localdt }}</td>
+        <td style="color:var(--fg2)">{{ (tok.last_used_at | localdt) if tok.last_used_at else t('never') }}</td>
+        <td style="color:var(--fg2)">{{ (tok.expires_at | localdt('%Y-%m-%d')) if tok.expires_at else t('unlimited') }}</td>
+        <td>{% if tok.revoked %}<span class="kg-status kg-status-pending">{{ t('token_revoked') }}</span>{% else %}<span class="kg-status kg-status-completed">{{ t('active') }}</span>{% endif %}</td>
+        <td>
+          {% if not tok.revoked %}
+          <form method="post" action="/tokens/{{ tok.id }}/revoke" onsubmit="return confirm('?');"><button type="submit" class="kg-btn kg-btn-sm" style="color:var(--sev-critical); border:1px solid var(--danger-line); background:transparent;">{{ t('revoke') }}</button></form>
+          {% else %}<span style="color:var(--fg2)">—</span>{% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" style="text-align:center; color:var(--fg2); padding:24px;">{{ t('token_empty') }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

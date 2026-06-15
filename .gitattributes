@@ -1,0 +1,10 @@
+# Depoda satir sonlarini LF olarak normalize et (cross-platform tutarlilik)
+* text=auto eol=lf
+
+# Binary dosyalar
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary

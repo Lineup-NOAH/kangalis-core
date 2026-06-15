@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ t('wl_title') }} · {{ app_name }}{% endblock %}
+
+{% block content %}
+<h1 class="k-h1" style="margin-bottom:6px;">{{ t('wl_title') }}</h1>
+<p class="k-sm" style="margin-bottom:18px; max-width:760px;">{{ t('wl_sub') }}</p>
+
+{% if error %}<div class="kg-alert kg-alert-error" style="margin-bottom:16px;">{{ error }}</div>{% endif %}
+{% if message %}<div class="kg-alert kg-alert-ok" style="margin-bottom:16px;">{{ message }}</div>{% endif %}
+
+<!-- Kullanıcı Adı Üretici -->
+<form method="post" action="/wordlists/generate/usernames" id="gen-user-form" class="kg-card" style="padding:20px; margin-bottom:20px;">
+  <h2 class="k-h3" style="margin-bottom:4px;">{{ icon('users', 16) }} {{ t('gen_user_title') }}</h2>
+  <p class="k-sm" style="margin-bottom:14px; color:var(--fg2); max-width:760px;">{{ t('gen_user_sub') }}</p>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:18px;">
+    <div>
+      <label class="kg-field-label" for="gen-names">{{ t('gen_names') }}</label>
+      <textarea id="gen-names" name="names_text" rows="8" class="kg-input font-mono" style="resize:vertical;" placeholder="Ahmet Yılmaz&#10;Mehmet Kaya&#10;Ayşe Şahin"></textarea>
+      <p class="k-sm" style="margin-top:6px; color:var(--fg2);">{{ t('gen_names_hint') }}</p>
+    </div>
+    <div>
+      <label class="kg-field-label">{{ t('gen_patterns') }}</label>
+      <div style="display:flex; flex-direction:column; gap:6px; margin-top:4px;">
+        {% set patt_examples = [('flast','ayilmaz'),('first.last','ahmet.yilmaz'),('f.last','a.yilmaz'),('firstlast','ahmetyilmaz'),('first_last','ahmet_yilmaz'),('first','ahmet'),('firstl','ahmety')] %}
+        {% for key, ex in patt_examples %}
+        <label class="k-sm" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+          <input type="checkbox" name="patterns" value="{{ key }}" checked />
+          <code>{{ key }}</code><span style="color:var(--fg2);">→ {{ ex }}</span>
+        </label>
+        {% endfor %}
+      </div>
+      <p class="k-sm" style="margin-top:6px; color:var(--fg2);">{{ t('gen_patterns_hint') }}</p>
+      <div style="margin-top:10px;">
+        <label class="kg-field-label" for="gen-custom">{{ t('gen_custom_patterns') }}</label>
+        <textarea id="gen-custom" name="custom_patterns_text" rows="2" class="kg-input font-mono" style="resize:vertical;" placeholder="{first}.{last}&#10;{f}{last}"></textarea>
+        <p class="k-sm" style="margin-top:6px; color:var(--fg2);">{{ t('gen_custom_patterns_hint') }}</p>
+      </div>
+    </div>
+  </div>
+  <label class="k-sm" style="display:flex; align-items:center; gap:8px; margin-top:14px; cursor:pointer;">
+    <input type="checkbox" name="normalize" value="on" checked />
+    {{ t('gen_normalize') }}
+  </label>
+  <div style="display:flex; align-items:flex-end; gap:12px; margin-top:16px; flex-wrap:wrap;">
+    <div style="flex:1; min-width:240px;">
+      <label class="kg-field-label" for="gen-name">{{ t('label_name') }}</label>
+      <input id="gen-name" name="name" required placeholder="hedef-kurum-kullanicilari" class="kg-input" />
+    </div>
+    <button type="button" class="kg-btn kg-btn-subtle" hx-post="/wordlists/generate/usernames/preview" hx-include="closest form" hx-target="#gen-user-preview" hx-swap="innerHTML">{{ t('gen_preview_btn') }}</button>
+    <button type="submit" class="kg-btn kg-btn-primary">{{ t('gen_user_save') }}</button>
+  </div>
+  <div id="gen-user-preview" style="margin-top:14px;"></div>
+</form>
+
+<!-- LDAP Kullanıcı Kasası -->
+<form method="post" action="/wordlists/ldap-users" id="ldap-vault-form" class="kg-card" style="padding:20px; margin-bottom:20px;">
+  <h2 class="k-h3" style="margin-bottom:4px;">{{ icon('users', 16) }} {{ t('ldap_vault_title') }}</h2>
+  <p class="k-sm" style="margin-bottom:14px; color:var(--fg2); max-width:760px;">{{ t('ldap_vault_sub') }}</p>
+  {% if not ldap_configured %}
+  <div class="kg-alert" style="margin-bottom:4px;">
+    {{ t('ldap_vault_not_configured') }} <a href="/settings" class="kg-link">{{ t('ldap_vault_settings_link') }}</a>
+  </div>
+  {% else %}
+  <div style="display:flex; align-items:flex-end; gap:12px; flex-wrap:wrap;">
+    <div style="flex:1; min-width:200px;">
+      <label class="kg-field-label" for="ldap-query">{{ t('ldap_vault_query') }}</label>
+      <input id="ldap-query" name="query" placeholder="{{ t('ldap_vault_query_ph') }}" class="kg-input" />
+    </div>
+    <div style="flex:1; min-width:200px;">
+      <label class="kg-field-label" for="ldap-name">{{ t('label_name') }}</label>
+      <input id="ldap-name" name="name" required placeholder="ldap-kullanicilari" class="kg-input" />
+    </div>
+    <button type="button" class="kg-btn kg-btn-subtle" hx-post="/wordlists/ldap-users/preview" hx-include="closest form" hx-target="#ldap-vault-preview" hx-swap="innerHTML">{{ t('gen_preview_btn') }}</button>
+    <button type="submit" class="kg-btn kg-btn-primary">{{ t('ldap_vault_save') }}</button>
+  </div>
+  <p class="k-sm" style="margin-top:6px; color:var(--fg2);">{{ t('ldap_vault_query_hint') }}</p>
+  <div id="ldap-vault-preview" style="margin-top:14px;"></div>
+  {% endif %}
+</form>
+
+<!-- Parola Üretici -->
+<form method="post" action="/wordlists/generate/passwords" id="gen-pass-form" class="kg-card" style="padding:20px; margin-bottom:20px;">
+  <h2 class="k-h3" style="margin-bottom:4px;">{{ icon('lock', 16) }} {{ t('gen_pass_title') }}</h2>
+  <p class="k-sm" style="margin-bottom:14px; color:var(--fg2); max-width:760px;">{{ t('gen_pass_sub') }}</p>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:18px;">
+    <div>
+      <label class="kg-field-label" for="gen-bases">{{ t('gen_bases') }}</label>
+      <textarea id="gen-bases" name="bases_text" rows="6" class="kg-input font-mono" style="resize:vertical;" placeholder="Sirket&#10;Istanbul&#10;Yaz&#10;Marka"></textarea>
+      <p class="k-sm" style="margin-top:6px; color:var(--fg2);">{{ t('gen_bases_hint') }}</p>
+    </div>
+    <div>
+      <label class="kg-field-label" for="gen-examples">{{ t('gen_examples') }}</label>
+      <textarea id="gen-examples" name="examples_text" rows="6" class="kg-input font-mono" style="resize:vertical;" placeholder="Aa123456&#10;Sirket2024!"></textarea>
+      <p class="k-sm" style="margin-top:6px; color:var(--fg2);">{{ t('gen_examples_hint') }}</p>
+    </div>
+    <div>
+      <label class="kg-field-label">{{ t('gen_policy') }}</label>
+      <div style="margin-top:4px; margin-bottom:8px;">
+        <label class="kg-field-label" for="gen-minlen" style="font-weight:400;">{{ t('gen_min_len') }}</label>
+        <select id="gen-minlen" name="min_len" class="kg-select" style="max-width:120px;">
+          <option value="8" selected>8</option>
+          <option value="10">10</option>
+          <option value="12">12</option>
+          <option value="14">14</option>
+        </select>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:5px;">
+        <label class="k-sm" style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" name="require_upper" value="on" checked /> {{ t('gen_req_upper') }}</label>
+        <label class="k-sm" style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" name="require_lower" value="on" checked /> {{ t('gen_req_lower') }}</label>
+        <label class="k-sm" style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" name="require_digit" value="on" checked /> {{ t('gen_req_digit') }}</label>
+        <label class="k-sm" style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" name="require_special" value="on" /> {{ t('gen_req_special') }}</label>
+      </div>
+    </div>
+    <div>
+      <label class="kg-field-label">{{ t('gen_suffixes') }}</label>
+      <div style="display:flex; gap:12px; flex-wrap:wrap; margin:4px 0 12px;">
+        {% for s in ['!', '.', '?', '@', '_'] %}
+        <label class="k-sm" style="display:flex; align-items:center; gap:5px; cursor:pointer;"><input type="checkbox" name="suffixes" value="{{ s }}" {% if s in ['!', '.'] %}checked{% endif %} /> <code>{{ s }}</code></label>
+        {% endfor %}
+      </div>
+      <label class="kg-field-label">{{ t('gen_years') }}</label>
+      <div style="display:flex; gap:12px; flex-wrap:wrap; margin:4px 0 12px;">
+        {% for y in [2023, 2024, 2025, 2026] %}
+        <label class="k-sm" style="display:flex; align-items:center; gap:5px; cursor:pointer;"><input type="checkbox" name="years" value="{{ y }}" {% if y in [2025, 2026] %}checked{% endif %} /> {{ y }}</label>
+        {% endfor %}
+      </div>
+      <div style="display:flex; flex-direction:column; gap:5px;">
+        <label class="k-sm" style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" name="capitalize" value="on" checked /> {{ t('gen_capitalize') }}</label>
+        <label class="k-sm" style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" name="leet" value="on" /> {{ t('gen_leet') }}</label>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex; align-items:flex-end; gap:12px; margin-top:16px; flex-wrap:wrap;">
+    <div style="flex:1; min-width:240px;">
+      <label class="kg-field-label" for="gen-pass-name">{{ t('label_name') }}</label>
+      <input id="gen-pass-name" name="name" required placeholder="hedef-kurum-parolalari" class="kg-input" />
+    </div>
+    <button type="button" class="kg-btn kg-btn-subtle" hx-post="/wordlists/generate/passwords/preview" hx-include="closest form" hx-target="#gen-pass-preview" hx-swap="innerHTML">{{ t('gen_preview_btn') }}</button>
+    <button type="submit" class="kg-btn kg-btn-primary">{{ t('gen_pass_save') }}</button>
+  </div>
+  <div id="gen-pass-preview" style="margin-top:14px;"></div>
+</form>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:20px;">
+  <!-- Yeni kelime listesi -->
+  <form method="post" action="/wordlists/create" enctype="multipart/form-data" class="kg-card" style="padding:20px; height:fit-content;">
+    <h2 class="k-h3" style="margin-bottom:14px;">{{ t('new_wl') }}</h2>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <div>
+        <label class="kg-field-label" for="wl-name">{{ t('label_name') }}</label>
+        <input id="wl-name" name="name" required placeholder="custom-dizinler" class="kg-input" />
+      </div>
+      <div>
+        <label class="kg-field-label" for="wl-kind">{{ t('wl_kind') }}</label>
+        <select id="wl-kind" name="kind" class="kg-select">
+          {% for k in wordlist_kinds %}<option value="{{ k }}">{{ t('wlkind_' + k) }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:12px;">
+      <label class="kg-field-label" for="wl-desc">{{ t('zone_desc') }}</label>
+      <input id="wl-desc" name="description" class="kg-input" />
+    </div>
+    <div style="margin-top:12px;">
+      <label class="kg-field-label" for="wl-entries">{{ t('wl_entries') }}</label>
+      <textarea id="wl-entries" name="entries_text" rows="7" class="kg-input font-mono" style="resize:vertical;" placeholder="admin&#10;login&#10;backup&#10;.git/config"></textarea>
+      <p class="k-sm" style="margin-top:6px; color:var(--fg2);">{{ t('wl_entries_hint') }}</p>
+    </div>
+    <div style="margin-top:10px;">
+      <label class="kg-field-label" for="wl-file">{{ t('wl_upload') }}</label>
+      <input id="wl-file" name="entries_file" type="file" accept=".txt,text/plain" class="kg-input" />
+    </div>
+    <button type="submit" class="kg-btn kg-btn-primary" style="margin-top:14px;">{{ t('wl_create') }}</button>
+  </form>
+
+  <!-- Mevcut kelime listeleri -->
+  <div>
+    {% if not wordlists %}
+    <div class="kg-card" style="padding:24px; text-align:center; color:var(--fg2);">{{ t('no_wls') }}</div>
+    {% endif %}
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      {% for w in wordlists %}
+      <div class="kg-card" style="padding:14px 16px; display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
+        <div>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span style="font-weight:600;">{{ w.name }}</span>
+            <span class="kg-chip kg-chip-accent">{{ t('wlkind_' + w.kind.value) }}</span>
+            <span class="kg-chip">{{ w.entries|length }} {{ t('wl_line_count') }}</span>
+            {% if w.is_builtin %}<span class="kg-chip">{{ t('wl_builtin') }}</span>{% endif %}
+          </div>
+          {% if w.description %}<p class="k-sm" style="margin-top:2px;">{{ w.description }}</p>{% endif %}
+        </div>
+        <div style="display:flex; gap:8px; align-items:center; flex-shrink:0;">
+          <a href="/wordlists/{{ w.id }}/view" class="kg-btn kg-btn-subtle kg-btn-sm">{{ icon('eye', 14) }} {{ t('wl_view') }}</a>
+          {% if not w.is_builtin %}
+          <a href="/wordlists/{{ w.id }}/edit" class="kg-btn kg-btn-subtle kg-btn-sm">{{ icon('edit', 14) }} {{ t('edit') }}</a>
+          <form method="post" action="/wordlists/{{ w.id }}/delete" onsubmit="return confirm('?');">
+            <button type="submit" class="kg-btn kg-btn-sm" style="color:var(--sev-critical); border:1px solid var(--danger-line); background:transparent;">{{ t('delete') }}</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

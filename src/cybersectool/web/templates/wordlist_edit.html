@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ t('wl_edit_title') }} · {{ app_name }}{% endblock %}
+
+{% block content %}
+<div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+  <a href="/wordlists" class="kg-btn kg-btn-ghost kg-btn-sm">{{ icon('chevron-left', 16) }} {{ t('nav_wordlists') }}</a>
+  <h1 class="k-h1" style="margin:0;">{{ t('wl_edit_title') }}</h1>
+</div>
+<p class="k-sm" style="margin-bottom:18px; max-width:680px;">{{ t('wl_sub') }}</p>
+
+{% if error %}<div class="kg-alert kg-alert-error" style="margin-bottom:16px;">{{ error }}</div>{% endif %}
+
+<form method="post" action="/wordlists/{{ wordlist.id }}/edit" enctype="multipart/form-data" class="kg-card" style="padding:20px; max-width:680px;">
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+    <div>
+      <label class="kg-field-label" for="wl-name">{{ t('label_name') }}</label>
+      <input id="wl-name" name="name" required value="{{ wordlist.name }}" class="kg-input" />
+    </div>
+    <div>
+      <label class="kg-field-label" for="wl-kind">{{ t('wl_kind') }}</label>
+      <select id="wl-kind" name="kind" class="kg-select">
+        {% for k in wordlist_kinds %}<option value="{{ k }}" {% if k == wordlist.kind.value %}selected{% endif %}>{{ t('wlkind_' + k) }}</option>{% endfor %}
+      </select>
+    </div>
+  </div>
+  <div style="margin-top:12px;">
+    <label class="kg-field-label" for="wl-desc">{{ t('zone_desc') }}</label>
+    <input id="wl-desc" name="description" value="{{ wordlist.description or '' }}" class="kg-input" />
+  </div>
+  <div style="margin-top:12px;">
+    <label class="kg-field-label" for="wl-entries">{{ t('wl_entries') }}</label>
+    <textarea id="wl-entries" name="entries_text" rows="12" class="kg-input font-mono" style="resize:vertical;">{{ entries_joined }}</textarea>
+    <p class="k-sm" style="margin-top:6px; color:var(--fg2);">{{ t('wl_entries_replace') }} {{ t('wl_entries_hint') }}</p>
+  </div>
+  <div style="margin-top:10px;">
+    <label class="kg-field-label" for="wl-file">{{ t('wl_upload') }}</label>
+    <input id="wl-file" name="entries_file" type="file" accept=".txt,text/plain" class="kg-input" />
+  </div>
+  <div style="display:flex; gap:10px; margin-top:16px;">
+    <button type="submit" class="kg-btn kg-btn-primary">{{ icon('check', 15) }} {{ t('wl_save') }}</button>
+    <a href="/credentials" class="kg-btn kg-btn-ghost">{{ t('cancel') }}</a>
+  </div>
+</form>
+{% endblock %}

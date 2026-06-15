@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+{% from "_icons.html" import icon, logo %}
+<html lang="{{ lang }}" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}{{ brand_name }}{% endblock %}</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
+  <script>
+    /* tema pre-paint: yanıp sönmeyi önler — body'den önce çalışır */
+    (function () {
+      try {
+        var saved = localStorage.getItem('kg-theme');
+        var theme = saved || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="/static/kangalis.css" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: {
+      colors: {
+        app: 'var(--bg)', surface: 'var(--bg2)', card: 'var(--card)', line: 'var(--border)',
+        fg: 'var(--fg)', fg2: 'var(--fg2)', accent: 'var(--accent)', steel: 'var(--steel)',
+        crit: '#EF4444', high: '#F97316', med: '#F59E0B', low: '#3B82F6', info: '#64748B', ok: '#1F9D6B',
+      },
+      fontFamily: { sans: ['Inter','system-ui','sans-serif'], mono: ['JetBrains Mono','ui-monospace','monospace'] },
+    } } };
+  </script>
+  <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+  <script>
+    function kgToggleTheme() {
+      var cur = document.documentElement.getAttribute('data-theme');
+      var next = cur === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      try { localStorage.setItem('kg-theme', next); } catch (e) {}
+    }
+    /* Mobil (<860px) hamburger: sidebar'ı aç/kapat. Masaüstünde sidebar her zaman açık. */
+    function kgToggleSidebar() { document.querySelector('.kg-sidebar')?.classList.toggle('open'); }
+    /* Genel "kopyala" düğmesi: btn.dataset.copy metnini panoya alır, kısa onay gösterir.
+       İkonu korur (innerHTML saklanıp geri yüklenir). EDB komutları, token snippet'leri vb. */
+    function kgCopy(btn) {
+      var txt = (btn && btn.dataset && btn.dataset.copy) || '';
+      navigator.clipboard.writeText(txt).then(function () {
+        var orig = btn.innerHTML; btn.innerHTML = '✓'; btn.disabled = true;
+        setTimeout(function () { btn.innerHTML = orig; btn.disabled = false; }, 1100);
+      }).catch(function () {});
+    }
+  </script>
+</head>
+<body>
+{% set lang_switch %}
+  <div class="kg-chip" style="padding:2px; gap:2px;">
+    <a href="/lang/tr" class="kg-btn kg-btn-sm {{ 'kg-btn-primary' if lang == 'tr' else 'kg-btn-subtle' }}" style="height:26px; padding:0 10px;">TR</a>
+    <a href="/lang/en" class="kg-btn kg-btn-sm {{ 'kg-btn-primary' if lang == 'en' else 'kg-btn-subtle' }}" style="height:26px; padding:0 10px;">EN</a>
+  </div>
+{% endset %}
+{% if user %}
+  {% set nav_items = [
+    {'path': '/',            'key': 'nav_dashboard', 'icon': 'dashboard', 'admin': false},
+    {'path': '/scans',       'key': 'nav_scans',     'icon': 'scans',     'admin': false},
+    {'path': '/assets',      'key': 'nav_assets',    'icon': 'server',    'admin': false},
+    {'path': '/zones',       'key': 'nav_zones',     'icon': 'zones',     'admin': false},
+    {'path': '/credentials', 'key': 'nav_vault',     'icon': 'vault',     'admin': true},
+    {'path': '/wordlists',   'key': 'nav_wordlists', 'icon': 'list',      'admin': true},
+    {'path': '/vulnerabilities', 'key': 'nav_vuln',  'icon': 'vuln',      'admin': false},
+    {'path': '/trends',      'key': 'nav_trends',    'icon': 'trend',     'admin': false},
+    {'path': '/schedules',   'key': 'nav_schedules', 'icon': 'schedules', 'admin': false},
+    {'path': '/report',      'key': 'nav_reports',   'icon': 'reports',   'admin': false},
+    {'path': '/users',       'key': 'nav_users',     'icon': 'users',     'admin': true},
+    {'path': '/exploits',    'key': 'nav_exploit',   'icon': 'exploit',   'admin': false},
+    {'path': '/cve-db',      'key': 'nav_cve',       'icon': 'shield',    'admin': false},
+    {'path': '/audit',       'key': 'nav_audit',     'icon': 'audit',     'admin': true},
+    {'path': '/tokens',      'key': 'nav_tokens',    'icon': 'tokens',    'admin': false},
+    {'path': '/system',      'key': 'nav_system',    'icon': 'server',    'admin': true},
+    {'path': '/settings',    'key': 'nav_settings',  'icon': 'settings',  'admin': true},
+  ] %}
+  <div class="kg-shell">
+    <aside class="kg-sidebar">
+      <div class="kg-brand">{{ logo(28) }}<span class="kg-wordmark">KANGALIS{% if ai_brand %}<span style="color:var(--accent); margin-left:6px;">AI</span>{% endif %}</span></div>
+      <nav class="kg-nav">
+        {% for item in nav_items %}
+          {% if not item.admin or user.role.value == 'admin' %}
+          {% set is_active = (request.url.path == item.path) or (item.path != '/' and request.url.path.startswith(item.path)) %}
+          <a href="{{ item.path }}" class="kg-nav-link {{ 'active' if is_active else '' }}">{{ icon(item.icon) }}<span>{{ t(item.key) }}</span></a>
+          {% endif %}
+        {% endfor %}
+      </nav>
+      <div style="margin-top:auto; padding:12px;">
+        <a href="/logout" class="kg-nav-link">{{ icon('logout') }}<span>{{ t('logout') }}</span></a>
+      </div>
+    </aside>
+    <div class="kg-main">
+      <header class="kg-topbar">
+        <button class="kg-iconbtn" onclick="kgToggleSidebar()" aria-label="menu" id="kg-menu-btn" style="display:none">{{ icon('menu') }}</button>
+        <div style="flex:1"></div>
+        {{ lang_switch }}
+        <button class="kg-iconbtn" onclick="kgToggleTheme()" aria-label="{{ t('theme_toggle') }}" title="{{ t('theme_toggle') }}">{{ icon('moon') }}</button>
+        <div style="width:1px; height:24px; background:var(--border)"></div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="kg-iconbtn" style="cursor:default">{{ icon('user') }}</span>
+          <div style="line-height:1.2">
+            <div style="font-size:13px; font-weight:600; color:var(--fg)">{{ user.username }}</div>
+            <div style="font-size:11px; color:var(--fg2)">{{ t('role_' + user.role.value) }}</div>
+          </div>
+        </div>
+      </header>
+      <main class="kg-content">
+{% else %}
+  <div style="position:fixed; top:16px; right:16px; display:flex; gap:8px; z-index:10;">
+    {{ lang_switch }}
+    <button class="kg-iconbtn" onclick="kgToggleTheme()" aria-label="{{ t('theme_toggle') }}">{{ icon('moon') }}</button>
+  </div>
+  <main style="min-height:100vh; width:100%; display:flex; align-items:center; justify-content:center; padding:24px;">
+{% endif %}
+        {% block content %}{% endblock %}
+{% if user %}
+      </main>
+    </div>
+  </div>
+  <style>@media (max-width:860px){ #kg-menu-btn{ display:inline-flex !important } }</style>
+{% else %}
+  </main>
+{% endif %}
+</body>
+</html>

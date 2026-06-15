@@ -1,0 +1,119 @@
+/* =====================================================================
+   Kangalis — Color & Type Tokens
+   Single source of truth. Drive everything via these CSS variables.
+   Two themes: [data-theme="dark"] (default) and [data-theme="light"].
+   ===================================================================== */
+
+/* ---- Fonts -----------------------------------------------------------
+   UI: Inter (sans). Technical data: JetBrains Mono.
+   Loaded via Google Fonts in the prototype; swap for self-hosted in prod. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* Font stacks */
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+
+  /* Type scale (px) */
+  --text-display: 34px;   /* page hero / login title */
+  --text-h1: 26px;        /* page titles */
+  --text-h2: 20px;        /* section headings */
+  --text-h3: 16px;        /* card titles */
+  --text-body: 14px;      /* default body */
+  --text-sm: 13px;        /* secondary / helper */
+  --text-xs: 12px;        /* labels, badges */
+  --text-stat: 30px;      /* stat-card numbers */
+
+  /* Weights */
+  --w-regular: 400;
+  --w-medium: 500;
+  --w-semibold: 600;
+  --w-bold: 700;
+
+  /* Tracking */
+  --track-label: 0.06em; /* uppercase section labels */
+  --track-word: 0.14em;  /* KANGALIS wordmark */
+
+  /* Radii */
+  --r-sm: 6px;    /* chips */
+  --r-md: 10px;   /* inputs, buttons */
+  --r-lg: 12px;   /* cards */
+  --r-xl: 16px;   /* modals, large cards */
+  --r-pill: 999px;
+
+  /* Spacing base (4px rhythm) */
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px;
+
+  /* Severity — CONSTANT across both themes */
+  --sev-critical: #EF4444;
+  --sev-high:     #F97316;
+  --sev-medium:   #F59E0B;
+  --sev-low:      #3B82F6;
+  --sev-info:     #64748B;
+}
+
+/* ---- DARK (default) -------------------------------------------------- */
+:root,
+[data-theme="dark"] {
+  --bg:      #0b0f14; /* app canvas */
+  --bg2:     #11161d; /* raised canvas / hover wash */
+  --card:    #161c25; /* card surface */
+  --border:  #232b36; /* hairline */
+  --fg:      #e6edf3; /* primary text */
+  --fg2:     #9aa7b4; /* secondary text */
+
+  --accent:      #E0A458; /* Kangal amber */
+  --accent-weak: rgba(224,164,88,0.14);
+  --accent-line: rgba(224,164,88,0.40);
+  --steel:       #3B82F6; /* secondary accent */
+  --steel-weak:  rgba(59,130,246,0.16);
+
+  --danger-bg:   rgba(239,68,68,0.10);
+  --danger-line: rgba(239,68,68,0.45);
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.40);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.45);
+  --scrim:     rgba(3,6,10,0.66);
+}
+
+/* ---- LIGHT ----------------------------------------------------------- */
+[data-theme="light"] {
+  --bg:      #f6f8fa;
+  --bg2:     #eef1f5;
+  --card:    #ffffff;
+  --border:  #e3e8ee;
+  --fg:      #0b0f14;
+  --fg2:     #5b6671;
+
+  --accent:      #BC7A2C; /* deepened amber for contrast on white */
+  --accent-weak: rgba(188,122,44,0.12);
+  --accent-line: rgba(188,122,44,0.38);
+  --steel:       #2563EB;
+  --steel-weak:  rgba(37,99,235,0.10);
+
+  --danger-bg:   rgba(239,68,68,0.07);
+  --danger-line: rgba(239,68,68,0.40);
+
+  --shadow-sm: 0 1px 2px rgba(16,24,40,0.06);
+  --shadow-md: 0 8px 24px rgba(16,24,40,0.10);
+  --scrim:     rgba(16,24,40,0.45);
+}
+
+/* =====================================================================
+   Semantic helpers — apply tokens to elements.
+   ===================================================================== */
+.k-display { font: var(--w-bold) var(--text-display)/1.15 var(--font-sans); color: var(--fg); }
+.k-h1      { font: var(--w-semibold) var(--text-h1)/1.2 var(--font-sans); color: var(--fg); }
+.k-h2      { font: var(--w-semibold) var(--text-h2)/1.25 var(--font-sans); color: var(--fg); }
+.k-h3      { font: var(--w-semibold) var(--text-h3)/1.3 var(--font-sans); color: var(--fg); }
+.k-body    { font: var(--w-regular) var(--text-body)/1.55 var(--font-sans); color: var(--fg); }
+.k-sm      { font: var(--w-regular) var(--text-sm)/1.5 var(--font-sans); color: var(--fg2); }
+.k-label   { font: var(--w-semibold) var(--text-xs)/1.2 var(--font-sans);
+             text-transform: uppercase; letter-spacing: var(--track-label); color: var(--fg2); }
+.k-mono    { font: var(--w-regular) var(--text-sm)/1.5 var(--font-mono); }
+.k-stat    { font: var(--w-semibold) var(--text-stat)/1 var(--font-sans);
+             color: var(--fg); font-variant-numeric: tabular-nums; }
+
+.k-card    { background: var(--card); border: 1px solid var(--border);
+             border-radius: var(--r-lg); box-shadow: var(--shadow-sm); }

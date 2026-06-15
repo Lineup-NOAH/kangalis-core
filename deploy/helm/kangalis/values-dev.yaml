@@ -1,0 +1,29 @@
+# Yerel/kind geliştirme değerleri (gerçek olmayan, güvenli varsayılanlar).
+# Kullanım: helm install kangalis ./deploy/helm/kangalis -f deploy/helm/kangalis/values-dev.yaml
+appEnv: development
+
+image:
+  repository: cybersectool-app
+  tag: latest
+  pullPolicy: IfNotPresent  # kind'a `kind load docker-image` ile yüklenen yerel imaj
+
+config:
+  allowAggressiveScans: true  # dev'de agresif akış kesintiye uğramasın (yine 'kabul' onaylı)
+
+worker:
+  replicas: 2
+  hostNetwork: false  # kind tek-node; dev'de kapalı (gerçek sunucuda LAN erişimi için açılır)
+  netRaw: true
+
+postgres:
+  enabled: true
+  storage: 1Gi
+
+redis:
+  enabled: true
+
+beat:
+  enabled: true
+
+mcp:
+  enabled: false

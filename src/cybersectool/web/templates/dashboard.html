@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ t('nav_dashboard') }} · {{ app_name }}{% endblock %}
+
+{% block content %}
+<h1 class="k-h1" style="margin-bottom:20px;">{{ t('nav_dashboard') }}</h1>
+
+{% set sevs = ['critical','high','medium','low','info'] %}
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:16px;">
+  <a href="/assets" class="kg-card kg-statcard" style="padding:18px;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+      <div class="kg-statnum">{{ asset_count }}</div>
+      <span style="color:var(--fg2)">{{ icon('server', 20) }}</span>
+    </div>
+    <div class="k-label" style="margin-top:8px;">{{ t('stat_assets') }}</div>
+  </a>
+  <a href="/vulnerabilities" class="kg-card kg-statcard" style="padding:18px;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+      <div class="kg-statnum" style="color:var(--sev-critical)">{{ vuln_open }}</div>
+      <span style="color:var(--sev-critical)">{{ icon('vuln', 20) }}</span>
+    </div>
+    <div class="k-label" style="margin-top:8px;">{{ t('stat_open') }}</div>
+  </a>
+  <a href="/vulnerabilities?tab=resolved" class="kg-card kg-statcard" style="padding:18px;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+      <div class="kg-statnum" style="color:var(--ok, #16a34a)">{{ vuln_resolved }}</div>
+      <span style="color:var(--ok, #16a34a)">{{ icon('check', 20) }}</span>
+    </div>
+    <div class="k-label" style="margin-top:8px;">{{ t('stat_resolved') }}</div>
+  </a>
+  <a href="/scans" class="kg-card kg-statcard" style="padding:18px;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+      <div class="kg-statnum">{{ scan_count }}</div>
+      <span style="color:var(--fg2)">{{ icon('scans', 20) }}</span>
+    </div>
+    <div class="k-label" style="margin-top:8px;">{{ t('stat_scans') }}</div>
+  </a>
+  <a href="/zones" class="kg-card kg-statcard" style="padding:18px;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+      <div class="kg-statnum">{{ zone_count }}</div>
+      <span style="color:var(--fg2)">{{ icon('zones', 20) }}</span>
+    </div>
+    <div class="k-label" style="margin-top:8px;">{{ t('stat_zones') }}</div>
+  </a>
+  <a href="/exploits" class="kg-card kg-statcard" style="padding:18px;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+      <div class="kg-statnum" style="color:var(--accent)">{{ "{:,}".format(exploit_total) }}</div>
+      <span style="color:var(--accent)">{{ icon('exploit', 20) }}</span>
+    </div>
+    <div class="k-label" style="margin-top:8px;">{{ t('stat_exploit') }}</div>
+  </a>
+</div>
+
+<!-- Zafiyet yaşam döngüsü özeti -->
+<div class="kg-card" style="margin-top:20px; padding:20px;">
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+    <h2 class="k-h3">{{ t('lifecycle_title') }}</h2>
+    <a href="/vulnerabilities" class="k-sm" style="color:var(--accent); text-decoration:none;">{{ t('view_all') }}</a>
+  </div>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px;">
+    <div class="kg-mini">
+      <div class="kg-mininum" style="color:var(--ok, #16a34a)">+{{ lifecycle.new_7d }}</div>
+      <div class="k-label">{{ t('lc_new_7d') }}</div>
+    </div>
+    <div class="kg-mini">
+      <div class="kg-mininum" style="color:var(--ok, #16a34a)">−{{ lifecycle.resolved_7d }}</div>
+      <div class="k-label">{{ t('lc_resolved_7d') }}</div>
+    </div>
+    <div class="kg-mini">
+      <div class="kg-mininum" style="color:{{ 'var(--sev-high)' if lifecycle.regressions else 'var(--fg)' }}">{{ lifecycle.regressions }}</div>
+      <div class="k-label">{{ t('lc_regressions') }}</div>
+    </div>
+    <div class="kg-mini">
+      <div class="kg-mininum" style="color:{{ 'var(--sev-high)' if lifecycle.aging_30d else 'var(--fg)' }}">{{ lifecycle.aging_30d }}</div>
+      <div class="k-label">{{ t('lc_aging_30d') }}</div>
+    </div>
+    <div class="kg-mini">
+      <div class="kg-mininum">{{ lifecycle.mttr_days if lifecycle.mttr_days is not none else '—' }}</div>
+      <div class="k-label">{{ t('lc_mttr') }}</div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:20px; display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:20px;">
+  <!-- En riskli zafiyetler -->
+  <div class="kg-card" style="padding:20px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+      <h2 class="k-h3">{{ t('top_risky_vuln') }}</h2>
+      <a href="/vulnerabilities" class="k-sm" style="color:var(--accent); text-decoration:none;">{{ t('view_all') }}</a>
+    </div>
+    {% if not top_vulns %}
+    <p class="k-sm">{{ t('none_yet') }} <a href="/scans" style="color:var(--accent)">{{ t('new_scan') }}.</a></p>
+    {% else %}
+    <table class="kg-table" style="font-size:13px;">
+      <tbody>
+        {% for v in top_vulns %}
+        <tr>
+          <td><span class="kg-sev kg-sev-{{ v.severity.value }}">{{ t('sev_' + v.severity.value) }}</span></td>
+          <td class="font-mono" style="font-size:12px;">{{ v.cve_id or '-' }}</td>
+          <td class="font-mono" style="font-size:12px; color:var(--fg2)">{{ device_by_id.get(v.asset_id, '') }}</td>
+          {% if v.reopened_count and v.reopened_count > 0 %}
+          <td><span class="kg-sev kg-sev-high" title="{{ v.reopened_count }}× {{ t('vuln_regression') }}">{{ t('vuln_regression') }}</span></td>
+          {% else %}<td></td>{% endif %}
+          <td style="text-align:right; font-weight:600;">{{ "%.1f"|format(v.risk_score or 0) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+
+  <!-- Zafiyet & Exploit veritabanı özeti -->
+  <div class="kg-card" style="padding:20px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+      <h2 class="k-h3">{{ t('exploit_db_summary') }}</h2>
+      <a href="/exploits" class="k-sm" style="color:var(--accent); text-decoration:none;">{{ t('open') }}</a>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
+      <span class="kg-chip">{{ t('total') }}: <b style="color:var(--fg)">{{ "{:,}".format(exploit_total) }}</b></span>
+      <a href="/exploits?severity=critical" class="kg-chip kg-chip-link kg-sev-critical">{{ t('sev_critical') }}: <b>{{ exploit_by_severity.get('critical', 0) }}</b></a>
+      <a href="/exploits?severity=high" class="kg-chip kg-chip-link kg-sev-high">{{ t('sev_high') }}: <b>{{ exploit_by_severity.get('high', 0) }}</b></a>
+      <span class="kg-chip kg-chip-accent" title="Offline CPE">{{ t('offline_cpe') }}: <b>{{ "{:,}".format(cpe_total) }}</b></span>
+    </div>
+    <p class="k-label" style="margin-bottom:8px;">{{ t('categories') }}</p>
+    {% set cat_labels = {'windows':'Windows','linux':'Linux','macos':'macOS','web':'Web','database':'Database','network':('Ağ' if lang=='tr' else 'Network'),'iot':'IoT','cloud':'Cloud','mobile':('Mobil' if lang=='tr' else 'Mobile')} %}
+    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+      {% for cat, label in cat_labels.items() %}
+      {% if exploit_by_category.get(cat, 0) > 0 %}
+      <a href="/exploits?category={{ cat }}" class="kg-chip kg-chip-link">{{ label }} <b style="color:var(--fg)">{{ exploit_by_category.get(cat, 0) }}</b></a>
+      {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Açık zafiyet önem dağılımı -->
+<div class="kg-card" style="margin-top:20px; padding:20px;">
+  <h2 class="k-h3" style="margin-bottom:14px;">{{ t('sev_dist') }}</h2>
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    {% for s in sevs %}
+    <span class="kg-sev kg-sev-{{ s }}">{{ t('sev_' + s) }}: {{ severity_counts.get(s, 0) }}</span>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ t('edit_zone') }} · {{ app_name }}{% endblock %}
+
+{% block content %}
+{% set _ret = return_to | default('zones') %}
+{% set _back = back_url | default('/zones') %}
+<div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+  <a href="{{ _back }}" class="kg-btn kg-btn-ghost kg-btn-sm">{{ icon('chevron-left', 16) }} {{ t('nav_scans') if _ret == 'scans' else t('nav_zones') }}</a>
+  <h1 class="k-h1" style="margin:0;">{{ t('edit_zone') }}</h1>
+</div>
+<p class="k-sm" style="margin-bottom:18px; max-width:680px;">{{ t('edit_zone_sub') }}</p>
+
+{% if error %}<div class="kg-alert kg-alert-error" style="margin-bottom:16px;">{{ error }}</div>{% endif %}
+
+<form method="post" action="/zones/{{ zone.id }}/edit" class="kg-card" style="padding:20px; max-width:680px;">
+  <input type="hidden" name="return_to" value="{{ _ret }}" />
+  <div style="margin-bottom:14px;">
+    <label class="kg-field-label" for="z-name">{{ t('zone_name') }}</label>
+    <input id="z-name" name="name" required value="{{ zone.name }}" class="kg-input" />
+  </div>
+  <div style="margin-bottom:14px;">
+    <label class="kg-field-label" for="z-desc">{{ t('zone_desc') }}</label>
+    <input id="z-desc" name="description" value="{{ zone.description or '' }}" class="kg-input" />
+  </div>
+  <div style="margin-bottom:14px;">
+    <label class="kg-field-label" for="z-cidrs">{{ t('zone_cidrs') }}</label>
+    <textarea id="z-cidrs" name="cidrs" required rows="6"
+              class="kg-input font-mono" style="height:auto; padding:10px 12px; font-size:13px;">{{ zone.cidrs | join('\n') }}</textarea>
+    <p class="k-sm" style="margin-top:6px; color:var(--k-text-dim);">{{ t('zone_cidrs_hint') }}</p>
+  </div>
+  <div style="display:flex; gap:10px;">
+    <button type="submit" class="kg-btn kg-btn-primary">{{ icon('check', 15) }} {{ t('save') }}</button>
+    <a href="{{ _back }}" class="kg-btn kg-btn-ghost">{{ t('cancel') }}</a>
+  </div>
+</form>
+{% endblock %}

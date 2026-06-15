@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ t('user_edit_title') }} · {{ app_name }}{% endblock %}
+
+{% block content %}
+<a href="/users" class="kg-btn kg-btn-ghost kg-btn-sm" style="margin-bottom:14px;">{{ icon('x', 14) }} {{ t('nav_users') }}</a>
+
+<h1 class="k-h1" style="margin-bottom:6px; display:flex; align-items:center; gap:10px;">
+  {{ target.username }}
+  <span class="kg-chip" style="color:var(--fg2);">{{ target.auth_source.value }}</span>
+  {% if target.id == user.id %}<span class="k-sm">{{ t('you_label') }}</span>{% endif %}
+</h1>
+<p class="k-sm" style="margin-bottom:18px;">{{ t('user_edit_title') }}</p>
+
+{% if error %}<div class="kg-alert kg-alert-error" style="margin-bottom:16px;">{{ error }}</div>{% endif %}
+{% if message %}<div class="kg-alert kg-alert-ok" style="margin-bottom:16px;">{{ message }}</div>{% endif %}
+
+<form method="post" action="/users/{{ target.id }}/edit" class="kg-card" style="padding:22px; max-width:600px; margin-bottom:18px; display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap;">
+  <div style="min-width:160px;">
+    <label class="kg-field-label" for="u-role">{{ t('label_role') }}</label>
+    <select id="u-role" name="role" class="kg-select">
+      {% for r in roles %}<option value="{{ r }}" {% if target.role.value == r %}selected{% endif %}>{{ t('role_' + r) }}</option>{% endfor %}
+    </select>
+  </div>
+  <div style="flex:1; min-width:200px;">
+    <label class="kg-field-label" for="u-email">{{ t('th_email') }}</label>
+    <input id="u-email" name="email" type="email" value="{{ target.email or '' }}" autocomplete="off" class="kg-input" />
+  </div>
+  <button type="submit" class="kg-btn kg-btn-primary">{{ t('save') }}</button>
+</form>
+
+<!-- X-5: durum (pasifleştir/etkinleştir) + silme — düzenle alanında toplandı -->
+<div class="kg-card" style="padding:22px; max-width:600px; margin-bottom:18px;">
+  <h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 4px;">{{ icon('users', 18) }} {{ t('user_manage') }}</h2>
+  <p class="k-sm" style="margin:0 0 16px; color:var(--fg2);">{{ t('user_manage_sub') }}</p>
+  <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+    <span class="kg-field-label" style="margin:0;">{{ t('user_status_label') }}:</span>
+    {% if target.is_active %}<span class="kg-status kg-status-completed">{{ t('active') }}</span>
+    {% else %}<span class="kg-status kg-status-pending">{{ t('passive') }}</span>{% endif %}
+  </div>
+  {% if target.id != user.id %}
+  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <form method="post" action="/users/{{ target.id }}/toggle">
+      <button type="submit" class="kg-btn kg-btn-ghost">
+        {{ icon('power', 15) }} {{ t('deactivate') if target.is_active else t('enable') }}
+      </button>
+    </form>
+    <form method="post" action="/users/{{ target.id }}/delete" onsubmit="return confirm('{{ t('user_delete_confirm') }}');">
+      <button type="submit" class="kg-btn kg-btn-danger">{{ icon('trash', 15) }} {{ t('delete') }}</button>
+    </form>
+  </div>
+  {% else %}
+  <p class="k-sm" style="color:var(--fg2);">{{ t('user_self_manage_note') }}</p>
+  {% endif %}
+</div>
+
+<div class="kg-card" style="padding:22px; max-width:600px;">
+  <h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 14px;">{{ icon('shield', 18) }} {{ t('mfa_panel') }}</h2>
+
+  {% if target.mfa_enabled %}
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+      <span class="kg-chip" style="color:#1F9D6B; border-color:#1F9D6B;">{{ icon('check', 14) }} {{ t('mfa_enabled_label') }}</span>
+      <span class="k-sm">{{ target.mfa_method }}</span>
+    </div>
+    <form method="post" action="/users/{{ target.id }}/mfa/disable">
+      <button type="submit" class="kg-btn kg-btn-danger">{{ icon('x', 15) }} {{ t('mfa_remove') }}</button>
+    </form>
+
+  {% elif totp_qr %}
+    <div style="display:flex; gap:22px; flex-wrap:wrap; align-items:flex-start;">
+      <div style="background:#fff; padding:10px; border-radius:10px; width:184px; height:184px;">{{ totp_qr | safe }}</div>
+      <div style="flex:1; min-width:220px;">
+        <div class="kg-field-label">{{ t('mfa_secret_label') }}</div>
+        <code class="font-mono" style="display:block; word-break:break-all; padding:8px; background:var(--bg2); border-radius:6px; margin-bottom:14px; font-size:13px;">{{ totp_secret }}</code>
+        <p class="k-sm" style="margin:0 0 12px;">{{ t('mfa_relay_qr') }}</p>
+        <div style="display:flex; gap:8px;">
+          <form method="post" action="/users/{{ target.id }}/mfa/totp/enable">
+            <button type="submit" class="kg-btn kg-btn-primary">{{ icon('check', 15) }} {{ t('mfa_enable') }}</button>
+          </form>
+          <form method="post" action="/users/{{ target.id }}/mfa/disable">
+            <button type="submit" class="kg-btn kg-btn-subtle kg-btn-sm">{{ t('cancel') }}</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+  {% else %}
+    <div style="margin-bottom:14px;">
+      <span class="kg-chip" style="color:var(--fg2);">{{ t('mfa_disabled_label') }}</span>
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <form method="post" action="/users/{{ target.id }}/mfa/totp/setup">
+        <button type="submit" class="kg-btn kg-btn-primary">{{ icon('shield', 15) }} {{ t('mfa_setup_totp') }}</button>
+      </form>
+      {% if target.email and smtp_ready %}
+      <form method="post" action="/users/{{ target.id }}/mfa/email/enable">
+        <button type="submit" class="kg-btn kg-btn-ghost">{{ icon('mail', 15) }} {{ t('mfa_email_enable') }}</button>
+      </form>
+      {% else %}
+      <button type="button" class="kg-btn kg-btn-ghost" disabled>{{ icon('mail', 15) }} {{ t('mfa_email_enable') }}</button>
+      {% endif %}
+    </div>
+    {% if not target.email %}
+    <p class="k-sm" style="color:var(--fg2); margin-top:8px;">{{ t('mfa_need_email') }}</p>
+    {% elif not smtp_ready %}
+    <p class="k-sm" style="color:var(--fg2); margin-top:8px;">{{ t('mfa_need_smtp') }}</p>
+    {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <title>Uyum Raporu · {{ app_name }}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 2cm 1.5cm 2cm 1.5cm;
+      @bottom-center { content: "Sayfa " counter(page) " / " counter(pages); font-size: 8pt; color: #94a3b8; }
+      @bottom-right { content: "{{ app_name }} · Uyum"; font-size: 8pt; color: #cbd5e1; }
+    }
+    * { box-sizing: border-box; }
+    body { font-family: "DejaVu Sans", "Liberation Sans", sans-serif; color: #1e293b; font-size: 10pt; line-height: 1.4; margin: 0; }
+    .header { border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 18px; }
+    .header h1 { font-size: 18pt; margin: 0 0 4px 0; color: #0f172a; }
+    .header .meta { font-size: 9pt; color: #64748b; }
+    h2 { font-size: 13pt; color: #0f172a; margin: 22px 0 8px 0; }
+    .score { display: inline-block; padding: 3px 10px; border-radius: 12px; font-weight: bold; font-size: 9pt; }
+    .score-good { background: #dcfce7; color: #166534; }
+    .score-mid { background: #fef9c3; color: #854d0e; }
+    .score-bad { background: #fee2e2; color: #991b1b; }
+    table.ctrl { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 9pt; }
+    table.ctrl th { background: #f1f5f9; text-align: left; padding: 6px 8px; border: 1px solid #e2e8f0; }
+    table.ctrl td { padding: 6px 8px; border: 1px solid #e2e8f0; vertical-align: top; }
+    .pass { color: #166534; font-weight: bold; }
+    .fail { color: #991b1b; font-weight: bold; }
+    .intro { color: #475569; font-size: 9pt; margin-bottom: 14px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Uyum Raporu (KVKK · ISO 27001 · PCI-DSS)</h1>
+    <div class="meta">
+      Hedef: {{ scan.target if scan else '—' }} · Oluşturma: {{ generated_at }} · {{ app_name }}
+    </div>
+  </div>
+
+  <p class="intro">
+    Bu rapor, teknik uyum (CIS) denetim sonuçlarını KVKK, ISO/IEC 27001:2022 ve PCI-DSS v4
+    çerçeve maddelerine eşler. Her madde için geçti/kaldı durumu ve ilgili CIS kontrolü gösterilir.
+    KVKK teknik tedbirleri md.12 kapsamındadır.
+  </p>
+
+  {% if not regulations %}
+  <p>Bu tarama için uyum verisi yok (kimlikli CIS denetimi gerektirir).</p>
+  {% else %}
+  {% for reg, r in regulations.items() %}
+  <h2>{{ reg }}
+    <span class="score {{ 'score-bad' if r.score < 60 else ('score-mid' if r.score < 90 else 'score-good') }}">
+      {{ r.score }}% · {{ r.passed }}/{{ r.total }} geçti
+    </span>
+  </h2>
+  <table class="ctrl">
+    <thead>
+      <tr><th>{{ reg }} maddesi</th><th>Kontrol</th><th>CIS</th><th>Durum</th></tr>
+    </thead>
+    <tbody>
+      {% for c in r.controls %}
+      <tr>
+        <td>{{ c.article }}</td>
+        <td>{{ c.title }}</td>
+        <td>{{ c.framework }} {{ c.cis_id }}</td>
+        <td class="{{ 'pass' if c.status == 'pass' else 'fail' }}">{{ 'Geçti' if c.status == 'pass' else 'Kaldı' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endfor %}
+  {% endif %}
+</body>
+</html>
