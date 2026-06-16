@@ -1,0 +1,59 @@
+name: AI imajı (ön-paketli model)
+
+# Qwen3-8B GGUF modeli GÖMÜLÜ olan kendi AI imajımızı (kangalis-ai) derler + ghcr'a basar.
+# Model build sırasında HuggingFace'ten indirilip imaja gömülür → kullanıcı sonra yalnız bu hazır
+# imajı çeker (çalışma anında sıfır indirme). ELLE tetiklenir (büyük/pahalı; her push'ta koşmaz).
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "İmaj etiketi (ghcr.io/<owner>/kangalis-ai:<tag>)"
+        default: "qwen3-8b-q4km"
+        required: true
+      model_file:
+        description: "Gömülecek GGUF dosya adı (unsloth/Qwen3-8B-GGUF reposundan)"
+        default: "Qwen3-8B-Q4_K_M.gguf"
+        required: true
+      model_sha256:
+        description: "GGUF SHA256 (bütünlük; boş = doğrulamayı atla)"
+        default: "120307ba529eb2439d6c430d94104dabd578497bc7bfe7e322b5d9933b449bd4"
+        required: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 5 GB+ model + imaj katmanları için disk aç (hosted runner'da ~14 GB boş gelir).
+      - name: Disk alanı aç
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache/CodeQL
+          df -h /
+
+      # ghcr imaj referansları küçük-harf olmalı; owner'ı (ör. Lineup-NOAH) küçült.
+      - name: Sahip adını küçük harfe çevir
+        id: owner
+        run: echo "lc=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+
+      - name: ghcr girişi
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Derle + push (model gömülü)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.ai
+          push: true
+          tags: ghcr.io/${{ steps.owner.outputs.lc }}/kangalis-ai:${{ github.event.inputs.tag }}
+          build-args: |
+            MODEL_FILE=${{ github.event.inputs.model_file }}
+            MODEL_SHA256=${{ github.event.inputs.model_sha256 }}

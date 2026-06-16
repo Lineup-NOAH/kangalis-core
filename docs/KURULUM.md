@@ -156,7 +156,8 @@ docker compose exec app python -m cybersectool.scripts.set_scope \
 | **`beat`** | **Derlenen** (aynı imaj) | Celery zamanlayıcı (periyodik görevler). |
 | **`mcp`** | **Derlenen** (aynı imaj) | MCP sunucusu — Claude entegrasyonu (port 8001). |
 | `migrate` | **Derlenen** (aynı imaj) | Tek-seferlik şema migrasyonu; iş bitince çıkar. |
-| `ghcr.io/ggml-org/llama.cpp` | **Opsiyonel** | Yerel AI motoru — **yalnız** `--profile ai` ile çalışır. |
+| `ghcr.io/ggml-org/llama.cpp` | **Opsiyonel** | Yerel AI motoru — **yalnız** `--profile ai` ile çalışır (model HuggingFace'ten çekilir). |
+| `ghcr.io/lineup-noah/kangalis-ai` | **Opsiyonel** (air-gap) | Model **gömülü** ön-paketli AI imajı — çalışma anında sıfır indirme (bkz. §8). |
 
 > **Tek imaj, dört servis:** `app`, `worker`, `beat` ve `mcp` aynı `Dockerfile`'dan
 > derlenen **tek imajı** paylaşır; yalnız çalıştırdıkları komut farklıdır. Bu, derleme
@@ -273,6 +274,28 @@ Bu komut llama.cpp sunucusunu başlatır; modeli (Qwen3-8B-GGUF Q4, ~5–6 GB)
 HuggingFace'ten **tek seferlik** çeker ve **CPU'da** koşar (GPU gerekmez). Port host'a
 **publish edilmez** — yani istemci verisi müşteri ağından çıkmaz (**sıfır egress**;
 yalnızca model indirme tek seferliktir). RAM `mem_limit 8g` ile sınırlıdır.
+
+### Ön-paketli (air-gap) imaj — model gömülü, çalışma anında sıfır indirme
+
+Yukarıdaki varsayılan yol, modeli ilk açılışta **HuggingFace'ten** çeker (internet + ~5 GB
+indirme gerekir). İzole/air-gap ağlar için, modeli (Qwen3-8B Q4) **gömülü** taşıyan ön-paketli
+imajımızı kullanın — böylece çalışma anında **hiç dış indirme olmaz**:
+
+```bash
+# (önce) imajı çekin ya da yerelde derleyin
+docker pull ghcr.io/lineup-noah/kangalis-ai:qwen3-8b-q4km
+#   veya yerel derleme:  bash build-ai-image.sh   /   powershell -File build-ai-image.ps1
+
+# (sonra) gömülü-imaj override'ı ile başlatın
+docker compose -f docker-compose.yml -f docker-compose.ai-baked.yml --profile ai up -d llamacpp
+#   veya:  make ai-baked
+```
+
+> İmaj büyüktür (~5–6 GB, model gömülü). Bir kez çekip air-gap ortama taşıyabilirsiniz
+> (`docker save`/`docker load`). Bu imaj MIT-lisanslı çekirdekten **ayrı** bir artefakttır;
+> llama.cpp (MIT) + Qwen3 (Apache-2.0) gömülüdür — bkz. `THIRD-PARTY-NOTICES.md`.
+
+### Diğer seçenekler ve notlar
 
 - **Alternatif (host motoru):** host'ta LM Studio / Ollama çalıştırıp
   `AI_ENDPOINT=http://host.docker.internal:<port>/v1` verebilirsiniz.

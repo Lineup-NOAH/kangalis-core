@@ -4,7 +4,9 @@ Kangalis (MIT lisanslı, açık-kaynak çekirdek), aşağıdaki üçüncü taraf
 bağımlılıklarını kullanır. Her bağımlılık kendi lisansı altında dağıtılır; ilgili lisans
 metinleri ve telif hakları paketlerin kendi dağıtımlarında yer alır. Bu liste yalnızca
 bilgilendirme amaçlıdır ve çalışma-zamanı (runtime) bağımlılıklarını kapsar; geliştirme/
-test araçları dahil değildir.
+test araçları dahil değildir. (İstisna: opsiyonel **ön-paketli AI imajı** llama.cpp ikilisini ve
+Qwen3 ağırlıklarını yeniden dağıttığından, bunların lisans metinleri imaja **ayrıca gömülür** —
+bkz. aşağıdaki "Ön-paketli AI imajı" bölümü.)
 
 ## Web ve Sunucu
 
@@ -60,6 +62,33 @@ test araçları dahil değildir.
 
 ## Opsiyonel — Yerel AI (varsayılan kapalı)
 
-- **llama.cpp** — MIT — yerel LLM çıkarım motoru (operatör tarafından harici çalıştırılır;
-  uygulamayla DAĞITILMAZ).
-- **Qwen3** (model ağırlıkları) — Apache-2.0 — opsiyonel yerel AI modeli (harici sağlanır).
+- **llama.cpp** — MIT — yerel LLM çıkarım motoru. Bu açık-kaynak çekirdek deposu llama.cpp
+  ikilisini DAĞITMAZ; varsayılan `llamacpp` servisi resmi `ghcr.io/ggml-org/llama.cpp` imajını
+  çeker. (Ayrıca aşağıdaki ön-paketli imaja bakın.)
+- **Qwen3** (model ağırlıkları) — Apache-2.0 — opsiyonel yerel AI modeli. Varsayılan akışta
+  ağırlıklar HuggingFace'ten (operatörün makinesine) **tek seferlik** çekilir; bu çekirdek deposu
+  ağırlıkları içermez/dağıtmaz.
+
+### Ön-paketli AI imajı (`kangalis-ai` — opsiyonel, AYRI artefakt)
+
+Air-gap/kolay-kurulum için **opsiyonel** bir ön-paketli imaj sağlanabilir (`Dockerfile.ai`;
+yayın: `ghcr.io/lineup-noah/kangalis-ai`). Bu imaj, MIT-lisanslı çekirdek uygulamadan **ayrı** bir
+dağıtım artefaktıdır ve içine **gömülü** olarak şunları taşır:
+
+- **llama.cpp** — **MIT** — yeniden dağıtıma izin verir; MIT, lisans metni + telif bildiriminin
+  "tüm kopyalarda" korunmasını zorunlu kılar. **Not:** resmi taban imaj
+  (`ghcr.io/ggml-org/llama.cpp:server`) llama.cpp lisans metnini **içermez** (yalnız Python'ın
+  lisansı bulunur); bu yüzden MIT metni imaja **ayrıca gömülür** →
+  `/licenses/llama.cpp-LICENSE.txt` (telif: `Copyright (c) 2023-2026 The ggml authors`).
+- **Qwen3-8B** model ağırlıkları (varsayılan `unsloth/Qwen3-8B-GGUF`, Q4_K_M kuantizasyonu) —
+  **Apache-2.0** — yeniden dağıtıma ve değiştirmeye izin verir; Apache-2.0 §4(a) lisans metninin
+  **koşulsuz** korunmasını ister. **Not:** modelin dağıtıldığı `unsloth/Qwen3-8B-GGUF` deposunda
+  LICENSE dosyası **yoktur**; bu yüzden Apache-2.0 metni üst (base) model deposu `Qwen/Qwen3-8B`'den
+  alınıp imaja gömülür → `/licenses/Qwen3-8B-LICENSE.txt` (telif: `Copyright 2024 Alibaba Cloud`).
+  Her iki upstream'de de **NOTICE** dosyası bulunmadığından Apache-2.0 §4(d) tetiklenmez.
+
+Yani bu ön-paketli imaj, bu iki bileşeni **yeniden dağıtır**; her ikisinin lisansı (MIT,
+Apache-2.0) buna açıkça izin verir ve gerekli lisans metinleri imaja `/licenses/` altına **gömülür**
+(depoda `licenses/` klasöründe vendor edilir — air-gap/yeniden-üretilebilir; bkz.
+[`licenses/README.md`](licenses/README.md)). İmaj, kendi bileşenlerinin lisansları altında
+dağıtılır; MIT-lisanslı Kangalis çekirdeğinin lisansını değiştirmez.

@@ -1,0 +1,59 @@
+# Kangalis AI — ÖN-PAKETLİ (model GÖMÜLÜ) yerel çıkarım imajı.
+#
+# NE: llama.cpp OpenAI-uyumlu çıkarım sunucusu + Qwen3-8B GGUF modeli TEK imaja gömülü.
+# NEDEN: Kullanıcılar modeli HuggingFace/AI-sitesinden çekmesin diye — bu imaj İNDİRİLDİĞİNDE
+#   model HAZIR gelir → anında çalışır + çalışma anında SIFIR dış indirme (air-gap uyumlu;
+#   LLM verisi müşteri ağında kalır). Compose'daki varsayılan llamacpp servisi modeli `-hf` ile
+#   HuggingFace'ten çeker; bu imaj o indirmeyi BUILD anına (bizim tarafımıza) taşır.
+#
+# DERLEME (model ~5 GB build sırasında indirilir + imaja gömülür; biten imaj internetsiz çalışır):
+#   docker build -f Dockerfile.ai -t ghcr.io/lineup-noah/kangalis-ai:qwen3-8b-q4km .
+#   # veya: bash build-ai-image.sh   /   powershell -File build-ai-image.ps1
+#   # veya: GitHub Actions → "AI imajı (ön-paketli model)" (workflow_dispatch) bunu ghcr'a basar.
+#
+# KULLANIM (derlendikten/çekildikten sonra — model gömülü, indirme yok):
+#   docker compose -f docker-compose.yml -f docker-compose.ai-baked.yml --profile ai up -d llamacpp
+#
+# LİSANS: llama.cpp = MIT, Qwen3 ağırlıkları = Apache-2.0 → her ikisi de yeniden DAĞITILABİLİR
+#   (gömülebilir). Ayrıntı/atıf: THIRD-PARTY-NOTICES.md.
+
+# Taban: llama.cpp `:server` (OpenAI-uyumlu /v1). Compose ile AYNI digest'e sabitlendi
+# (tedarik-zinciri sertleştirme: mutable ":server" tag'i sessizce değişebilir). Güncellemek için:
+#   docker buildx imagetools inspect ghcr.io/ggml-org/llama.cpp:server
+FROM ghcr.io/ggml-org/llama.cpp:server@sha256:7d02b045314fbc22f8cc763fa47fb5a9e8cbfb2c7b8204a87e94c109c0a9e874
+
+# Gömülecek model. Varsayılan: Qwen3-8B Q4_K_M (~5 GB; CPU'da ~8 GB RAM). Başka bir kuantizasyon/
+# model için `--build-arg MODEL_FILE=... --build-arg MODEL_SHA256=...` ile override edin.
+# MODEL_SHA256 = indirilen dosyanın bütünlük (tedarik-zinciri) kontrolü; boş bırakılırsa atlanır.
+# Yeni checksum: https://huggingface.co/<repo>/raw/main/<dosya>.gguf → "oid sha256:" satırı.
+ARG MODEL_REPO=unsloth/Qwen3-8B-GGUF
+ARG MODEL_FILE=Qwen3-8B-Q4_K_M.gguf
+ARG MODEL_SHA256=120307ba529eb2439d6c430d94104dabd578497bc7bfe7e322b5d9933b449bd4
+
+# Modeli indir → SHA256 doğrula → sabit bir isme symlink (CMD bunu kullanır, MODEL_FILE'dan bağımsız).
+# Tek RUN = tek katman (ara indirme katmanları kalmaz). Taban imaj `curl` + coreutils içerir
+# (compose healthcheck'i de curl kullanır). HuggingFace public repo → anonim indirme yeterli.
+RUN set -eux; \
+    mkdir -p /models; \
+    curl -fSL --retry 5 --retry-delay 10 \
+        -o "/models/${MODEL_FILE}" \
+        "https://huggingface.co/${MODEL_REPO}/resolve/main/${MODEL_FILE}?download=true"; \
+    if [ -n "${MODEL_SHA256}" ]; then \
+        echo "${MODEL_SHA256}  /models/${MODEL_FILE}" | sha256sum -c -; \
+    else \
+        echo "UYARI: MODEL_SHA256 boş — bütünlük doğrulaması ATLANDI."; \
+    fi; \
+    ln -sf "/models/${MODEL_FILE}" /models/model.gguf; \
+    ls -lh "/models/${MODEL_FILE}"
+
+# LİSANS BÜTÜNLÜĞÜ (yeniden-dağıtım yükümlülüğü): bu imaj llama.cpp ikilisini (MIT) + Qwen3
+# ağırlıklarını (Apache-2.0) YENİDEN DAĞITIR; her ikisi de lisans metninin KORUNMASINI zorunlu kılar
+# (MIT: "all copies"; Apache-2.0 §4(a): koşulsuz "a copy of this License"). Taban imaj llama.cpp
+# LICENSE'ını İÇERMEZ ve unsloth GGUF deposunda da LICENSE YOKTUR → metinleri repodan gömüyoruz
+# (air-gap/yeniden-üretilebilir; ayrıntı: licenses/README.md, THIRD-PARTY-NOTICES.md). Model
+# katmanından SONRA gelir ki ağır indirme katmanı cache'te kalsın.
+COPY licenses/ /licenses/
+
+# Taban ENTRYPOINT = llama-server; aşağısı ona argümandır. `-hf` YOK → yalnız yerel gömülü dosya
+# (sıfır dış indirme). compose `command:` bunu override ederse o geçerli olur. -c 8192 = bağlam.
+CMD ["-m", "/models/model.gguf", "--host", "0.0.0.0", "--port", "8080", "-c", "8192"]

@@ -34,7 +34,7 @@
 (sıfır-egress). Bulut API'si yok, API anahtarı yok. (Detaylı sıfır-egress kanıtı:
 `docs/AI-SIFIR-EGRESS.md`.)
 
-**Nasıl açılır.** İki yol var:
+**Nasıl açılır.** Üç yol var (A en kolay; B air-gap/izole ağ için; C kendi host motorunuz):
 
 - **A) Gömülü motor (en kolay) — llama.cpp profili:**
   ```bash
@@ -45,7 +45,24 @@
   Compose'da `app`/`worker` zaten `AI_ENDPOINT=http://llamacpp:8080/v1`'e işaret eder.
   Modeli değiştirmek için `.env` içinde `AI_GGUF_REPO=...` ayarlayın.
 
-- **B) Host-native motor (LM Studio / Ollama / LocalAI):**
+- **B) Ön-paketli (air-gap) imaj — model GÖMÜLÜ, sıfır indirme:**
+  Yol (A) modeli HuggingFace'ten çeker (ilk açılışta ~5 GB indirme + internet gerekir). Bunun
+  yerine, modeli (Qwen3-8B Q4) **gömülü** taşıyan ön-paketli imajımızı kullanabilirsiniz —
+  böylece çalışma anında **hiç dış indirme olmaz** (air-gap/izole ağlar için uygundur; LLM verisi
+  müşteri ağında kalır):
+  ```bash
+  # (önce) imajı çekin ya da yerelde derleyin:
+  docker pull ghcr.io/lineup-noah/kangalis-ai:qwen3-8b-q4km
+  #   veya:  bash build-ai-image.sh   /   powershell -File build-ai-image.ps1
+  # (sonra) gömülü-imaj override'ı ile başlatın:
+  docker compose -f docker-compose.yml -f docker-compose.ai-baked.yml --profile ai up -d llamacpp
+  #   veya:  make ai-baked
+  ```
+  > Bu imaj, MIT-lisanslı çekirdekten **ayrı** bir artefakttır; içine llama.cpp (MIT) + Qwen3
+  > ağırlıkları (Apache-2.0) gömülüdür — her ikisinin lisansı gömmeye/yeniden dağıtıma izin verir.
+  > Recipe: `Dockerfile.ai`. Ayrıntı: `THIRD-PARTY-NOTICES.md`.
+
+- **C) Host-native motor (LM Studio / Ollama / LocalAI):**
   Host makinede kendi motorunuzu çalıştırın ve `.env` içinde endpoint'i ona yöneltin:
   ```env
   AI_ENDPOINT=http://host.docker.internal:<port>/v1
@@ -55,7 +72,7 @@
   > eşlemesi gerekir (Compose dosyasında zaten tanımlı). Bu eşleme yoksa app, host motoruna
   > sessizce bağlanamaz.
 
-Her iki yolda da son adım aynıdır: **Ayarlar > AI** kartından AI'yı **etkinleştirin**
+Hangi yolu seçerseniz seçin, son adım aynıdır: **Ayarlar > AI** kartından AI'yı **etkinleştirin**
 (`ai_enabled`), endpoint/model/zaman aşımını doğrulayın ve "Bağlantıyı test et" ile motoru
 yoklayın. Etkinleştirilmeden AI yüzeyleri görünmez. Etkinken arayüz markası "Kangalis AI" olur.
 

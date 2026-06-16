@@ -22,7 +22,13 @@ logs: ## Logları canlı izle
 ps: ## Servis durumu
 	docker compose ps
 
-ai: ## Yerel AI motorunu başlat (opsiyonel — ~5GB model indirir)
+ai: ## Yerel AI motorunu başlat (opsiyonel — modeli HuggingFace'ten ~5GB indirir)
 	docker compose --profile ai up -d llamacpp
 
-.PHONY: help up setup down reset logs ps ai
+ai-build: ## Ön-paketli AI imajını (model gömülü) yerelde derle
+	bash build-ai-image.sh
+
+ai-baked: ## Ön-paketli (model gömülü) AI imajıyla başlat — çalışma anında sıfır indirme
+	docker compose -f docker-compose.yml -f docker-compose.ai-baked.yml --profile ai up -d llamacpp
+
+.PHONY: help up setup down reset logs ps ai ai-build ai-baked

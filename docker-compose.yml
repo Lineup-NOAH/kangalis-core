@@ -150,6 +150,8 @@ services:
   # OpenAI ``/v1/chat/completions`` sunar → app/worker AI_ENDPOINT=http://llamacpp:8080/v1.
   # Modeli değiştirmek için AI_GGUF_REPO (.env), Ayarlar'daki ai_model yalnız etikettir (llama.cpp
   # tek-model sunar). Alternatif: LM Studio/LocalAI'yi host'ta çalıştırıp endpoint'i ona yönelt.
+  # AIR-GAP / SIFIR İNDİRME: modeli GÖMÜLÜ taşıyan ön-paketli imaj için (bu servisi internetten
+  # model çekmeden başlatır) -> docker-compose.ai-baked.yml override + Dockerfile.ai (make ai-baked).
   # PERFORMANS (#273): grounded rapor üretimi CPU'da yavaştır (özet/script ~3-5 dk sıcak modelle);
   # bu yüzden ai_timeout varsayılanı 300 sn. llama.cpp modeli sürekli yüklü tutar. Motor OLLAMA ise
   # OLLAMA_KEEP_ALIVE=-1 ortam değişkenini ver → model boşalmaz, soğuk-yükleme cezası (~70sn) olmaz.
