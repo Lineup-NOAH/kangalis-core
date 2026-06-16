@@ -20,6 +20,18 @@ services:
     ports:
       - "6379:6379"
 
+  # DB şema migrasyonu (tek-seferlik): app/worker/beat/mcp BAŞLAMADAN önce `alembic upgrade head`
+  # çalışır ve çıkar — kullanıcı elle migration koşmaz (otomatik). İdempotent; her up'ta güvenli.
+  migrate:
+    build: .
+    command: alembic upgrade head
+    environment:
+      DATABASE_URL: postgresql+asyncpg://cyber:cyber@db:5432/cybersectool
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
   app:
     build: .
     environment:
@@ -57,6 +69,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     healthcheck:
       test:
         - CMD
@@ -94,6 +108,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+      migrate:
+        condition: service_completed_successfully
 
   beat:
     build: .
@@ -106,6 +122,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+      migrate:
+        condition: service_completed_successfully
 
   mcp:
     build: .
@@ -121,6 +139,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+      migrate:
+        condition: service_completed_successfully
 
   # YEREL AI (OpenAI-uyumlu, llama.cpp server) — Kangalis'in on-prem AI asistanı (zafiyet açıklama
   # + rapor özeti; Faz 2'de exploit hazırlama). VARSAYILAN KAPALI: yalnız 'ai' profiliyle başlar

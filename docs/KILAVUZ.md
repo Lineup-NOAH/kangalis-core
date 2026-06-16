@@ -8,27 +8,53 @@
 
 ## 1. 🚀 Çalıştırma (sıfırdan)
 
-Önkoşul: Docker ve Docker Compose kurulu olmalı. Depoyu klonlayın ve dizine girin.
+**Tek önkoşul: Docker ve Docker Compose.** Başka hiçbir şeyi elle kurmanıza gerek yok —
+`nmap` dahil tüm araçlar `docker compose up --build` sırasında imaja **otomatik** gelir
+(tarama nmap olmadan çalışmaz; ayrıntı için aşağıdaki nota ve `docs/KURULUM.md`'ye bakın).
+Depoyu klonlayın ve dizine girin.
+
+### A) Tek komut — kurulum sihirbazı (önerilen)
+
+Sihirbaz şunları yapar: **derle + başlat → şema migrasyonu (otomatik) → admin kullanıcı sorar →
+yetkili tarama kapsamı (CIDR) sorar.**
+
+```powershell
+# <repo-dizini> = klonladığınız depo kökü
+cd <repo-dizini>
+
+# Windows (PowerShell)
+powershell -ExecutionPolicy Bypass -File setup.ps1
+
+# Linux / macOS:  bash setup.sh        (veya:  make setup)
+```
+
+### B) Manuel adımlar (alternatif)
 
 ```powershell
 # <repo-dizini> = klonladığınız depo kökü
 cd <repo-dizini>
 
 # 1) Tüm servisleri başlat (app, db, redis, worker, beat, mcp)
+#    Şema migrasyonu OTOMATİKtir (migrate servisi şemayı kurar; elle 'alembic upgrade head' GEREKMEZ).
 docker compose up -d --build
 
-# 2) Veritabanı tablolarını oluştur/güncelle
-docker compose exec app alembic upgrade head
-
-# 3) İlk kullanıcıyı oluştur — kendi güçlü parolanı belirle
+# 2) İlk kullanıcıyı oluştur — kendi güçlü parolanı belirle
 docker compose exec app python -m cybersectool.scripts.create_user --username <kullanıcı-adı> --password "<güçlü-bir-parola-seç>" --role admin
 
-# 4) ⚠️ ZORUNLU: yetkili tarama kapsamı (yoksa hiçbir tarama çalışmaz)
+# 3) ⚠️ ZORUNLU: yetkili tarama kapsamı (yoksa hiçbir tarama çalışmaz)
 docker compose exec app python -m cybersectool.scripts.set_scope --name ic-ag --allow 192.168.1.0/24 --allow 10.0.0.0/8
 
 # Durdurma:  docker compose down        (veri kalır)
 # Sıfırlama: docker compose down -v      (veri SİLİNİR)
 ```
+
+> **nmap (tarama motoru):** Elle kurulmaz; `docker compose up --build` sırasında imaja
+> otomatik gelir (`ARG INSTALL_NMAP=true`, varsayılan açık). Araç nmap olmadan tarama
+> **yapamaz**. nmap **NPSL** ile dağıtılır; Kangalis ikiliyi yeniden dağıtmaz, sizin build'iniz
+> Debian deposundan çeker. Ayrıntı: `docs/KURULUM.md` ve `THIRD-PARTY-NOTICES.md`.
+
+> 📘 Ayrıntılı kurulum / üretime geçiş: `docs/KURULUM.md` ·
+> 🧩 opsiyonel özellikler (yerel AI, MCP, eklentiler): `docs/EKLENTILER.md`.
 
 **Erişim adresleri:**
 | Servis | Adres |
@@ -210,10 +236,11 @@ Token yoksa/geçersizse → **401**. Detay: `docs/MCP.md`.
 # Not: shell'inde 'docker' PATH'te yoksa başına şunu ekle:
 #   $env:PATH = "C:\Program Files\Docker\Docker\resources\bin;" + $env:PATH
 
-docker compose up -d --build                 # başlat
+bash setup.sh                                # tek-komut kurulum sihirbazı (Linux/macOS; Win: setup.ps1)
+docker compose up -d --build                 # başlat (şema migrasyonu OTOMATİK; elle alembic gerekmez)
 docker compose ps                            # servis durumu
 docker compose logs worker --tail 20         # worker logları
-docker compose exec app alembic upgrade head # migration
+docker compose logs migrate --tail 20        # migrasyon logları (otomatik çalışır)
 
 # kullanıcı / token / scope
 docker compose exec app python -m cybersectool.scripts.create_user --username X --password "Y" --role admin

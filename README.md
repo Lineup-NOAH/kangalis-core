@@ -24,9 +24,11 @@ denetimleri (CIS/KVKK/ISO/PCI), raporlama ve yerel (on-prem) savunmacı AI. **Ex
 kimlik brute-force) ayrı, opsiyonel bir **sömürü eklentisinde** tutulur ve bu depoya dahil
 **değildir**. Çekirdek, eklenti olmadan tam çalışır.
 
-> **nmap gerekir:** Tarama motoru `nmap` ikilisini çağırır; Docker imajına gömülü **gelmez**.
-> Host'a kurun (`apt install nmap` / `brew install nmap` / `choco install nmap`) veya çalışma
-> ortamında sağlayın.
+> **nmap gerekir:** Tarama motoru `nmap` ikilisini çağırır; tarama bunsuz **çalışmaz**.
+> Elle kurmanız gerekmez — `docker compose up --build` sırasında imaja **otomatik** gelir
+> (`ARG INSTALL_NMAP=true`, varsayılan açık). nmap **NPSL** (Nmap Public Source License) ile
+> dağıtılır; Kangalis ikiliyi yeniden dağıtmaz, sizin build'iniz Debian deposundan çeker.
+> Ayrıntı: [`docs/KURULUM.md`](docs/KURULUM.md) ve [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md).
 
 ## Özellikler
 
@@ -40,6 +42,31 @@ kimlik brute-force) ayrı, opsiyonel bir **sömürü eklentisinde** tutulur ve b
 - 📊 **Web dashboard** — HTMX + Tailwind
 
 Mimari/tasarım: [`docs/PROJE_PLANI.md`](docs/PROJE_PLANI.md)
+
+## Kurulum (hızlı başlangıç)
+
+**Tek önkoşul: Docker + Docker Compose.** Başka hiçbir şeyi elle kurmanıza gerek yok —
+`nmap` dahil her şey `docker compose up --build` sırasında imaja otomatik gelir
+(NPSL ile; ayrıntı [`docs/KURULUM.md`](docs/KURULUM.md)).
+
+Tek komutla kurulum sihirbazı (derle + başlat → migrate **otomatik** → admin kullanıcı sor →
+yetkili tarama kapsamı/CIDR sor):
+
+```bash
+# Linux / macOS
+bash setup.sh          # veya:  make setup
+
+# Windows (PowerShell)
+powershell -ExecutionPolicy Bypass -File setup.ps1
+```
+
+Ardından panel: **http://localhost:8000/login**
+
+> ⚠️ Tarama yetkili **kapsam** (CIDR) tanımlanmadan çalışmaz; sihirbaz bunu sorar.
+> Yalnızca taramaya yetkili olduğunuz ağları girin.
+
+- 📘 Ayrıntılı kurulum / manuel adımlar / üretime geçiş: [`docs/KURULUM.md`](docs/KURULUM.md)
+- 🧩 Opsiyonel özellikler (yerel AI, MCP, eklentiler): [`docs/EKLENTILER.md`](docs/EKLENTILER.md)
 
 ## Teknoloji yığını
 
