@@ -12,7 +12,7 @@ AI üç katmandan oluşur ve **üçü de operatörün kendi sunucusunda** çalı
 | Katman | Görev | Konum |
 |--------|-------|-------|
 | **Kangalis AI çatısı** (`core/ai/`) | İstek hazırlar, prompt kurar, yanıtı gösterir | Dağıtım sunucusu (uygulama konteyneri) |
-| **Yerel çıkarım motoru** (llama.cpp; Ollama/LM Studio gibi yerel motorlar da olur) | Modeli yükler, OpenAI-uyumlu API sunar | Dağıtım sunucusu (AI konteyneri) |
+| **Yerel çıkarım motoru** (Ollama; LM Studio/LocalAI gibi yerel motorlar da olur) | Modeli yükler, OpenAI-uyumlu API sunar | Dağıtım sunucusu (AI konteyneri) |
 | **Model** (örn. qwen3:8b) | Metni üreten yapay zekâ | Dağıtım sunucusu (yerel diskte) |
 
 Bulut API'si **yoktur**. AI çağrısı yalnızca **iç ağ adresine** (`http://kangalis-ai:11434/v1`)
@@ -88,9 +88,9 @@ Phone-home yapsaydı bozulurdu — yapmıyor.
 ```bash
 # 1) İnternetsiz bir iç ağ kur; app erişimini koru, AI'ı internetli ağdan KOPAR:
 docker network create --internal kg-airgap
-docker network connect    kg-airgap          cybersectool-app-1   # app erişimi korunur
+docker network connect    kg-airgap          kangalis-core-app-1   # app erişimi korunur
 docker network connect    kg-airgap          kangalis-ai
-docker network disconnect cybersectool_default kangalis-ai        # ← internet gider
+docker network disconnect kangalis-core_default kangalis-ai        # ← internet gider
 
 # 2) İnternetin gerçekten kesildiğini DOĞRULA (BLOCKED beklenir):
 docker exec kangalis-ai sh -c "curl -m6 -sS https://www.google.com >/dev/null 2>&1 && echo REACHABLE || echo BLOCKED"
@@ -104,9 +104,9 @@ print(asyncio.run(generate(c,'Kısa bir test cümlesi yaz.',system='Sen analists
 # Beklenen: model normal Türkçe yanıt üretir → veri dışarı GEREKMİYOR.
 
 # 4) GERİ AL (AI'ı internetli ağa geri bağla + test ağını temizle):
-docker network connect    cybersectool_default kangalis-ai
+docker network connect    kangalis-core_default kangalis-ai
 docker network disconnect kg-airgap kangalis-ai
-docker network disconnect kg-airgap cybersectool-app-1
+docker network disconnect kg-airgap kangalis-core-app-1
 docker network rm         kg-airgap
 ```
 

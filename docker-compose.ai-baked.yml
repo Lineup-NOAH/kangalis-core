@@ -1,29 +1,21 @@
 # Kangalis — ÖN-PAKETLİ AI imajı override'ı (air-gap / SIFIR çalışma-anı indirme).
 #
-# Ana docker-compose.yml'deki `llamacpp` servisi modeli HuggingFace'ten `-hf` ile çeker.
-# Bu override o servisi, modeli GÖMÜLÜ taşıyan ön-paketli imajımıza (bkz. Dockerfile.ai) geçirir.
-# Diğer her şey (profil ai, port, mem_limit, healthcheck, ağ) ana dosyadan MİRAS alınır.
+# Ana docker-compose.yml'deki `ollama` servisi modeli ilk açılıştan sonra `ollama pull` ile çeker.
+# Bu override o servisi, modeli GÖMÜLÜ taşıyan ön-paketli imajımıza (bkz. Dockerfile.ai) geçirir →
+# pull gerekmez. Diğer her şey (profil ai, port 11434, mem_limit, kangalis-ai alias, healthcheck,
+# OLLAMA_KEEP_ALIVE) ana dosyadan MİRAS alınır.
 #
 # KULLANIM:
-#   docker compose -f docker-compose.yml -f docker-compose.ai-baked.yml --profile ai up -d llamacpp
+#   docker compose -f docker-compose.yml -f docker-compose.ai-baked.yml --profile ai up -d ollama
 #   # veya:  make ai-baked
 #
-# İmajı önce derleyin/çekin:
-#   - ghcr'dan çek (yayınlandıysa):  docker pull ghcr.io/lineup-noah/kangalis-ai:qwen3-8b-q4km
-#   - yerel derle:                   bash build-ai-image.sh  /  powershell -File build-ai-image.ps1
+# İmajı önce çekin/derleyin:
+#   docker pull ghcr.io/lineup-noah/kangalis-ai:qwen3-8b
+#   # veya yerel: bash build-ai-image.sh  /  powershell -File build-ai-image.ps1
 #
 # Farklı imaj/etiket için:  AI_BAKED_IMAGE=... .env'de ya da ortamda verin.
 
 services:
-  llamacpp:
-    image: ${AI_BAKED_IMAGE:-ghcr.io/lineup-noah/kangalis-ai:qwen3-8b-q4km}
-    # Gömülü model dosyasını kullan (-hf YOK = sıfır dış indirme). Taban ENTRYPOINT = llama-server.
-    command:
-      - "-m"
-      - "/models/model.gguf"
-      - "--host"
-      - "0.0.0.0"
-      - "--port"
-      - "8080"
-      - "-c"
-      - "8192"
+  ollama:
+    # Model GÖMÜLÜ → ilk açılışta pull GEREKMEZ. Entrypoint taban imajdan miras = `ollama serve`.
+    image: ${AI_BAKED_IMAGE:-ghcr.io/lineup-noah/kangalis-ai:qwen3-8b}

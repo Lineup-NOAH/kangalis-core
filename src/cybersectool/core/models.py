@@ -810,11 +810,11 @@ class AppSettings(Base):
     ai_enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     ai_endpoint_url: Mapped[str] = mapped_column(
         String(255), default="", server_default=""
-    )  # boş → config.ai_endpoint (http://llamacpp:8080/v1)
+    )  # boş → config.ai_endpoint (http://ollama:11434/v1)
     ai_model_name: Mapped[str] = mapped_column(
         String(128), default="", server_default=""
     )  # boş → config.ai_model (qwen3:8b)
-    ai_timeout_sec: Mapped[int] = mapped_column(default=60, server_default="60")  # CPU yavaş
+    ai_timeout_sec: Mapped[int] = mapped_column(default=300, server_default="300")  # CPU yavaş
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

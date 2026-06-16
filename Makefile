@@ -22,13 +22,14 @@ logs: ## Logları canlı izle
 ps: ## Servis durumu
 	docker compose ps
 
-ai: ## Yerel AI motorunu başlat (opsiyonel — modeli HuggingFace'ten ~5GB indirir)
-	docker compose --profile ai up -d llamacpp
+ai: ## Yerel AI (Ollama) motorunu başlat (opsiyonel — sonra: ollama pull qwen3:8b)
+	docker compose --profile ai up -d ollama
+	@echo "Model çek: docker compose exec ollama ollama pull qwen3:8b  (ya da: make ai-baked = model gömülü)"
 
 ai-build: ## Ön-paketli AI imajını (model gömülü) yerelde derle
 	bash build-ai-image.sh
 
 ai-baked: ## Ön-paketli (model gömülü) AI imajıyla başlat — çalışma anında sıfır indirme
-	docker compose -f docker-compose.yml -f docker-compose.ai-baked.yml --profile ai up -d llamacpp
+	docker compose -f docker-compose.yml -f docker-compose.ai-baked.yml --profile ai up -d ollama
 
 .PHONY: help up setup down reset logs ps ai ai-build ai-baked

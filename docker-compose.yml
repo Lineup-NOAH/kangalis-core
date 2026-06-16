@@ -46,12 +46,12 @@ services:
       # kesintiye uğramasın. Üretimde devre dışı bırakmak için: ALLOW_AGGRESSIVE_SCANS=false
       ALLOW_AGGRESSIVE_SCANS: ${ALLOW_AGGRESSIVE_SCANS:-true}
       # YEREL AI (OpenAI-uyumlu) endpoint'i — app'in /ai/explain & /ai/summary route'ları buraya
-      # bağlanır. 'ai' profili açıksa aşağıdaki llamacpp servisine işaret eder; sıfır egress.
+      # bağlanır. 'ai' profili açıksa aşağıdaki ollama servisine işaret eder; sıfır egress.
       # Host'taki native motor (LM Studio vb.) için: http://host.docker.internal:<port>/v1.
       # Yalnız VARSAYILAN: gerçek açma/model/timeout Ayarlar > AI kartından (AppSettings) yönetilir.
-      AI_ENDPOINT: ${AI_ENDPOINT:-http://llamacpp:8080/v1}
+      AI_ENDPOINT: ${AI_ENDPOINT:-http://ollama:11434/v1}
       AI_MODEL: ${AI_MODEL:-qwen3:8b}
-      AI_TIMEOUT: ${AI_TIMEOUT:-60}
+      AI_TIMEOUT: ${AI_TIMEOUT:-300}
     volumes:
       # Sistem/Servisler paneli (admin) — konteyner durum + CPU/RAM/disk için Docker Engine
       # API'sine SALT-OKUMA erişim. Kod yalnız GET (list/stats/df) yapar; mount edilmezse
@@ -96,9 +96,9 @@ services:
       ALLOW_AGGRESSIVE_SCANS: ${ALLOW_AGGRESSIVE_SCANS:-true}
       # YEREL AI (OpenAI-uyumlu) — worker da Faz 2 exploit-hazırlama için aynı motoru kullanacak
       # (app ile AYNI endpoint). Boş/erişilemezse her şey graceful (statik akış sürer).
-      AI_ENDPOINT: ${AI_ENDPOINT:-http://llamacpp:8080/v1}
+      AI_ENDPOINT: ${AI_ENDPOINT:-http://ollama:11434/v1}
       AI_MODEL: ${AI_MODEL:-qwen3:8b}
-      AI_TIMEOUT: ${AI_TIMEOUT:-60}
+      AI_TIMEOUT: ${AI_TIMEOUT:-300}
     # YEREL AI host-native yolu (worker Faz 2 exploit-hazırlamada aynı motoru kullanacak); app ile
     # AYNI gerekçe — LINUX'ta host.docker.internal çözümü için host-gateway eşlemesi şart.
     extra_hosts:
@@ -142,55 +142,53 @@ services:
       migrate:
         condition: service_completed_successfully
 
-  # YEREL AI (OpenAI-uyumlu, llama.cpp server) — Kangalis'in on-prem AI asistanı (zafiyet açıklama
-  # + rapor özeti; Faz 2'de exploit hazırlama). VARSAYILAN KAPALI: yalnız 'ai' profiliyle başlar
-  # (`docker compose --profile ai up -d llamacpp`). CPU'da koşar (GPU gerekmez); model HuggingFace'ten
-  # otomatik çekilir (-hf). SIFIR EGRESS — port host'a publish EDİLMEZ (yalnız internal ağ), istemci
-  # verisi müşteri ağından çıkmaz (model indirme tek seferlik). mem_limit ile RAM kapılı (AI bursty).
-  # OpenAI ``/v1/chat/completions`` sunar → app/worker AI_ENDPOINT=http://llamacpp:8080/v1.
-  # Modeli değiştirmek için AI_GGUF_REPO (.env), Ayarlar'daki ai_model yalnız etikettir (llama.cpp
-  # tek-model sunar). Alternatif: LM Studio/LocalAI'yi host'ta çalıştırıp endpoint'i ona yönelt.
-  # AIR-GAP / SIFIR İNDİRME: modeli GÖMÜLÜ taşıyan ön-paketli imaj için (bu servisi internetten
-  # model çekmeden başlatır) -> docker-compose.ai-baked.yml override + Dockerfile.ai (make ai-baked).
+  # YEREL AI (Ollama, OpenAI-uyumlu /v1) — Kangalis'in on-prem AI asistanı (zafiyet açıklama + rapor
+  # özeti; Faz 2'de exploit hazırlama). VARSAYILAN KAPALI: yalnız 'ai' profiliyle başlar
+  # (`docker compose --profile ai up -d ollama`). CPU'da koşar (GPU gerekmez). SIFIR EGRESS — port
+  # host'a publish EDİLMEZ (yalnız internal ağ), istemci verisi müşteri ağından çıkmaz.
+  # OpenAI ``/v1/chat/completions`` sunar → app/worker AI_ENDPOINT=http://ollama:11434/v1.
+  # MODEL: bu servis modeli OTOMATİK çekmez; ilk açılıştan sonra bir kez çekin (volume'da kalıcı):
+  #   docker compose exec ollama ollama pull qwen3:8b
+  # AIR-GAP / SIFIR İNDİRME (önerilen): modeli GÖMÜLÜ taşıyan ön-paketli imaj → pull gerekmez:
+  #   docker-compose.ai-baked.yml override + Dockerfile.ai (make ai-baked).
   # PERFORMANS (#273): grounded rapor üretimi CPU'da yavaştır (özet/script ~3-5 dk sıcak modelle);
-  # bu yüzden ai_timeout varsayılanı 300 sn. llama.cpp modeli sürekli yüklü tutar. Motor OLLAMA ise
-  # OLLAMA_KEEP_ALIVE=-1 ortam değişkenini ver → model boşalmaz, soğuk-yükleme cezası (~70sn) olmaz.
-  llamacpp:
-    # Digest-pin (tedarik-zinciri sertleştirme): mutable ":server" tag'i sessizce değişebilir →
-    # OCI index digest'ine sabitlendi (multi-arch; Docker doğru platformu seçer). Güncellemek için
-    # `docker buildx imagetools inspect ghcr.io/ggml-org/llama.cpp:server` ile yeni digest al.
-    image: ghcr.io/ggml-org/llama.cpp:server@sha256:7d02b045314fbc22f8cc763fa47fb5a9e8cbfb2c7b8204a87e94c109c0a9e874
+  # bu yüzden ai_timeout (Ayarlar) cömert tutulur. OLLAMA_KEEP_ALIVE=-1 → model boşalmaz,
+  # soğuk-yükleme cezası (~70sn) olmaz.
+  ollama:
+    # Digest-pin (tedarik-zinciri sertleştirme): mutable ":latest" sessizce değişebilir → Ollama
+    # 0.30.8 digest'ine sabitlendi. Güncellemek için:
+    #   docker pull ollama/ollama:latest && docker inspect ollama/ollama:latest --format '{{index .RepoDigests 0}}'
+    image: ollama/ollama@sha256:05b6fe5143ed006d6d4abd39bdd575f962a5822bdf81e6fbb5e6894eb984ab9c
     profiles: ["ai"]
-    command:
-      - "-hf"
-      - "${AI_GGUF_REPO:-unsloth/Qwen3-8B-GGUF:Q4_K_M}"
-      - "--host"
-      - "0.0.0.0"
-      - "--port"
-      - "8080"
-      - "-c"
-      - "8192"
+    # Sabit konteyner adı: hem ağ-içi DNS (app/worker 'ollama' VE 'kangalis-ai' ile çözer → elle
+    # kurulmuş eski http://kangalis-ai:11434 ayarı bozulmaz) hem de `docker exec/restart/network
+    # kangalis-ai ...` komutlarının çalışması için (network alias yalnız DNS verir, CLI adresi vermez).
+    container_name: kangalis-ai
+    environment:
+      OLLAMA_KEEP_ALIVE: "-1"
+      # CPU'da KV-cache şişmesini sınırla: tek paralel slot (eşzamanlı app+worker isteklerinde her
+      # slot ayrı KV cache açar; tek slot mem_limit'e sığmayı kolaylaştırır).
+      OLLAMA_NUM_PARALLEL: "1"
     expose:
-      - "8080"
+      - "11434"
     volumes:
-      - llamacpp_models:/root/.cache/llama.cpp
-    mem_limit: 8g
+      - ollama_models:/root/.ollama
+    # qwen3:8b ~5-6 GB + KV cache + runtime. Düşük-RAM'de AI_MEM_LIMIT ile küçültün (ör. 6g).
+    mem_limit: ${AI_MEM_LIMIT:-8g}
     restart: unless-stopped
     healthcheck:
-      # llama.cpp server /health döndürür (model yüklenince 200 OK). Model çekme+yükleme dakikalar
-      # sürebildiğinden start_period uzun tutuldu. (Image curl içerir.) Bu yalnız BİLGİLENDİRİCİDİR:
-      # app/worker AI'a depends_on ile BAĞLANMAZ (graceful degradation), böylece motor yükselirken
-      # ya da hiç açılmazken uygulama her zaman ayağa kalkar — yalnız Ayarlar'daki sağlık rozeti +
-      # `docker compose ps` bu durumu gösterir.
-      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      # Ollama API'si ayağa kalkınca `ollama list` 0 döner (model olmasa da). Bu yalnız
+      # BİLGİLENDİRİCİDİR: app/worker AI'a depends_on ile BAĞLANMAZ (graceful degradation) → motor
+      # yükselirken/kapalıyken uygulama her zaman ayağa kalkar; yalnız Ayarlar sağlık rozeti + ps gösterir.
+      test: ["CMD", "ollama", "list"]
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 180s
+      start_period: 60s
 
 volumes:
   pgdata:
-  llamacpp_models:
+  ollama_models:
 
 # Köprü ağ subnet'i yapılandırılabilir (VI-7): müşteri LAN'ı ile çakışmayı önlemek için
 # .env'de DOCKER_SUBNET ayarlayın (ör. 10.89.0.0/16). Varsayılan alışılmadık bir aralık.

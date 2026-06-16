@@ -5762,7 +5762,7 @@ async def settings_ai_web(
     session: SessionDep,
     ai_endpoint_url: Annotated[str, Form()] = "",
     ai_model_name: Annotated[str, Form()] = "",
-    ai_timeout_sec: Annotated[int, Form()] = 60,
+    ai_timeout_sec: Annotated[int, Form()] = 300,
     ai_enabled: Annotated[str, Form()] = "",
 ) -> Response:
     """Yerel AI (OpenAI-uyumlu motor) ayarları (#182): aç/kapa + endpoint + model + timeout.
@@ -5815,7 +5815,7 @@ async def settings_ai_test_web(request: Request, session: SessionDep) -> Respons
         msg = quote(
             f"AI endpoint'ine ulaşıldı (sunulan modeller: {installed}). "
             f"Ayarlardaki model '{model}' listede yok — model adını sunulanlarla eşleştirin "
-            "(llama.cpp tek-model sunar, ad etiket olabilir)."
+            "(Ollama tek-model sunar, ad etiket olabilir)."
         )
     return RedirectResponse(f"/settings?msg={msg}", status_code=status.HTTP_303_SEE_OTHER)
 

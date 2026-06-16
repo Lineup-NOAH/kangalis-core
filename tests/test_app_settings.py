@@ -277,6 +277,15 @@ def test_normalize_ai_timeout() -> None:
     assert normalize_ai_timeout(9999) == 600  # üst sınır
 
 
+async def test_ai_timeout_default_is_300(
+    session_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    """Taze ayar satırının AI zaman aşımı varsayılanı 300 sn (#273): ağır CPU yüzeyleri 60 sn'de
+    timeout'a düşmesin. Kolon/form/compose varsayılanlarının sessizce kaymasını kilitler."""
+    async with session_factory() as session:
+        assert (await get_settings(session)).ai_timeout_sec == 300
+
+
 async def test_save_ai_settings(session_factory: async_sessionmaker[AsyncSession]) -> None:
     """AI ayarları kaydı: aç/kapa + endpoint/model strip + timeout kısma. Varsayılan KAPALI."""
     async with session_factory() as session:
@@ -326,7 +335,7 @@ async def test_probe_ai_endpoint_mocked(
         row = await save_ai_settings(
             session,
             ai_enabled=True,
-            ai_endpoint_url="http://llamacpp:8080/v1",
+            ai_endpoint_url="http://ollama:11434/v1",
             ai_model_name="qwen3:8b",
             ai_timeout_sec=60,
         )

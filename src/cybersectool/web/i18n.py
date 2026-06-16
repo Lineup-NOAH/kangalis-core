@@ -1972,16 +1972,16 @@ DICT: dict[str, dict[str, str]] = {
     },
     "set_ai_endpoint": {"tr": "Endpoint (OpenAI taban URL)", "en": "Endpoint (OpenAI base URL)"},
     "set_ai_endpoint_tip": {
-        "tr": "Yerel OpenAI-uyumlu motorun URL'i (llama.cpp/LM Studio/LocalAI). Boş→varsayılan "
-        "(http://llamacpp:8080/v1). Host motoru için http://host.docker.internal:<port>/v1.",
-        "en": "URL of the local OpenAI-compatible engine (llama.cpp/LM Studio/LocalAI). Blank→"
-        "default (http://llamacpp:8080/v1). Host engine: http://host.docker.internal:<port>/v1.",
+        "tr": "Yerel OpenAI-uyumlu motorun URL'i (Ollama/LM Studio/LocalAI). Boş→varsayılan "
+        "(http://ollama:11434/v1). Host motoru için http://host.docker.internal:<port>/v1.",
+        "en": "URL of the local OpenAI-compatible engine (Ollama/LM Studio/LocalAI). Blank→"
+        "default (http://ollama:11434/v1). Host engine: http://host.docker.internal:<port>/v1.",
     },
     "set_ai_model": {"tr": "Model", "en": "Model"},
     "set_ai_model_tip": {
-        "tr": "Model adı/etiketi. Varsayılan qwen3:8b (çok-dilli+akıl; CPU'da ~6GB). llama.cpp "
+        "tr": "Model adı/etiketi. Varsayılan qwen3:8b (çok-dilli+akıl; CPU'da ~6GB). Ollama "
         "tek-model sunar (etiket); LM Studio'da yüklü model id'siyle eşleşmeli.",
-        "en": "Model name/label. Default qwen3:8b (multilingual+reasoning; ~6GB CPU). llama.cpp "
+        "en": "Model name/label. Default qwen3:8b (multilingual+reasoning; ~6GB CPU). Ollama "
         "serves a single model (label); for LM Studio it must match the loaded model id.",
     },
     "set_ai_timeout": {"tr": "Zaman aşımı (sn)", "en": "Timeout (s)"},
@@ -1996,10 +1996,14 @@ DICT: dict[str, dict[str, str]] = {
         "used. AI output is generative — verify before acting on it.",
     },
     "set_ai_hint": {
-        "tr": "Container: docker compose --profile ai up -d llamacpp (model otomatik çekilir). "
-        "Ya da host'ta LM Studio/llama.cpp çalıştırıp endpoint'i ona yöneltin. Sonra test edin.",
-        "en": "Container: docker compose --profile ai up -d llamacpp (model auto-downloads). "
-        "Or run LM Studio/llama.cpp on the host and point the endpoint at it. Then test.",
+        "tr": "Container: docker compose --profile ai up -d ollama (ilk açılıştan sonra modeli "
+        "docker compose exec ollama ollama pull qwen3:8b ile çekin; air-gap için ön-paketli imaj "
+        "zaten var). Ya da host'ta LM Studio/Ollama çalıştırıp endpoint'i ona yöneltin. Sonra "
+        "test edin.",
+        "en": "Container: docker compose --profile ai up -d ollama (after first start, pull the "
+        "model with docker compose exec ollama ollama pull qwen3:8b; a pre-packaged image already "
+        "exists for air-gap). Or run LM Studio/Ollama on the host and point the endpoint at it. "
+        "Then test.",
     },
     "set_ai_test": {"tr": "Bağlantıyı test et", "en": "Test connection"},
     # Yerel AI kurulum sihirbazı (Faz 1 çatısı) — ortam algılama + önerilen motor yolu
@@ -2026,9 +2030,9 @@ DICT: dict[str, dict[str, str]] = {
     },
     "set_ai_detect_none_hint": {
         "tr": "Erişilebilir motor yok. Linux'ta gömülü profili açın "
-        "(docker compose --profile ai up -d llamacpp) ya da kurumsal LLM endpoint'inizi girin.",
+        "(docker compose --profile ai up -d ollama) ya da kurumsal LLM endpoint'inizi girin.",
         "en": "No reachable engine. On Linux enable the bundled profile "
-        "(docker compose --profile ai up -d llamacpp) or enter your enterprise LLM endpoint.",
+        "(docker compose --profile ai up -d ollama) or enter your enterprise LLM endpoint.",
     },
     # Yerel AI açıklama / özet (per-bulgu + rapor; #183-184)
     "ai_explain_btn": {"tr": "AI ile açıkla", "en": "Explain with AI"},

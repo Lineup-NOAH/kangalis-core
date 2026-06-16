@@ -62,13 +62,13 @@ class Settings(BaseSettings):
     ldap_default_role: str = "viewer"
     # YEREL AI (OpenAI-uyumlu motor, on-prem) — ürünün diferansiyatörü: müşteri ağından
     # ÇIKMAYAN, CPU'da koşan zafiyet-açıklama + rapor-özeti asistanı. Bulut API YOK
-    # (gizlilik/egress). İstemci OpenAI ``/v1/chat/completions`` konuşur → llama.cpp / LM
+    # (gizlilik/egress). İstemci OpenAI ``/v1/chat/completions`` konuşur → Ollama / LM
     # Studio / LocalAI gibi YEREL motorlarla çalışır (tek runtime'a bağlı değil). Bu env
     # değerleri yalnız VARSAYILANDIR; çalışma anı Ayarlar > AI kartından (AppSettings) override
     # edilir. ai_enabled DB'de (admin UI); endpoint boşsa AI devre dışı (graceful: butonlar
-    # gizli, statik Remediation sürer). Compose 'ai' profili llama.cpp server'ı açar; host'taki
+    # gizli, statik Remediation sürer). Compose 'ai' profili Ollama servisini açar; host'taki
     # native motor için endpoint host.docker.internal olur.
-    ai_endpoint: str = "http://llamacpp:8080/v1"  # OpenAI taban URL; internal ağ; sıfır egress
+    ai_endpoint: str = "http://ollama:11434/v1"  # OpenAI taban URL; internal ağ; sıfır egress
     ai_model: str = "qwen3:8b"  # Haziran-2026 sub-8B lider (çok-dilli+akıl+kod); Q4 ~6GB CPU
     # CPU çıkarımı yavaş: grounded RAPOR üretimi (özet/script/asset-story) qwen3:8b'de sıcak
     # modelle bile ~3-5 dk sürebilir (#273 ölçümü). Soğuk yükleme +~70sn. Bu yüzden cömert

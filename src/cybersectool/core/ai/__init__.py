@@ -2,7 +2,7 @@
 
 Bu paket Kangalis'in YEREL AI asistanının ortak motorudur: müşteri ağından çıkmayan (sıfır
 egress), CPU'da koşan bir LLM'e prompt yollar, metin döndürür. İstemci OpenAI ``/v1`` protokolü
-konuşur → llama.cpp / LM Studio / LocalAI gibi yerel motorların hepsiyle çalışır. Katmanlar:
+konuşur → Ollama / LM Studio / LocalAI gibi yerel motorların hepsiyle çalışır. Katmanlar:
 
 * ``client``  — düşük-seviye HTTP istemcisi (uygulamayı BİLMEZ: bulgu/rapor/exploit yok).
 * ``service`` — yeteneğe bağımsız orkestrasyon: config çöz (``AIConfig``) + istemciyi çağır;

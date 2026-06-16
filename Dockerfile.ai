@@ -1,59 +1,47 @@
-# Kangalis AI — ÖN-PAKETLİ (model GÖMÜLÜ) yerel çıkarım imajı.
+# Kangalis AI — ÖN-PAKETLİ (model GÖMÜLÜ) yerel Ollama imajı.
 #
-# NE: llama.cpp OpenAI-uyumlu çıkarım sunucusu + Qwen3-8B GGUF modeli TEK imaja gömülü.
-# NEDEN: Kullanıcılar modeli HuggingFace/AI-sitesinden çekmesin diye — bu imaj İNDİRİLDİĞİNDE
-#   model HAZIR gelir → anında çalışır + çalışma anında SIFIR dış indirme (air-gap uyumlu;
-#   LLM verisi müşteri ağında kalır). Compose'daki varsayılan llamacpp servisi modeli `-hf` ile
-#   HuggingFace'ten çeker; bu imaj o indirmeyi BUILD anına (bizim tarafımıza) taşır.
+# NE: Ollama çıkarım sunucusu + Qwen3-8B modeli TEK imaja gömülü.
+# NEDEN: Kullanıcılar modeli internetten çekmesin diye — bu imaj İNDİRİLDİĞİNDE model HAZIR gelir
+#   → anında çalışır + çalışma anında SIFIR dış indirme (air-gap uyumlu; LLM verisi yerel kalır).
+#   Varsayılan `ollama` servisi modeli ilk açılışta `ollama pull` ile çeker; bu imaj o indirmeyi
+#   BUILD anına (bizim tarafımıza) taşır.
 #
-# DERLEME (model ~5 GB build sırasında indirilir + imaja gömülür; biten imaj internetsiz çalışır):
-#   docker build -f Dockerfile.ai -t ghcr.io/lineup-noah/kangalis-ai:qwen3-8b-q4km .
-#   # veya: bash build-ai-image.sh   /   powershell -File build-ai-image.ps1
+# DERLEME (model ~5 GB build sırasında indirilip imaja gömülür; biten imaj internetsiz çalışır):
+#   docker build -f Dockerfile.ai -t ghcr.io/lineup-noah/kangalis-ai:qwen3-8b .
+#   # veya: bash build-ai-image.sh  /  powershell -File build-ai-image.ps1
 #   # veya: GitHub Actions → "AI imajı (ön-paketli model)" (workflow_dispatch) bunu ghcr'a basar.
 #
 # KULLANIM (derlendikten/çekildikten sonra — model gömülü, indirme yok):
-#   docker compose -f docker-compose.yml -f docker-compose.ai-baked.yml --profile ai up -d llamacpp
+#   docker compose -f docker-compose.yml -f docker-compose.ai-baked.yml --profile ai up -d ollama
 #
-# LİSANS: llama.cpp = MIT, Qwen3 ağırlıkları = Apache-2.0 → her ikisi de yeniden DAĞITILABİLİR
-#   (gömülebilir). Ayrıntı/atıf: THIRD-PARTY-NOTICES.md.
+# LİSANS: Ollama = MIT, Qwen3 ağırlıkları = Apache-2.0 → her ikisi de yeniden DAĞITILABİLİR
+#   (gömülebilir). Metinler imaja /licenses/ altına gömülür (bkz. licenses/, THIRD-PARTY-NOTICES.md).
 
-# Taban: llama.cpp `:server` (OpenAI-uyumlu /v1). Compose ile AYNI digest'e sabitlendi
-# (tedarik-zinciri sertleştirme: mutable ":server" tag'i sessizce değişebilir). Güncellemek için:
-#   docker buildx imagetools inspect ghcr.io/ggml-org/llama.cpp:server
-FROM ghcr.io/ggml-org/llama.cpp:server@sha256:7d02b045314fbc22f8cc763fa47fb5a9e8cbfb2c7b8204a87e94c109c0a9e874
+# Taban: resmi Ollama sunucusu (OpenAI-uyumlu /v1, port 11434). Digest'e sabitlendi (tedarik-zinciri
+# sertleştirme: mutable ":latest" sessizce değişebilir). Bu digest = Ollama 0.30.8. Güncellemek için:
+#   docker pull ollama/ollama:latest && docker inspect ollama/ollama:latest --format '{{index .RepoDigests 0}}'
+FROM ollama/ollama@sha256:05b6fe5143ed006d6d4abd39bdd575f962a5822bdf81e6fbb5e6894eb984ab9c
 
-# Gömülecek model. Varsayılan: Qwen3-8B Q4_K_M (~5 GB; CPU'da ~8 GB RAM). Başka bir kuantizasyon/
-# model için `--build-arg MODEL_FILE=... --build-arg MODEL_SHA256=...` ile override edin.
-# MODEL_SHA256 = indirilen dosyanın bütünlük (tedarik-zinciri) kontrolü; boş bırakılırsa atlanır.
-# Yeni checksum: https://huggingface.co/<repo>/raw/main/<dosya>.gguf → "oid sha256:" satırı.
-ARG MODEL_REPO=unsloth/Qwen3-8B-GGUF
-ARG MODEL_FILE=Qwen3-8B-Q4_K_M.gguf
-ARG MODEL_SHA256=120307ba529eb2439d6c430d94104dabd578497bc7bfe7e322b5d9933b449bd4
+# Gömülecek model (Ollama etiketi). Varsayılan Qwen3-8B (~5 GB; CPU'da ~6 GB RAM). Başka model için
+# `--build-arg AI_MODEL=...` ile override edin (compose'daki ai_model ile aynı olmalı).
+ARG AI_MODEL=qwen3:8b
 
-# Modeli indir → SHA256 doğrula → sabit bir isme symlink (CMD bunu kullanır, MODEL_FILE'dan bağımsız).
-# Tek RUN = tek katman (ara indirme katmanları kalmaz). Taban imaj `curl` + coreutils içerir
-# (compose healthcheck'i de curl kullanır). HuggingFace public repo → anonim indirme yeterli.
+# Modeli BUILD'de indir + imaja GÖM: `ollama pull` için sunucuyu GEÇİCİ ayağa kaldır, model
+# /root/.ollama'ya yazılır (katmana gömülür). Sınırlı bekleme (sunucu gelmezse build takılmasın).
 RUN set -eux; \
-    mkdir -p /models; \
-    curl -fSL --retry 5 --retry-delay 10 \
-        -o "/models/${MODEL_FILE}" \
-        "https://huggingface.co/${MODEL_REPO}/resolve/main/${MODEL_FILE}?download=true"; \
-    if [ -n "${MODEL_SHA256}" ]; then \
-        echo "${MODEL_SHA256}  /models/${MODEL_FILE}" | sha256sum -c -; \
-    else \
-        echo "UYARI: MODEL_SHA256 boş — bütünlük doğrulaması ATLANDI."; \
-    fi; \
-    ln -sf "/models/${MODEL_FILE}" /models/model.gguf; \
-    ls -lh "/models/${MODEL_FILE}"
+    ollama serve & srv=$!; \
+    for _ in $(seq 1 60); do ollama list >/dev/null 2>&1 && break; sleep 1; done; \
+    ollama list >/dev/null 2>&1 || { echo "HATA: ollama serve 60sn icinde hazir olmadi" >&2; kill "${srv}" 2>/dev/null || true; exit 1; }; \
+    ollama pull "${AI_MODEL}"; \
+    ollama list; \
+    kill "${srv}" 2>/dev/null || true
 
-# LİSANS BÜTÜNLÜĞÜ (yeniden-dağıtım yükümlülüğü): bu imaj llama.cpp ikilisini (MIT) + Qwen3
-# ağırlıklarını (Apache-2.0) YENİDEN DAĞITIR; her ikisi de lisans metninin KORUNMASINI zorunlu kılar
-# (MIT: "all copies"; Apache-2.0 §4(a): koşulsuz "a copy of this License"). Taban imaj llama.cpp
-# LICENSE'ını İÇERMEZ ve unsloth GGUF deposunda da LICENSE YOKTUR → metinleri repodan gömüyoruz
-# (air-gap/yeniden-üretilebilir; ayrıntı: licenses/README.md, THIRD-PARTY-NOTICES.md). Model
-# katmanından SONRA gelir ki ağır indirme katmanı cache'te kalsın.
+# Model sürekli yüklü kalsın (CPU'da soğuk-yükleme cezası ~70sn olmasın).
+ENV OLLAMA_KEEP_ALIVE=-1
+
+# LİSANS BÜTÜNLÜĞÜ (yeniden-dağıtım yükümlülüğü): bu imaj Ollama ikilisini (MIT) + Qwen3 ağırlıklarını
+# (Apache-2.0) YENİDEN DAĞITIR; her ikisi de lisans metninin korunmasını zorunlu kılar. Metinler
+# repodan gömülür (air-gap/yeniden-üretilebilir; ayrıntı: licenses/README.md, THIRD-PARTY-NOTICES.md).
 COPY licenses/ /licenses/
 
-# Taban ENTRYPOINT = llama-server; aşağısı ona argümandır. `-hf` YOK → yalnız yerel gömülü dosya
-# (sıfır dış indirme). compose `command:` bunu override ederse o geçerli olur. -c 8192 = bağlam.
-CMD ["-m", "/models/model.gguf", "--host", "0.0.0.0", "--port", "8080", "-c", "8192"]
+# ENTRYPOINT/CMD taban imajdan miras = `ollama serve` (port 11434). compose `command` ile değişmez.

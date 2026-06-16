@@ -36,29 +36,30 @@
 
 **Nasıl açılır.** Üç yol var (A en kolay; B air-gap/izole ağ için; C kendi host motorunuz):
 
-- **A) Gömülü motor (en kolay) — llama.cpp profili:**
+- **A) Gömülü motor (en kolay) — Ollama profili:**
   ```bash
-  docker compose --profile ai up -d llamacpp
+  docker compose --profile ai up -d ollama
   ```
-  Bu, OpenAI-uyumlu yerel bir çıkarım sunucusu başlatır; modeli (varsayılan
-  `unsloth/Qwen3-8B-GGUF:Q4_K_M`, ~5GB) HuggingFace'ten **tek seferlik** çeker ve CPU'da koşar.
-  Compose'da `app`/`worker` zaten `AI_ENDPOINT=http://llamacpp:8080/v1`'e işaret eder.
-  Modeli değiştirmek için `.env` içinde `AI_GGUF_REPO=...` ayarlayın.
+  Bu, OpenAI-uyumlu yerel bir çıkarım sunucusu başlatır; modeli (varsayılan `qwen3:8b`, ~5GB)
+  ilk açılıştan sonra `docker compose exec ollama ollama pull qwen3:8b` ile **tek seferlik**
+  çeker ve CPU'da koşar (air-gap için ön-paketli imaj zaten var, bkz. B).
+  Compose'da `app`/`worker` zaten `AI_ENDPOINT=http://ollama:11434/v1`'e işaret eder.
+  Modeli değiştirmek için `.env` içinde `AI_MODEL=...` ayarlayın.
 
 - **B) Ön-paketli (air-gap) imaj — model GÖMÜLÜ, sıfır indirme:**
-  Yol (A) modeli HuggingFace'ten çeker (ilk açılışta ~5 GB indirme + internet gerekir). Bunun
-  yerine, modeli (Qwen3-8B Q4) **gömülü** taşıyan ön-paketli imajımızı kullanabilirsiniz —
+  Yol (A) modeli ilk açılıştan sonra `ollama pull` ile çeker (~5 GB indirme + internet gerekir).
+  Bunun yerine, modeli (Qwen3-8B Q4) **gömülü** taşıyan ön-paketli imajımızı kullanabilirsiniz —
   böylece çalışma anında **hiç dış indirme olmaz** (air-gap/izole ağlar için uygundur; LLM verisi
   müşteri ağında kalır):
   ```bash
   # (önce) imajı çekin ya da yerelde derleyin:
-  docker pull ghcr.io/lineup-noah/kangalis-ai:qwen3-8b-q4km
+  docker pull ghcr.io/lineup-noah/kangalis-ai:qwen3-8b
   #   veya:  bash build-ai-image.sh   /   powershell -File build-ai-image.ps1
   # (sonra) gömülü-imaj override'ı ile başlatın:
-  docker compose -f docker-compose.yml -f docker-compose.ai-baked.yml --profile ai up -d llamacpp
+  docker compose -f docker-compose.yml -f docker-compose.ai-baked.yml --profile ai up -d ollama
   #   veya:  make ai-baked
   ```
-  > Bu imaj, MIT-lisanslı çekirdekten **ayrı** bir artefakttır; içine llama.cpp (MIT) + Qwen3
+  > Bu imaj, MIT-lisanslı çekirdekten **ayrı** bir artefakttır; içine Ollama (MIT) + Qwen3
   > ağırlıkları (Apache-2.0) gömülüdür — her ikisinin lisansı gömmeye/yeniden dağıtıma izin verir.
   > Recipe: `Dockerfile.ai`. Ayrıntı: `THIRD-PARTY-NOTICES.md`.
 

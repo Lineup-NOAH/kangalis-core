@@ -4,8 +4,8 @@ Bu katman UYGULAMAYI BİLMEZ (bulgu/rapor/exploit kavramı yok): yalnız bir end
 yollayıp metin döndürür. Faz 1 (raporlama) ve Faz 2 (exploit hazırlama) aynı istemciyi paylaşır.
 
 OpenAI-uyumlu ``/v1/chat/completions`` protokolü konuşur → yerel motorların ORTAK standardı:
-**llama.cpp server**, **LM Studio**, **LocalAI**, **vLLM** vb. hepsiyle çalışır (tek bir bespoke
-runtime'a — Ollama'ya — bağlı DEĞİL). Endpoint OpenAI taban URL'idir (genelde ``.../v1``).
+**Ollama**, **LM Studio**, **LocalAI**, **vLLM** vb. hepsiyle çalışır (tek bir bespoke
+runtime'a bağlı DEĞİL). Endpoint OpenAI taban URL'idir (genelde ``.../v1``).
 
 Sıfır egress: çağrı yalnız müşteri ağındaki yerel motora gider (compose 'ai' profili ya da
 host'taki native motor). Hiçbir veri buluta/dışarı çıkmaz.
@@ -46,9 +46,9 @@ async def generate(
     """OpenAI-uyumlu ``/chat/completions`` çağrısı (stream=false) → üretilen metin ya da ``None``.
 
     Args:
-        endpoint: OpenAI taban URL'i (ör. ``http://llamacpp:8080/v1``). Boşsa ``None`` döner.
-        model: Model adı/etiketi (ör. ``qwen3:8b``). Tek-model sunan motorlarda (llama.cpp)
-            etiket olabilir; çok-model sunanlarda (LM Studio) yüklü model id'siyle eşleşmeli.
+        endpoint: OpenAI taban URL'i (ör. ``http://ollama:11434/v1``). Boşsa ``None`` döner.
+        model: Model adı/etiketi (ör. ``qwen3:8b``). Tek-model sunan motorlarda (Ollama, ad
+            etiket olabilir); çok-model sunanlarda (LM Studio) yüklü model id'siyle eşleşmeli.
             Boşsa ``None`` döner.
         prompt: Kullanıcı prompt'u (grounded içerik buraya gömülür).
         system: Opsiyonel sistem yönergesi (rol/biçim/dil talimatı) → ``system`` rol mesajı.

@@ -103,7 +103,7 @@ async def list_models(config: AIConfig) -> list[str] | None:
 _AI_CANDIDATES: tuple[tuple[str, str, str], ...] = (
     ("ollama-host", "Ollama (host-native)", "http://host.docker.internal:11434/v1"),
     ("lmstudio-host", "LM Studio (host-native)", "http://host.docker.internal:1234/v1"),
-    ("bundled", "Gömülü container (llamacpp)", "http://llamacpp:8080/v1"),
+    ("bundled", "Gömülü container (Ollama)", "http://ollama:11434/v1"),
 )
 # Algılama yoklaması kısa zaman aşımıyla yapılır (erişilemez aday tüm sihirbazı bekletmesin).
 _DETECT_TIMEOUT = 4.0

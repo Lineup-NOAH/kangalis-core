@@ -38,5 +38,5 @@ docker compose exec -T app python -m cybersectool.scripts.set_scope @scopeArgs
 Write-Host "`n[OK] Kurulum tamam!"
 Write-Host "   Web paneli : http://localhost:8000/login   (kullanici: $kuser)"
 Write-Host "   API/Swagger: http://localhost:8000/docs"
-Write-Host "   Yerel AI'yi acmak (opsiyonel): docker compose --profile ai up -d llamacpp"
+Write-Host "   Yerel AI'yi acmak (opsiyonel): docker compose --profile ai up -d ollama"
 Write-Host "   Ayrinti: docs/KURULUM.md + docs/EKLENTILER.md"

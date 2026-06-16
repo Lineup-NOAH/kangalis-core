@@ -1,23 +1,19 @@
 name: AI imajı (ön-paketli model)
 
-# Qwen3-8B GGUF modeli GÖMÜLÜ olan kendi AI imajımızı (kangalis-ai) derler + ghcr'a basar.
-# Model build sırasında HuggingFace'ten indirilip imaja gömülür → kullanıcı sonra yalnız bu hazır
+# Qwen3-8B modeli GÖMÜLÜ olan kendi Ollama AI imajımızı (kangalis-ai) derler + ghcr'a basar.
+# Model build sırasında `ollama pull` ile çekilip imaja gömülür → kullanıcı sonra yalnız bu hazır
 # imajı çeker (çalışma anında sıfır indirme). ELLE tetiklenir (büyük/pahalı; her push'ta koşmaz).
 on:
   workflow_dispatch:
     inputs:
       tag:
         description: "İmaj etiketi (ghcr.io/<owner>/kangalis-ai:<tag>)"
-        default: "qwen3-8b-q4km"
+        default: "qwen3-8b"
         required: true
-      model_file:
-        description: "Gömülecek GGUF dosya adı (unsloth/Qwen3-8B-GGUF reposundan)"
-        default: "Qwen3-8B-Q4_K_M.gguf"
+      model:
+        description: "Gömülecek Ollama modeli (etiket)"
+        default: "qwen3:8b"
         required: true
-      model_sha256:
-        description: "GGUF SHA256 (bütünlük; boş = doğrulamayı atla)"
-        default: "120307ba529eb2439d6c430d94104dabd578497bc7bfe7e322b5d9933b449bd4"
-        required: false
 
 permissions:
   contents: read
@@ -55,5 +51,4 @@ jobs:
           push: true
           tags: ghcr.io/${{ steps.owner.outputs.lc }}/kangalis-ai:${{ github.event.inputs.tag }}
           build-args: |
-            MODEL_FILE=${{ github.event.inputs.model_file }}
-            MODEL_SHA256=${{ github.event.inputs.model_sha256 }}
+            AI_MODEL=${{ github.event.inputs.model }}

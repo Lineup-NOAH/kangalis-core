@@ -8,15 +8,18 @@ build sırasında ağdan çekilmek yerine depoda **vendor** edilmiştir.
 
 | Dosya | Bileşen | Lisans | Telif |
 |---|---|---|---|
-| `llama.cpp-LICENSE.txt` | llama.cpp (çıkarım motoru ikilisi) | MIT | Copyright (c) 2023-2026 The ggml authors |
-| `Qwen3-8B-LICENSE.txt` | Qwen3-8B model ağırlıkları (GGUF) | Apache-2.0 | Copyright 2024 Alibaba Cloud |
+| `ollama-LICENSE.txt` | Ollama (çıkarım sunucusu) | MIT | Copyright (c) Ollama |
+| `Qwen3-8B-LICENSE.txt` | Qwen3-8B model ağırlıkları | Apache-2.0 | Copyright 2024 Alibaba Cloud |
 
 Notlar:
-- **llama.cpp**: Resmi taban imaj (`ghcr.io/ggml-org/llama.cpp:server`) MIT lisans metnini
-  **içermez** (yalnızca Python'ın lisansı bulunur); bu yüzden MIT metni buradan gömülür.
-- **Qwen3**: Modelin dağıtıldığı `unsloth/Qwen3-8B-GGUF` deposunda LICENSE dosyası **yoktur**;
-  Apache-2.0 metni, üst (base) model deposu `Qwen/Qwen3-8B`'den alınmıştır. Her iki upstream'de de
-  bir **NOTICE** dosyası bulunmadığından Apache-2.0 §4(d) tetiklenmez.
+- **Ollama**: Resmi `ollama/ollama` imajı MIT lisanslıdır; metni uyum/atıf için buraya da gömülür.
+- **Qwen3**: Model `ollama pull qwen3:8b` ile Ollama kütüphanesinden gelir; ağırlıklar **Qwen3-8B**
+  (Apache-2.0). Lisans metni üst (base) model deposu `Qwen/Qwen3-8B`'den alınmıştır. Upstream'de bir
+  **NOTICE** dosyası bulunmadığından Apache-2.0 §4(d) tetiklenmez.
+- **Taban katmanlar**: İmaj `ollama/ollama` tabanından gelen Ubuntu 24.04 + sistem paketlerini (ve
+  GPU değişkeninde NVIDIA CUDA kütüphanelerini) miras alır; bunlar burada vendor **edilmez**, kendi
+  upstream lisansları altında imaj katmanlarında taşınır. Bu klasör yalnızca Kangalis'in pinlediği
+  iki bileşeni kapsar.
 - Bu metinler yalnızca **bilgilendirme/uyum** amaçlıdır; her bileşen kendi lisansı altında dağıtılır
   ve MIT-lisanslı Kangalis çekirdeğinin lisansını değiştirmez. (Hukuki tavsiye değildir.)
 

@@ -156,7 +156,7 @@ docker compose exec app python -m cybersectool.scripts.set_scope \
 | **`beat`** | **Derlenen** (aynı imaj) | Celery zamanlayıcı (periyodik görevler). |
 | **`mcp`** | **Derlenen** (aynı imaj) | MCP sunucusu — Claude entegrasyonu (port 8001). |
 | `migrate` | **Derlenen** (aynı imaj) | Tek-seferlik şema migrasyonu; iş bitince çıkar. |
-| `ghcr.io/ggml-org/llama.cpp` | **Opsiyonel** | Yerel AI motoru — **yalnız** `--profile ai` ile çalışır (model HuggingFace'ten çekilir). |
+| `ollama/ollama` | **Opsiyonel** | Yerel AI motoru (Ollama) — **yalnız** `--profile ai` ile çalışır (model ilk açılıştan sonra `ollama pull qwen3:8b` ile çekilir). |
 | `ghcr.io/lineup-noah/kangalis-ai` | **Opsiyonel** (air-gap) | Model **gömülü** ön-paketli AI imajı — çalışma anında sıfır indirme (bkz. §8). |
 
 > **Tek imaj, dört servis:** `app`, `worker`, `beat` ve `mcp` aynı `Dockerfile`'dan
@@ -245,7 +245,7 @@ cp .env.example .env
 | `DOCKER_SUBNET` | `172.28.0.0/16` | Konteyner köprü ağı. **Müşteri LAN'ı ile çakışıyorsa değiştirin** (ör. `10.89.0.0/16`). |
 | `EXCLUDE_SCAN_IPS` | boş | Taramadan/envanterden dışlanacak ek IP'ler (virgülle). Aracın kendi konteyner IP'leri zaten otomatik dışlanır. |
 | `ALLOW_AGGRESSIVE_SCANS` | dev=`true`, kod varsayılanı=`false` | Agresif (müdahaleci) tarama kill-switch'i. **Üretimde `false` bırakın.** |
-| `AI_ENDPOINT` | `http://llamacpp:8080/v1` | Yerel AI motoru OpenAI-uyumlu uç. Host'taki motor için `http://host.docker.internal:<port>/v1`. |
+| `AI_ENDPOINT` | `http://ollama:11434/v1` | Yerel AI motoru OpenAI-uyumlu uç. Host'taki motor için `http://host.docker.internal:<port>/v1`. |
 | `AI_MODEL` | `qwen3:8b` | AI model etiketi. |
 | `AI_TIMEOUT` | `300` | AI istek zaman aşımı (sn). CPU çıkarımı yavaştır; cömert tutuldu. |
 
@@ -265,35 +265,36 @@ Kangalis'in yerel AI asistanı (zafiyet açıklama + rapor özeti) **varsayılan
 yalnızca `ai` profiliyle başlar:
 
 ```bash
-docker compose --profile ai up -d llamacpp
+docker compose --profile ai up -d ollama
 # veya:
 make ai
 ```
 
-Bu komut llama.cpp sunucusunu başlatır; modeli (Qwen3-8B-GGUF Q4, ~5–6 GB)
-HuggingFace'ten **tek seferlik** çeker ve **CPU'da** koşar (GPU gerekmez). Port host'a
-**publish edilmez** — yani istemci verisi müşteri ağından çıkmaz (**sıfır egress**;
-yalnızca model indirme tek seferliktir). RAM `mem_limit 8g` ile sınırlıdır.
+Bu komut Ollama sunucusunu başlatır; modeli (Qwen3-8B Q4, ~5–6 GB) ilk açılıştan sonra
+`docker compose exec ollama ollama pull qwen3:8b` ile **tek seferlik** çeker ve **CPU'da**
+koşar (GPU gerekmez). Port host'a **publish edilmez** — yani istemci verisi müşteri ağından
+çıkmaz (**sıfır egress**; yalnızca model indirme tek seferliktir). RAM `mem_limit 8g` ile
+sınırlıdır.
 
 ### Ön-paketli (air-gap) imaj — model gömülü, çalışma anında sıfır indirme
 
-Yukarıdaki varsayılan yol, modeli ilk açılışta **HuggingFace'ten** çeker (internet + ~5 GB
+Yukarıdaki varsayılan yol, modeli ilk açılıştan sonra `ollama pull` ile çeker (internet + ~5 GB
 indirme gerekir). İzole/air-gap ağlar için, modeli (Qwen3-8B Q4) **gömülü** taşıyan ön-paketli
 imajımızı kullanın — böylece çalışma anında **hiç dış indirme olmaz**:
 
 ```bash
 # (önce) imajı çekin ya da yerelde derleyin
-docker pull ghcr.io/lineup-noah/kangalis-ai:qwen3-8b-q4km
+docker pull ghcr.io/lineup-noah/kangalis-ai:qwen3-8b
 #   veya yerel derleme:  bash build-ai-image.sh   /   powershell -File build-ai-image.ps1
 
 # (sonra) gömülü-imaj override'ı ile başlatın
-docker compose -f docker-compose.yml -f docker-compose.ai-baked.yml --profile ai up -d llamacpp
+docker compose -f docker-compose.yml -f docker-compose.ai-baked.yml --profile ai up -d ollama
 #   veya:  make ai-baked
 ```
 
 > İmaj büyüktür (~5–6 GB, model gömülü). Bir kez çekip air-gap ortama taşıyabilirsiniz
 > (`docker save`/`docker load`). Bu imaj MIT-lisanslı çekirdekten **ayrı** bir artefakttır;
-> llama.cpp (MIT) + Qwen3 (Apache-2.0) gömülüdür — bkz. `THIRD-PARTY-NOTICES.md`.
+> Ollama (MIT) + Qwen3 (Apache-2.0) gömülüdür — bkz. `THIRD-PARTY-NOTICES.md`.
 
 ### Diğer seçenekler ve notlar
 
@@ -334,7 +335,7 @@ Geliştirme varsayılanları (`SECRET_KEY=dev-secret`, DB kullanıcı/şifre `cy
 |---|---|---|
 | **Tarama çalışmıyor / "kapsam dışı" hatası** | Kapsam tanımlı değil **ya da** nmap kurulu değil | `set_scope` ile en az bir `--allow <CIDR>` tanımlayın (Bölüm 3.3). nmap'i `INSTALL_NMAP=false` ile kapattıysanız tarama çalışmaz — varsayılanla yeniden derleyin (Bölüm 5). |
 | **Migrate hatası / uygulama başlamıyor** | Veritabanı henüz sağlıklı değil ya da migrasyon başarısız | `docker compose logs migrate db` ile bakın. `db` servisi `healthy` mi (`docker compose ps`)? Gerekirse `docker compose up -d --build` ile yeniden deneyin. |
-| **AI bağlanmıyor** | Profil açık değil, endpoint yanlış ya da (Linux) host-gateway eksik | `docker compose --profile ai up -d llamacpp` ile motoru açın. Host motoru kullanıyorsanız `AI_ENDPOINT` doğru mu? **Linux'ta** host motoruna ulaşmak için `host.docker.internal:host-gateway` eşlemesi şarttır (compose'da tanımlıdır; özel kurulumda doğrulayın). AI kapalıyken uygulama yine çalışır. |
+| **AI bağlanmıyor** | Profil açık değil, endpoint yanlış ya da (Linux) host-gateway eksik | `docker compose --profile ai up -d ollama` ile motoru açın. Host motoru kullanıyorsanız `AI_ENDPOINT` doğru mu? **Linux'ta** host motoruna ulaşmak için `host.docker.internal:host-gateway` eşlemesi şarttır (compose'da tanımlıdır; özel kurulumda doğrulayın). AI kapalıyken uygulama yine çalışır. |
 | **Konteyner ağı müşteri LAN'ıyla çakışıyor** | `DOCKER_SUBNET` müşteri aralığıyla örtüşüyor | `.env` içinde `DOCKER_SUBNET`'i alışılmadık bir aralığa çekin (ör. `10.89.0.0/16`) ve yeniden başlatın. |
 | **Sömürü/exploit çalıştırma yok** | Çekirdek tasarımı gereği | Açık-kaynak çekirdek exploit **çalıştırmaz**; yalnız "exploit var mı" sinyalini gösterir. Gerçek sömürü ayrı `kangalis-exploit` eklentisindedir — bkz. aşağıdaki link. |
 

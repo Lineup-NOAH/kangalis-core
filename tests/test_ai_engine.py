@@ -17,7 +17,7 @@ from cybersectool.core.ai import client as ai_client
 from cybersectool.core.ai import service as ai_service
 from cybersectool.core.ai.service import AIConfig
 
-BASE = "http://llamacpp:8080/v1"
+BASE = "http://ollama:11434/v1"
 
 
 def _chat(content: str) -> dict[str, Any]:

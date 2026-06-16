@@ -32,7 +32,7 @@ def _patch_reachable(monkeypatch: pytest.MonkeyPatch, *reachable: str, host: boo
 async def test_detect_recommends_host_native_when_ollama_up(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _patch_reachable(monkeypatch, "11434", host=True)  # Ollama host-native ayakta
+    _patch_reachable(monkeypatch, "host.docker.internal:11434", host=True)  # Ollama host-native
     res = await service.detect_ai_paths(None)
     assert res["recommended"] == "ollama-host"  # host-native > bundled (container baypas)
     ollama = next(c for c in res["candidates"] if c["key"] == "ollama-host")
@@ -44,7 +44,7 @@ async def test_detect_recommends_host_native_when_ollama_up(
 async def test_detect_recommends_bundled_when_only_container_up(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _patch_reachable(monkeypatch, "llamacpp:8080", host=True)  # yalnız gömülü container
+    _patch_reachable(monkeypatch, "ollama:11434", host=True)  # yalnız gömülü container
     res = await service.detect_ai_paths(None)
     assert res["recommended"] == "bundled"
 
@@ -99,8 +99,8 @@ async def test_settings_ai_detect_admin_returns_fragment(
                 },
                 {
                     "key": "bundled",
-                    "label": "Gömülü container (llamacpp)",
-                    "endpoint": "http://llamacpp:8080/v1",
+                    "label": "Gömülü container (Ollama)",
+                    "endpoint": "http://ollama:11434/v1",
                     "ok": False,
                     "models": [],
                 },
