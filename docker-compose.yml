@@ -1,22 +1,29 @@
 services:
   db:
     image: postgres:16
+    # Kimlik bilgileri: setup sihirbazı .env'e POSTGRES_USER/PASSWORD/DB yazarsa onlar; yoksa
+    # yerel/lab varsayılanı (cyber/cyber/cybersectool). NOT: parola pgdata'ya İLK açılışta gömülür —
+    # sonradan değiştirmek için 'pgdata' volume'unu sıfırlayın (docker compose down -v).
     environment:
-      POSTGRES_USER: cyber
-      POSTGRES_PASSWORD: cyber
-      POSTGRES_DB: cybersectool
+      POSTGRES_USER: ${POSTGRES_USER:-cyber}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cyber}
+      POSTGRES_DB: ${POSTGRES_DB:-cybersectool}
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cyber -d cybersectool"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cyber} -d ${POSTGRES_DB:-cybersectool}"]
       interval: 5s
       timeout: 3s
       retries: 10
 
   redis:
     image: redis:7
+    # Parola: setup sihirbazı REDIS_PASSWORD verirse auth açılır; boşsa (varsayılan) auth yok.
+    # redis-server --requirepass "" = parola DEVRE DIŞI (yerel/lab varsayılanı). İstemciler
+    # REDIS_URL üzerinden bağlanır (sihirbaz parolayı oraya da doğru biçimde gömer).
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:-}"]
     ports:
       - "6379:6379"
 
@@ -26,7 +33,7 @@ services:
     build: .
     command: alembic upgrade head
     environment:
-      DATABASE_URL: postgresql+asyncpg://cyber:cyber@db:5432/cybersectool
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-cyber}:${POSTGRES_PASSWORD:-cyber}@db:5432/${POSTGRES_DB:-cybersectool}
     depends_on:
       db:
         condition: service_healthy
@@ -36,9 +43,16 @@ services:
     build: .
     environment:
       APP_ENV: development
-      SECRET_KEY: dev-secret
-      DATABASE_URL: postgresql+asyncpg://cyber:cyber@db:5432/cybersectool
-      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: ${SECRET_KEY:-dev-secret}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-cyber}:${POSTGRES_PASSWORD:-cyber}@db:5432/${POSTGRES_DB:-cybersectool}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      # Kimlik kasası Fernet anahtarı (boşsa SECRET_KEY'den türetilir — yalnız dev). Sihirbaz
+      # güçlü rastgele üretir; app+worker AYNI değeri almalı ki worker'ın çözebildiğini app şifreleyebilsin.
+      CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY:-}
+      # NVD API anahtarı (opsiyonel; rate-limit'i yükseltir) + kritik-bulgu bildirim webhook'u.
+      # Boşken zararsız (NVD anahtarsız çalışır / bildirim kapalı). .env'den gelir, container'a buradan ulaşır.
+      NVD_API_KEY: ${NVD_API_KEY:-}
+      NOTIFY_WEBHOOK_URL: ${NOTIFY_WEBHOOK_URL:-}
       # Taramadan/envanterden dışlanacak ek IP'ler (aracın kendi altyapısı oto-algılanır).
       EXCLUDE_SCAN_IPS: ${EXCLUDE_SCAN_IPS:-}
       # Agresif (müdahaleci) tarama org-seviyesi kill-switch'i. Kod varsayılanı KAPALI
@@ -87,9 +101,14 @@ services:
     command: celery -A cybersectool.tasks.celery_app worker --loglevel=info
     environment:
       APP_ENV: development
-      SECRET_KEY: dev-secret
-      DATABASE_URL: postgresql+asyncpg://cyber:cyber@db:5432/cybersectool
-      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: ${SECRET_KEY:-dev-secret}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-cyber}:${POSTGRES_PASSWORD:-cyber}@db:5432/${POSTGRES_DB:-cybersectool}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      # Kimlik kasası Fernet anahtarı — app ile AYNI olmalı (kimlikli taramada parolayı çözer).
+      CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY:-}
+      # NVD oto-senkron worker'da koşar (anahtar rate-limit'i yükseltir); kritik-bulgu bildirimi de.
+      NVD_API_KEY: ${NVD_API_KEY:-}
+      NOTIFY_WEBHOOK_URL: ${NOTIFY_WEBHOOK_URL:-}
       # Tarama worker'ı: aracın kendi container IP'lerini + bu listeyi taramadan dışlar.
       EXCLUDE_SCAN_IPS: ${EXCLUDE_SCAN_IPS:-}
       # Agresif kill-switch (app ile AYNI olmalı): worker derinlemesine savunma için de okur.
@@ -115,8 +134,12 @@ services:
     build: .
     command: celery -A cybersectool.tasks.celery_app beat --loglevel=info
     environment:
-      DATABASE_URL: postgresql+asyncpg://cyber:cyber@db:5432/cybersectool
-      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-cyber}:${POSTGRES_PASSWORD:-cyber}@db:5432/${POSTGRES_DB:-cybersectool}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      # beat yalnız zamanlar (kasayı çözmez); yine de app/worker ile AYNI anahtarları taşısın ki
+      # ileride bir görev kasaya dokunursa default kurulumda aynı Fernet anahtarı türesin.
+      SECRET_KEY: ${SECRET_KEY:-dev-secret}
+      CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY:-}
     depends_on:
       db:
         condition: service_healthy
@@ -130,8 +153,12 @@ services:
     command: python -m cybersectool.mcp.server
     environment:
       MCP_TRANSPORT: http
-      DATABASE_URL: postgresql+asyncpg://cyber:cyber@db:5432/cybersectool
-      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-cyber}:${POSTGRES_PASSWORD:-cyber}@db:5432/${POSTGRES_DB:-cybersectool}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      # mcp kasayı çözmez (yalnız token-hash + parola doğrular); app/worker ile AYNI anahtarları
+      # taşısın ki tutarlılık bozulmasın ve ileride kasaya dokunan bir yol eklenirse anahtar tutsun.
+      SECRET_KEY: ${SECRET_KEY:-dev-secret}
+      CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY:-}
     ports:
       - "8001:8001"
     depends_on:

@@ -68,17 +68,26 @@ powershell -ExecutionPolicy Bypass -File setup.ps1
 
 ### Sihirbaz ne yapar?
 
-`setup.sh` / `setup.ps1` etkileşimli bir kurulum sihirbazıdır ve şu 4 adımı sizin için
+`setup.sh` / `setup.ps1` etkileşimli bir kurulum sihirbazıdır ve şu 5 adımı sizin için
 yürütür:
 
-1. **Derle + başlat** — `docker compose up -d --build`. İmaj derlenir (nmap dahil; ilk
+1. **Kimlik bilgileri & güvenlik anahtarları** — PostgreSQL kullanıcı/parola/veritabanı
+   adı ile Redis parolasını sorar; her alanın **varsayılanı köşeli parantezde gösterilir**
+   ve boş **Enter** ile geçilebilir (ör. `Kullanıcı adı [cyber]:`). `SECRET_KEY` ile kimlik
+   kasası (Fernet) anahtarını **güçlü ve rastgele otomatik üretir**; opsiyonel NVD API
+   anahtarı ve bildirim webhook'unu da sorar. Tümünü `.env`'e yazar (erişimi yalnız size
+   kısıtlanır — `chmod 600` / ACL). Girdi doğrulaması: kullanıcı/parola yalnız harf, rakam
+   ve `. _ -`; NVD anahtarı harf/rakam/`-`; webhook `http(s)://` ile başlamalı — aksi halde
+   sihirbaz tekrar sorar. **`.env`'de kimlik zaten varsa bu adım atlanır** (yeniden
+   çalıştırmada güvenli; bu yüzden sihirbazı çalıştıracaksanız `.env.example`'ı önce kopyalamayın).
+2. **Derle + başlat** — `docker compose up -d --build`. İmaj derlenir (nmap dahil; ilk
    derleme birkaç dakika sürebilir) ve tüm servisler arka planda başlatılır.
-2. **Şema migrasyonu + sağlık beklemesi** — `migrate` servisi veritabanı şemasını
+3. **Şema migrasyonu + sağlık beklemesi** — `migrate` servisi veritabanı şemasını
    **otomatik** kurar (elle `alembic` çalıştırmanıza gerek yoktur). Sihirbaz, uygulama
    `/health` ucu yanıt verene kadar bekler.
-3. **Yönetici (admin) kullanıcı** — kullanıcı adı ve parola sorar; bir `admin` rolünde
+4. **Yönetici (admin) kullanıcı** — kullanıcı adı ve parola sorar; bir `admin` rolünde
    ilk hesap oluşturur.
-4. **Yetkili tarama kapsamı (ZORUNLU)** — taramaya **yetkili** olduğunuz ağları CIDR
+5. **Yetkili tarama kapsamı (ZORUNLU)** — taramaya **yetkili** olduğunuz ağları CIDR
    biçiminde sorar (ör. `192.168.1.0/24,10.0.0.0/8`) ve kapsam politikasını kaydeder.
 
 Sihirbaz bittiğinde web paneli, API/Swagger ve (opsiyonel) AI açma komutu ekrana
@@ -87,11 +96,21 @@ yazdırılır. Doğrudan [Bölüm 6 — Erişim adresleri](#6-erişim-adresleri)
 > **Not:** Sihirbaz her şeyi otomatik yapar ama **tarama kapsamını sizden alır** —
 > kapsam tanımlanmadan hiçbir tarama çalışmaz (aşağıya bakın).
 
+> **Not (parola değişikliği):** PostgreSQL parolası veritabanı diskine (`pgdata`)
+> **ilk açılışta** gömülür. İlk kurulumdan sonra Postgres kullanıcı/parola/db'yi
+> değiştirmek isterseniz `.env`'i düzenleyip `docker compose down -v` ile `pgdata`'yı
+> sıfırlayın (aksi halde kimlik uyuşmazlığı olur).
+
 ---
 
 ## 3. Manuel kurulum (sihirbaz yerine adım adım)
 
-Sihirbazı kullanmak istemiyorsanız aynı sonucu dört komutla elde edebilirsiniz.
+Sihirbazı kullanmak istemiyorsanız aynı sonucu birkaç komutla elde edebilirsiniz.
+
+> **Kimlik bilgileri:** Aşağıdaki adımlar **varsayılan** kimlik bilgilerini kullanır
+> (DB `cyber:cyber`, Redis parolasız, `SECRET_KEY=dev-secret`). Bunları özelleştirmek
+> için **`up`'tan önce** `.env`'i düzenleyin (Bölüm 7) — özellikle üretimde güçlü
+> `SECRET_KEY` + `CREDENTIAL_ENCRYPTION_KEY` ve DB/Redis parolaları verin.
 
 ### 3.1 — Derle + başlat (migrate otomatik)
 
@@ -212,8 +231,8 @@ Kurulum tamamlandığında aşağıdaki uçlar yerel makinenizde erişilebilir o
 | **Web paneli** | http://localhost:8000/login | Ana arayüz — buradan giriş yapın. |
 | **API / Swagger** | http://localhost:8000/docs | Etkileşimli API dokümantasyonu. |
 | **MCP sunucusu** | http://localhost:8001/mcp | Claude entegrasyonu (token gerekir). |
-| **PostgreSQL** | `localhost:5432` | Veritabanı (kullanıcı/şifre: `cyber`/`cyber` — dev). |
-| **Redis** | `localhost:6379` | Broker / önbellek. |
+| **PostgreSQL** | `localhost:5432` | Veritabanı. Kullanıcı/şifre `.env` `POSTGRES_USER`/`POSTGRES_PASSWORD` ile belirlenir (varsayılan dev: `cyber`/`cyber`). |
+| **Redis** | `localhost:6379` | Broker / önbellek (`REDIS_PASSWORD` verildiyse parola gerekir). |
 
 MCP için bir erişim token'ı üretmeniz gerekir:
 
@@ -240,8 +259,10 @@ cp .env.example .env
 |---|---|---|
 | `SECRET_KEY` | `dev-secret` (dev) | Oturum imzalama + kasa anahtarı türetimi. **Üretimde güçlü, rastgele bir değer verin.** |
 | `CREDENTIAL_ENCRYPTION_KEY` | boş (dev'de SECRET_KEY'den türetilir) | Kimlik kasası (SSH/DB/AD parolaları) Fernet anahtarı. **Üretimde ayrı, gizli bir değer verin.** |
-| `DATABASE_URL` | `...@db:5432/cybersectool` | PostgreSQL bağlantı dizesi. |
-| `REDIS_URL` | `redis://redis:6379/0` | Redis / Celery broker. |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `cyber` / `cyber` / `cybersectool` | PostgreSQL kimlik bilgileri (sihirbaz sorar). Docker'da compose `DATABASE_URL`'i bunlardan (`@db`) kurar. **Parola `pgdata`'ya ilk açılışta gömülür** — değiştirmek için `docker compose down -v`. |
+| `REDIS_PASSWORD` | boş (auth kapalı) | Redis parolası. Verilirse `redis-server --requirepass` ile auth açılır ve `REDIS_URL`'e gömülür. |
+| `DATABASE_URL` | `...@db:5432/cybersectool` (compose kurar) | Yalnız **Docker dışı** (uv run) çalıştırmada okunur; Docker'da `POSTGRES_*`'ten türetilir. |
+| `REDIS_URL` | `redis://redis:6379/0` | Redis / Celery broker. Parola verilirse `redis://:PAROLA@redis:6379/0` (sihirbaz yazar). |
 | `DOCKER_SUBNET` | `172.28.0.0/16` | Konteyner köprü ağı. **Müşteri LAN'ı ile çakışıyorsa değiştirin** (ör. `10.89.0.0/16`). |
 | `EXCLUDE_SCAN_IPS` | boş | Taramadan/envanterden dışlanacak ek IP'ler (virgülle). Aracın kendi konteyner IP'leri zaten otomatik dışlanır. |
 | `ALLOW_AGGRESSIVE_SCANS` | dev=`true`, kod varsayılanı=`false` | Agresif (müdahaleci) tarama kill-switch'i. **Üretimde `false` bırakın.** |
@@ -249,7 +270,9 @@ cp .env.example .env
 | `AI_MODEL` | `qwen3:8b` | AI model etiketi. |
 | `AI_TIMEOUT` | `300` | AI istek zaman aşımı (sn). CPU çıkarımı yavaştır; cömert tutuldu. |
 
-> **Güçlü secret üretimi:**
+> **Güçlü secret üretimi:** Kurulum sihirbazı (`setup.sh`/`setup.ps1`) `SECRET_KEY` ve
+> `CREDENTIAL_ENCRYPTION_KEY`'i zaten **otomatik üretir**. Elle üretmek isterseniz
+> (sihirbazsız kurulum ya da üretim override'ı):
 > ```bash
 > # SECRET_KEY
 > python -c "import secrets; print(secrets.token_urlsafe(48))"
