@@ -1,4 +1,4 @@
-"""Parola politikası doğrulaması — uzunluk + (opsiyonel) karmaşıklık.
+"""Parola politikası doğrulaması — boşluk + uzunluk + (opsiyonel) karmaşıklık.
 
 ``app_settings``'teki ``password_min_length`` ve ``password_require_complexity``
 değerlerine göre uygulanır. Yeni kullanıcı oluşturma / parola belirleme noktalarında
@@ -10,6 +10,10 @@ from __future__ import annotations
 
 def validate_password(password: str, *, min_length: int, require_complexity: bool) -> str | None:
     """Politikaya uymayan parola için hata mesajı, uyan parola için None döndürür."""
+    if not password.strip():
+        return "Parola yalnızca boşluktan oluşamaz."
+    if password != password.strip():
+        return "Parola baştaki veya sondaki boşluk içeremez."
     if len(password) < min_length:
         return f"Parola en az {min_length} karakter olmalı."
     if require_complexity:

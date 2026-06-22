@@ -102,7 +102,7 @@
         <button class="kg-iconbtn" onclick="kgToggleTheme()" aria-label="{{ t('theme_toggle') }}" title="{{ t('theme_toggle') }}">{{ icon('moon') }}</button>
         <div style="width:1px; height:24px; background:var(--border)"></div>
         <div style="display:flex; align-items:center; gap:8px;">
-          <span class="kg-iconbtn" style="cursor:default">{{ icon('user') }}</span>
+          <a href="/account/password" class="kg-iconbtn" title="{{ t('account_password_title') }}">{{ icon('user') }}</a>
           <div style="line-height:1.2">
             <div style="font-size:13px; font-weight:600; color:var(--fg)">{{ user.username }}</div>
             <div style="font-size:11px; color:var(--fg2)">{{ t('role_' + user.role.value) }}</div>

@@ -215,6 +215,7 @@ from cybersectool.core.schedules import (
     list_schedules,
     set_schedule_active,
 )
+from cybersectool.core.security import verify_password
 from cybersectool.core.session_guard import (
     session_idle_expired,
     start_session_timeout,
@@ -243,6 +244,7 @@ from cybersectool.core.users import (
     list_users,
     set_user_active,
     set_user_email,
+    set_user_password,
     set_user_role,
 )
 from cybersectool.core.vuln import count_cves, cves_by_ids
@@ -5445,6 +5447,111 @@ async def user_edit_save(
     msg = quote("Kullanıcı güncellendi.")
     return RedirectResponse(
         f"/users/{user_id}/edit?msg={msg}", status_code=status.HTTP_303_SEE_OTHER
+    )
+
+
+@router.post("/users/{user_id}/password")
+async def user_password_reset(
+    request: Request,
+    session: SessionDep,
+    user_id: int,
+    new_password: Annotated[str, Form()],
+    new_password_confirm: Annotated[str, Form()],
+) -> Response:
+    """Admin: başka bir YEREL kullanıcının parolasını sıfırlar (politika + tekrar eşleşmesi)."""
+    resolved = await _require_admin_target(request, session, user_id)
+    if isinstance(resolved, Response):
+        return resolved
+    user, target = resolved
+    if target.auth_source.value != "local" or target.password_hash is None:
+        err = quote("LDAP/dizin kullanıcısının parolası buradan değiştirilemez.")
+        return RedirectResponse(
+            f"/users/{user_id}/edit?error={err}", status_code=status.HTTP_303_SEE_OTHER
+        )
+    if new_password != new_password_confirm:
+        err = quote("Yeni parolalar eşleşmiyor.")
+        return RedirectResponse(
+            f"/users/{user_id}/edit?error={err}", status_code=status.HTTP_303_SEE_OTHER
+        )
+    settings_row = await get_settings(session)
+    pw_error = validate_password(
+        new_password,
+        min_length=settings_row.password_min_length,
+        require_complexity=settings_row.password_require_complexity,
+    )
+    if pw_error is not None:
+        return RedirectResponse(
+            f"/users/{user_id}/edit?error={quote(pw_error)}",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+    await set_user_password(session, user_id, new_password)
+    await log_action(session, "user_password_reset", user_id=user.id, target=str(user_id))
+    return RedirectResponse(
+        f"/users/{user_id}/edit?msg={quote('Parola güncellendi.')}",
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
+
+
+@router.get("/account/password", response_class=HTMLResponse)
+async def account_password_page(request: Request, session: SessionDep) -> Response:
+    """Self-service: her kullanıcı kendi parolasını değiştirir."""
+    user = await _current_user(request, session)
+    if user is None:
+        return _redirect_login()
+    return templates.TemplateResponse(
+        request,
+        "account_password.html",
+        {
+            "user": user,
+            "is_local": user.auth_source.value == "local" and user.password_hash is not None,
+            "message": request.query_params.get("msg"),
+            "error": request.query_params.get("error"),
+        },
+    )
+
+
+@router.post("/account/password")
+async def account_password_save(
+    request: Request,
+    session: SessionDep,
+    current_password: Annotated[str, Form()],
+    new_password: Annotated[str, Form()],
+    new_password_confirm: Annotated[str, Form()],
+) -> Response:
+    """Self-service parola değiştirme: mevcut parola doğrulanır + politika + tekrar eşleşmesi."""
+    user = await _current_user(request, session)
+    if user is None:
+        return _redirect_login()
+    if user.auth_source.value != "local" or user.password_hash is None:
+        err = quote("Bu hesabın parolası burada değiştirilemez (LDAP/dizin).")
+        return RedirectResponse(
+            f"/account/password?error={err}", status_code=status.HTTP_303_SEE_OTHER
+        )
+    if not verify_password(current_password, user.password_hash):
+        err = quote("Mevcut parola yanlış.")
+        return RedirectResponse(
+            f"/account/password?error={err}", status_code=status.HTTP_303_SEE_OTHER
+        )
+    if new_password != new_password_confirm:
+        err = quote("Yeni parolalar eşleşmiyor.")
+        return RedirectResponse(
+            f"/account/password?error={err}", status_code=status.HTTP_303_SEE_OTHER
+        )
+    settings_row = await get_settings(session)
+    pw_error = validate_password(
+        new_password,
+        min_length=settings_row.password_min_length,
+        require_complexity=settings_row.password_require_complexity,
+    )
+    if pw_error is not None:
+        return RedirectResponse(
+            f"/account/password?error={quote(pw_error)}", status_code=status.HTTP_303_SEE_OTHER
+        )
+    await set_user_password(session, user.id, new_password)
+    await log_action(session, "self_password_change", user_id=user.id, target=str(user.id))
+    return RedirectResponse(
+        f"/account/password?msg={quote('Parolanız güncellendi.')}",
+        status_code=status.HTTP_303_SEE_OTHER,
     )
 
 

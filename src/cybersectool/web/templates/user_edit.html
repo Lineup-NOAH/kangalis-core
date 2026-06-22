@@ -107,4 +107,24 @@
     {% endif %}
   {% endif %}
 </div>
+
+<div class="kg-card" style="padding:22px; max-width:600px; margin-top:18px;">
+  <h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 4px;">{{ icon('vault', 18) }} {{ t('admin_reset_password') }}</h2>
+  <p class="k-sm" style="margin:0 0 16px; color:var(--fg2);">{{ t('admin_reset_password_sub') }}</p>
+  {% if target.auth_source.value == 'local' %}
+  <form method="post" action="/users/{{ target.id }}/password" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+    <div style="flex:1; min-width:220px;">
+      <label class="kg-field-label" for="rp">{{ t('new_password') }}</label>
+      <input id="rp" name="new_password" type="password" autocomplete="new-password" required class="kg-input" />
+    </div>
+    <div style="flex:1; min-width:220px;">
+      <label class="kg-field-label" for="rp2">{{ t('new_password_confirm') }}</label>
+      <input id="rp2" name="new_password_confirm" type="password" autocomplete="new-password" required class="kg-input" />
+    </div>
+    <button type="submit" class="kg-btn kg-btn-primary">{{ icon('check', 15) }} {{ t('reset_password') }}</button>
+  </form>
+  {% else %}
+  <p class="k-sm" style="color:var(--fg2);">{{ t('admin_reset_password_ldap') }}</p>
+  {% endif %}
+</div>
 {% endblock %}

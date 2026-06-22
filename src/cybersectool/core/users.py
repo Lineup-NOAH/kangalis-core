@@ -76,6 +76,16 @@ async def set_user_active(session: AsyncSession, user_id: int, active: bool) -> 
     return True
 
 
+async def set_user_password(session: AsyncSession, user_id: int, password: str) -> bool:
+    """Kullanıcının parolasını (argon2 hash'le) günceller. Yerel hesaplar için."""
+    user = await session.get(User, user_id)
+    if user is None:
+        return False
+    user.password_hash = hash_password(password)
+    await session.commit()
+    return True
+
+
 async def delete_user(session: AsyncSession, user_id: int) -> bool:
     user = await session.get(User, user_id)
     if user is None:
