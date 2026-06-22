@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+import re
+
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -44,6 +47,30 @@ def test_format_cef() -> None:
     msg = syslog_forward.format_syslog("cef", _entry())
     assert msg.startswith("CEF:0|Lineup-NOAH|Kangalis|")
     assert "|1004|web_scan|" in msg
+
+
+def test_format_json() -> None:
+    msg = syslog_forward.format_syslog("json", _entry())
+    assert "\n" not in msg  # tek satır
+    obj = json.loads(msg)
+    assert obj["event_id"] == 1004
+    assert obj["action"] == "web_scan"
+    assert obj["user"] == "3"
+    assert obj["target"] == "10.0.0.1"
+    assert "msg" in obj and "timestamp" in obj and "host" in obj and "category" in obj
+
+
+def test_format_json_unicode_preserved() -> None:
+    # ensure_ascii=False → Türkçe karakterler escape edilmeden okunur kalır.
+    msg = syslog_forward.format_syslog("json", _entry(action="login_success"))
+    assert "\\u" not in msg  # \uXXXX kaçışı yok
+    assert json.loads(msg)["action"] == "login_success"
+
+
+def test_parser_regex_json_matches_output() -> None:
+    regex = syslog_forward.parser_regex_for_format("json")
+    msg = syslog_forward.format_syslog("json", _entry())
+    assert re.match(regex, msg)
 
 
 async def test_forward_disabled() -> None:

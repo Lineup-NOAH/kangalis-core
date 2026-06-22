@@ -30,21 +30,19 @@
 <!-- Haftalık açık zafiyet trendi -->
 <div class="kg-card" style="padding:20px; margin-bottom:20px;">
   <h2 class="k-h3" style="margin-bottom:16px;">{{ t('trend_weekly_open') }}</h2>
-  {% set opens = trend.points | map(attribute='open') | list %}
-  {% set max_open = (opens | max) if opens else 1 %}
-  {% if not max_open %}{% set max_open = 1 %}{% endif %}
+  {# #D: çubuk = o hafta YENİ açılan zafiyet (first_seen), her hafta 0'dan — kümülatif değil. #}
+  {% set news = trend.points | map(attribute='new') | list %}
+  {% set max_new = (news | max) if news else 1 %}
+  {% if not max_new %}{% set max_new = 1 %}{% endif %}
   <div style="display:flex; align-items:flex-end; gap:10px; height:180px; padding-top:10px;">
     {% for p in trend.points %}
     <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%;">
       <div style="flex:1; display:flex; align-items:flex-end; width:100%;">
-        <div title="{{ t('stat_open') }}: {{ p.open }}"
-             style="width:100%; background:var(--sev-critical); border-radius:4px 4px 0 0; height:{{ (p.open / max_open * 100) | round(1) }}%; min-height:2px;"></div>
+        <div title="{{ t('trend_weekly_open') }}: {{ p.new }}"
+             style="width:100%; background:var(--sev-high); border-radius:4px 4px 0 0; height:{{ (p.new / max_new * 100) | round(1) }}%; min-height:2px;"></div>
       </div>
-      <div class="k-sm" style="font-weight:600;">{{ p.open }}</div>
-      <div style="font-size:11px;">
-        <span style="color:var(--sev-high)">+{{ p.new }}</span> /
-        <span style="color:var(--ok, #16a34a)">−{{ p.resolved }}</span>
-      </div>
+      <div class="k-sm" style="font-weight:600; color:var(--sev-high);">+{{ p.new }}</div>
+      <div style="font-size:11px; color:var(--ok, #16a34a);">−{{ p.resolved }}</div>
       <div style="color:var(--fg2); font-size:11px;">{{ p.label }}</div>
     </div>
     {% endfor %}

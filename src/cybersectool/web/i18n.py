@@ -208,12 +208,14 @@ DICT: dict[str, dict[str, str]] = {
         "derived from vulnerability history.",
     },
     "trend_weekly_open": {
-        "tr": "Haftalık açık zafiyet (son 8 hafta)",
-        "en": "Weekly open vulnerabilities (last 8 weeks)",
+        "tr": "Haftalık yeni açılan zafiyet (son 8 hafta)",
+        "en": "Weekly newly-opened vulnerabilities (last 8 weeks)",
     },
     "trend_legend": {
-        "tr": "Çubuk = o hafta sonundaki açık zafiyet · +yeni / −çözülen o hafta.",
-        "en": "Bar = open vulnerabilities at week end · +new / −resolved that week.",
+        "tr": "Çubuk = o hafta YENİ açılan zafiyet (kümülatif değil, her hafta 0'dan) · "
+        "−çözülen o hafta.",
+        "en": "Bar = vulnerabilities newly opened that week (not cumulative, from 0 each "
+        "week) · −resolved that week.",
     },
     "trend_aging": {"tr": "Açık Zafiyet Yaşı", "en": "Open Vulnerability Age"},
     "aging_fresh": {"tr": "≤ 7 gün", "en": "≤ 7 days"},

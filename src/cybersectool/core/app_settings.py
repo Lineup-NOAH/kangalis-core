@@ -22,7 +22,7 @@ from cybersectool.core.models import AppSettings
 from cybersectool.core.scan_policy import normalize_fanout_workers, normalize_scan_speed
 
 SYSLOG_PROTOCOLS: tuple[str, ...] = ("udp", "tcp")
-SYSLOG_FORMATS: tuple[str, ...] = ("rfc5424", "rfc3164", "cef")
+SYSLOG_FORMATS: tuple[str, ...] = ("rfc5424", "rfc3164", "cef", "json")
 
 # --- Saat dilimi (IX-1) ---
 DEFAULT_TIMEZONE = "Europe/Istanbul"

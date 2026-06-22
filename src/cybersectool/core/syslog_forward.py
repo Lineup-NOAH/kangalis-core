@@ -15,6 +15,7 @@ Senkron socket çağrısı ``asyncio.to_thread`` ile event loop'u bloklamadan ç
 from __future__ import annotations
 
 import asyncio
+import json
 import socket
 from datetime import UTC, datetime
 
@@ -27,7 +28,7 @@ _SEVERITY = 6  # informational
 _PRI = _FACILITY * 8 + _SEVERITY  # = 14
 _APP = "Kangalis"
 _VENDOR = "Lineup-NOAH"
-SUPPORTED_FORMATS = ("rfc5424", "rfc3164", "cef")
+SUPPORTED_FORMATS = ("rfc5424", "rfc3164", "cef", "json")
 _MONTHS = (
     "Jan", "Feb", "Mar", "Apr", "May", "Jun",
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
@@ -72,6 +73,20 @@ def format_syslog(fmt: str, entry: AuditLog) -> str:
     """Audit kaydını seçilen biçimde tek satırlık syslog mesajına çevirir."""
     host = _hostname()
     ts = _event_time(entry)
+    if fmt == "json":
+        # JSON: yapısal tek-satır nesne — SIEM tarafı doğrudan JSON ayrıştırır (regex gerekmez).
+        # Alanlar _detail() ile aynı yapısal küme; ensure_ascii=False → Türkçe okunur kalır.
+        obj = {
+            "event_id": entry.event_id,
+            "category": category_for(entry.action),
+            "action": entry.action,
+            "user": _user(entry),
+            "target": _clean(entry.target or ""),
+            "msg": _clean(render_message(entry.action, entry.target, _user(entry), lang="tr")),
+            "timestamp": ts.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "host": host,
+        }
+        return json.dumps(obj, ensure_ascii=False, separators=(",", ":"))
     if fmt == "cef":
         # CEF: sabit başlık + uzantı (key=value). msg = anlamlı mesaj.
         message = _clean(render_message(entry.action, entry.target, _user(entry), lang="tr"))
@@ -116,6 +131,11 @@ def parser_regex_for_format(fmt: str) -> str:
     yapılandırmasına kopyalar. Desen, :func:`format_syslog` ile *aynı kaynaktan* türer.
     """
     pri = _PRI
+    if fmt == "json":
+        # JSON yapısaldır → SIEM tarafı JSON olarak ayrıştırır; adlandırılmış-grup regex GEREKMEZ.
+        # Yalnız zarf doğrulayan basit desen (alanlar: event_id, category, action, user, target,
+        # msg, timestamp, host).
+        return r"^\{.*\}$"
     if fmt == "cef":
         # CEF:0|vendor|product|version|event_id|action|severity|ext...
         return (
