@@ -28,6 +28,19 @@ DICT: dict[str, dict[str, str]] = {
     "nav_trends": {"tr": "Trend", "en": "Trends"},
     "nav_exploit": {"tr": "Exploit DB", "en": "Exploit DB"},
     "nav_cve": {"tr": "Zafiyet Veritabanı", "en": "Vulnerability DB"},
+    # Help / Docs (#A)
+    "nav_help": {"tr": "Yardım", "en": "Help"},
+    "help_title": {"tr": "Yardım & Dokümanlar", "en": "Help & Documentation"},
+    "help_sub": {
+        "tr": "Kurulum, temel kullanım, tarama kapsamı ve eklentiler için kısa rehber.",
+        "en": "A short guide to setup, basic usage, scan scope and plugins.",
+    },
+    "help_docs_note": {
+        "tr": "Daha ayrıntılı kurulum ve kullanım için depo içindeki docs/ klasörüne bakın "
+        "(KURULUM.md, EKLENTILER.md, KILAVUZ.md).",
+        "en": "For more detailed setup and usage, see the docs/ folder in the repository "
+        "(KURULUM.md, EKLENTILER.md, KILAVUZ.md).",
+    },
     "cvedb_sub": {
         "tr": "Yerel CVE/CPE bilgi bankası (NVD'den çekilen). Sızma cephaneliği olan Exploit "
         "DB'den AYRIDIR — burası 'hangi zafiyetler var' bilgisi, orası gerçek exploit/payload.",

@@ -323,7 +323,7 @@ docker compose -f docker-compose.yml -f docker-compose.ai-baked.yml --profile ai
 
 - **Alternatif (host motoru):** host'ta LM Studio / Ollama çalıştırıp
   `AI_ENDPOINT=http://host.docker.internal:<port>/v1` verebilirsiniz.
-- AI, web panelinde **Ayarlar > AI** kartından açılır. Kapalıyken her şey graceful'dur
+- AI, web panelinde **Eklentiler > AI** kartından açılır. Kapalıyken her şey graceful'dur
   (statik içerik gösterilir, uygulama yine ayağa kalkar).
 - İlk grounded üretim CPU'da yavaştır (~birkaç dakika).
 

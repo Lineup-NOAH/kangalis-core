@@ -73,7 +73,7 @@
   > eşlemesi gerekir (Compose dosyasında zaten tanımlı). Bu eşleme yoksa app, host motoruna
   > sessizce bağlanamaz.
 
-Hangi yolu seçerseniz seçin, son adım aynıdır: **Ayarlar > AI** kartından AI'yı **etkinleştirin**
+Hangi yolu seçerseniz seçin, son adım aynıdır: **Eklentiler > AI** kartından AI'yı **etkinleştirin**
 (`ai_enabled`), endpoint/model/zaman aşımını doğrulayın ve "Bağlantıyı test et" ile motoru
 yoklayın. Etkinleştirilmeden AI yüzeyleri görünmez. Etkinken arayüz markası "Kangalis AI" olur.
 
@@ -317,7 +317,7 @@ doğrulama, RBAC ve tüm çekirdek özellikleri eksiksiz çalışır.
 
 | Özellik | Varsayılan | Nasıl açılır | Kapalıyken |
 |---|---|---|---|
-| Yerel AI | Kapalı | `--profile ai` + Ayarlar>AI | Statik içerik (graceful) |
+| Yerel AI | Kapalı | `--profile ai` + Eklentiler>AI | Statik içerik (graceful) |
 | Sömürü eklentisi | Çekirdekte yok | Ayrı/ticari `kangalis-exploit` | Sinyal gösterilir, çalıştırılmaz |
 | nmap | **Açık** | Build'de otomatik | Tarama çalışmaz (kapatmayın) |
 | MCP | Hazır (kullanmak ops.) | Token üret + bağlan | Panel/API tam çalışır |

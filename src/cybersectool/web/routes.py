@@ -309,6 +309,7 @@ from cybersectool.tasks.cpe_sync import cpe_sync_task, nvd_backfill_task
 from cybersectool.tasks.exploit_sync import sync_exploits_task
 from cybersectool.tasks.sca_scan import sca_scan_task
 from cybersectool.tasks.web_scan import web_scan_task
+from cybersectool.web.help_content import HELP_SECTIONS
 from cybersectool.web.i18n import LANG_COOKIE, normalize_lang, translator
 from cybersectool.web.pdf import PdfUnavailableError, render_html_to_pdf
 
@@ -5648,6 +5649,23 @@ async def plugins_page(request: Request, session: SessionDep) -> Response:
             "message": request.query_params.get("msg"),
             "error": request.query_params.get("error"),
         },
+    )
+
+
+@router.get("/help", response_class=HTMLResponse)
+async def help_page(request: Request, session: SessionDep) -> Response:
+    """Yardım & Dokümanlar — statik kullanım kılavuzu (tüm giriş yapan kullanıcılar).
+
+    İçerik web/help_content.py'de TEK KAYNAK olarak tutulur; (ileride) yerel AI Q&A
+    ekranı (#2c) aynı içeriği grounding bağlamı olarak kullanacak.
+    """
+    user = await _current_user(request, session)
+    if user is None:
+        return _redirect_login()
+    return templates.TemplateResponse(
+        request,
+        "help.html",
+        {"app_name": APP_NAME, "user": user, "sections": HELP_SECTIONS},
     )
 
 
