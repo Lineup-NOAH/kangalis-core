@@ -1,4 +1,4 @@
-# Kangalis — ön-paketli AI imajını (Qwen3-8B modeli gömülü, Ollama) YEREL derle (+ opsiyonel ghcr push).
+﻿# Kangalis — ön-paketli AI imajını (Qwen3-8B modeli gömülü, Ollama) YEREL derle (+ opsiyonel ghcr push).
 # Model (~5 GB) build sırasında indirilip imaja gömülür → biten imaj internetsiz çalışır.
 #
 # Kullanım:

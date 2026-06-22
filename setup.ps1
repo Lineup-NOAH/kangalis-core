@@ -1,4 +1,4 @@
-# Kangalis — tek-komut ilk kurulum (Windows / PowerShell).
+﻿# Kangalis — tek-komut ilk kurulum (Windows / PowerShell).
 # Önkoşul: Docker Desktop. Çalıştır:  powershell -ExecutionPolicy Bypass -File setup.ps1
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
