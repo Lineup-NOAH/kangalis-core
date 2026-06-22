@@ -5619,6 +5619,38 @@ async def user_mfa_disable(request: Request, session: SessionDep, user_id: int) 
     )
 
 
+# --- Eklentiler (admin-only; data-only çekirdek: nmap + yerel AI) ---
+
+
+@router.get("/plugins", response_class=HTMLResponse)
+async def plugins_page(request: Request, session: SessionDep) -> Response:
+    """Eklentiler — çekirdek (data-only) eklenti durumları + yerel AI yapılandırması (#218/#219).
+
+    Canlı satırlar yalnız nmap (imaj derlemesiyle 'kurulu') ve AI (app_settings.ai_enabled).
+    Sömürü eklentileri (searchsploit/Metasploit/sandbox) bu çekirdekte yoktur — ayrı ticari
+    eklentide (kangalis-exploit) gelir; sayfada yalnız nötr bir tanıtım kartı gösterilir.
+    """
+    user = await _current_user(request, session)
+    if user is None:
+        return _redirect_login()
+    if user.role != Role.admin:
+        return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
+    row = await get_settings(session)
+    ai_active = bool(getattr(row, "ai_enabled", False))
+    return templates.TemplateResponse(
+        request,
+        "plugins.html",
+        {
+            "app_name": APP_NAME,
+            "user": user,
+            "ai_active": ai_active,
+            "s": row,
+            "message": request.query_params.get("msg"),
+            "error": request.query_params.get("error"),
+        },
+    )
+
+
 # --- Ayarlar (admin-only güvenlik/operasyon ayarları) ---
 
 
@@ -5866,7 +5898,7 @@ async def settings_scan_web(
     return _settings_saved_redirect()
 
 
-@router.post("/settings/ai")
+@router.post("/plugins/ai")
 async def settings_ai_web(
     request: Request,
     session: SessionDep,
@@ -5893,10 +5925,11 @@ async def settings_ai_web(
         ai_timeout_sec=ai_timeout_sec,
     )
     await log_action(session, "settings_update", user_id=user.id, target="ai")
-    return _settings_saved_redirect()
+    msg = quote("Ayarlar kaydedildi.")
+    return RedirectResponse(f"/plugins?msg={msg}", status_code=status.HTTP_303_SEE_OTHER)
 
 
-@router.post("/settings/ai/test")
+@router.post("/plugins/ai/test")
 async def settings_ai_test_web(request: Request, session: SessionDep) -> Response:
     """Kayıtlı AI endpoint'ine bağlanıp kurulu modelleri sorgular (etkin olmasa da test eder)."""
     user = await _current_user(request, session)
@@ -5909,13 +5942,8 @@ async def settings_ai_test_web(request: Request, session: SessionDep) -> Respons
     await log_action(session, "settings_update", user_id=user.id, target="ai_test")
     if not result["ok"]:
         endpoint = (row.ai_endpoint_url or settings.ai_endpoint).strip()
-        return await _settings_page(
-            request,
-            session,
-            user,
-            error=f"AI endpoint'ine ulaşılamadı: {endpoint} (yerel motor çalışıyor mu?)",
-            status_code=502,
-        )
+        err = quote(f"AI endpoint'ine ulaşılamadı: {endpoint} (yerel motor çalışıyor mu?)")
+        return RedirectResponse(f"/plugins?error={err}", status_code=status.HTTP_303_SEE_OTHER)
     model = result["model"]
     models = result["models"]
     if result["has_model"]:
@@ -5927,10 +5955,10 @@ async def settings_ai_test_web(request: Request, session: SessionDep) -> Respons
             f"Ayarlardaki model '{model}' listede yok — model adını sunulanlarla eşleştirin "
             "(Ollama tek-model sunar, ad etiket olabilir)."
         )
-    return RedirectResponse(f"/settings?msg={msg}", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(f"/plugins?msg={msg}", status_code=status.HTTP_303_SEE_OTHER)
 
 
-@router.post("/settings/ai/detect")
+@router.post("/plugins/ai/detect")
 async def settings_ai_detect_web(request: Request, session: SessionDep) -> Response:
     """Kurulum sihirbazı (Faz 1 çatısı): ortamı yoklayıp erişilebilir yerel-AI motorlarını döndürür.
 

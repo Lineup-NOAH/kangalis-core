@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ t('plugins_title') }} · {{ app_name }}{% endblock %}
+
+{% block content %}
+<h1 class="k-h1" style="margin-bottom:6px;">{{ icon('plug', 22) }} {{ t('plugins_title') }}</h1>
+<p class="k-sm" style="margin-bottom:18px; color:var(--fg2); max-width:780px;">{{ t('plugins_sub') }}</p>
+
+{% if error %}<div class="kg-alert kg-alert-error" style="margin-bottom:16px; max-width:780px;">{{ error }}</div>{% endif %}
+{% if message %}<div class="kg-alert kg-alert-ok" style="margin-bottom:16px; max-width:780px;">{{ message }}</div>{% endif %}
+
+{# Çekirdek (data-only) eklenti satırları: nmap her zaman bilgilendirici 'kurulu' (imaj
+   derlemesiyle gelir); AI app_settings.ai_enabled'a göre canlı aktif/pasif. #}
+{% set plugins = [
+  {'key': 'nmap', 'icon': 'scans',    'name': t('plugin_nmap_name'), 'status': 'installed',                       'howto': t('plugin_nmap_howto')},
+  {'key': 'ai',   'icon': 'sparkles', 'name': t('set_ai_section'),   'status': ('active' if ai_active else 'inactive'), 'howto': t('set_ai_sub')},
+] %}
+
+<div style="display:flex; flex-direction:column; gap:12px; max-width:780px;">
+  {% for p in plugins %}
+  <div class="kg-card" style="padding:16px 18px;">
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+      <span style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:9px; background:color-mix(in srgb, var(--accent) 12%, transparent); color:var(--accent); flex-shrink:0;">{{ icon(p.icon, 18) }}</span>
+      <span class="k-h3" style="margin:0; flex:1; min-width:160px;">{{ p.name }}</span>
+      {% if p.status == 'installed' %}
+      <span class="kg-status kg-status-completed">{{ t('plugin_status_installed') }}</span>
+      {% elif p.status == 'active' %}
+      <span class="kg-status kg-status-completed">{{ t('plugin_status_active') }}</span>
+      {% else %}
+      <span class="kg-status kg-status-pending">{{ t('plugin_status_inactive') }}</span>
+      {% endif %}
+    </div>
+    <div style="margin-top:12px;">
+      <div class="kg-field-label" style="margin-bottom:4px;">{{ t('plugin_howto') }}</div>
+      <p class="k-sm" style="margin:0; color:var(--fg2);">{{ p.howto }}</p>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Yerel AI yapılandırması (Ayarlar'dan taşındı, #219) — Eklentiler artık AI'yı açıp ayarlama yeri. -->
+<div style="max-width:780px; margin-top:26px;">
+  <h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 4px;">{{ icon('sparkles', 18) }} {{ t('set_ai_section') }}
+    {% if ai_active %}<span class="kg-status kg-status-completed">{{ t('plugin_status_active') }}</span>{% else %}<span class="kg-status kg-status-pending">{{ t('plugin_status_inactive') }}</span>{% endif %}
+  </h2>
+  <p class="k-sm" style="margin:0 0 12px; color:var(--fg2);">{{ t('set_ai_sub') }}</p>
+  <form method="post" action="/plugins/ai" class="kg-card" style="padding:20px; margin-bottom:10px;">
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;" title="{{ t('set_ai_enabled_tip') }}">
+      <input id="ai-enabled" name="ai_enabled" type="checkbox" {{ 'checked' if s.ai_enabled else '' }} />
+      <label for="ai-enabled" class="k-sm" style="font-weight:600;">{{ t('set_ai_enabled') }}</label>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; align-items:start;">
+      <div title="{{ t('set_ai_endpoint_tip') }}">
+        <label class="kg-field-label" for="ai-endpoint">{{ t('set_ai_endpoint') }}</label>
+        <input id="ai-endpoint" name="ai_endpoint_url" value="{{ s.ai_endpoint_url }}" placeholder="http://ollama:11434/v1" class="kg-input font-mono" />
+      </div>
+      <div title="{{ t('set_ai_model_tip') }}">
+        <label class="kg-field-label" for="ai-model">{{ t('set_ai_model') }}</label>
+        <input id="ai-model" name="ai_model_name" value="{{ s.ai_model_name }}" placeholder="qwen3:8b" class="kg-input font-mono" />
+      </div>
+      <div title="{{ t('set_ai_timeout_tip') }}">
+        <label class="kg-field-label" for="ai-timeout">{{ t('set_ai_timeout') }}</label>
+        <input id="ai-timeout" name="ai_timeout_sec" type="number" min="5" max="600" step="5" value="{{ s.ai_timeout_sec }}" class="kg-input" />
+      </div>
+    </div>
+    <div class="k-sm" style="margin-top:12px; padding:10px 12px; background:var(--bg2); border-radius:8px; color:var(--fg2);">
+      🔒 {{ t('set_ai_privacy') }}
+    </div>
+    <p class="k-sm" style="margin-top:8px; color:var(--fg2);">{{ t('set_ai_hint') }}</p>
+    <div style="margin-top:16px;"><button type="submit" class="kg-btn kg-btn-primary">{{ t('save') }}</button></div>
+  </form>
+  <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:10px;">
+    <form method="post" action="/plugins/ai/test" style="margin:0;">
+      <button type="submit" class="kg-btn kg-btn-ghost">{{ icon('refresh', 15) }} {{ t('set_ai_test') }}</button>
+    </form>
+    <button type="button" class="kg-btn kg-btn-ghost" title="{{ t('set_ai_detect_tip') }}"
+            hx-post="/plugins/ai/detect" hx-target="#ai-detect-result" hx-swap="innerHTML"
+            hx-indicator="#ai-detect-spin">{{ icon('sparkles', 15) }} {{ t('set_ai_detect') }}</button>
+    <span id="ai-detect-spin" class="htmx-indicator k-sm" style="color:var(--fg2);">…</span>
+  </div>
+  <div id="ai-detect-result"></div>
+</div>
+
+{# Nötr eklenti tanıtım kartı: canlı sömürü ayrı ticari eklentide; bu çekirdek data-only. #}
+<div class="kg-card" style="max-width:780px; margin-top:26px; padding:16px 18px;">
+  <h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 6px;">{{ icon('plug', 18) }} {{ t('plugin_addon_title') }}</h2>
+  <p class="k-sm" style="margin:0; color:var(--fg2);">{{ t('plugin_addon_body') }}</p>
+</div>
+{% endblock %}

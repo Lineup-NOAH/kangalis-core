@@ -280,45 +280,6 @@
   <p class="k-sm" style="margin-top:10px; color:var(--fg2);">{{ t('set_nvd_backfill_hint') }}</p>
 </form>
 
-<!-- Yerel AI asistanı (OpenAI-uyumlu yerel motor, on-prem; #182) -->
-<h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 4px;">{{ icon('sparkles', 18) }} {{ t('set_ai_section') }}</h2>
-<p class="k-sm" style="margin:0 0 12px; color:var(--fg2); max-width:760px;">{{ t('set_ai_sub') }}</p>
-<form method="post" action="/settings/ai" class="kg-card" style="padding:20px; margin-bottom:10px;">
-  <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;" title="{{ t('set_ai_enabled_tip') }}">
-    <input id="ai-enabled" name="ai_enabled" type="checkbox" {{ 'checked' if s.ai_enabled else '' }} />
-    <label for="ai-enabled" class="k-sm" style="font-weight:600;">{{ t('set_ai_enabled') }}</label>
-  </div>
-  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; align-items:start;">
-    <div title="{{ t('set_ai_endpoint_tip') }}">
-      <label class="kg-field-label" for="ai-endpoint">{{ t('set_ai_endpoint') }}</label>
-      <input id="ai-endpoint" name="ai_endpoint_url" value="{{ s.ai_endpoint_url }}" placeholder="http://ollama:11434/v1" class="kg-input font-mono" />
-    </div>
-    <div title="{{ t('set_ai_model_tip') }}">
-      <label class="kg-field-label" for="ai-model">{{ t('set_ai_model') }}</label>
-      <input id="ai-model" name="ai_model_name" value="{{ s.ai_model_name }}" placeholder="qwen3:8b" class="kg-input font-mono" />
-    </div>
-    <div title="{{ t('set_ai_timeout_tip') }}">
-      <label class="kg-field-label" for="ai-timeout">{{ t('set_ai_timeout') }}</label>
-      <input id="ai-timeout" name="ai_timeout_sec" type="number" min="5" max="600" step="5" value="{{ s.ai_timeout_sec }}" class="kg-input" />
-    </div>
-  </div>
-  <div class="k-sm" style="margin-top:12px; padding:10px 12px; background:var(--bg2); border-radius:8px; color:var(--fg2);">
-    🔒 {{ t('set_ai_privacy') }}
-  </div>
-  <p class="k-sm" style="margin-top:8px; color:var(--fg2);">{{ t('set_ai_hint') }}</p>
-  <div style="margin-top:16px;"><button type="submit" class="kg-btn kg-btn-primary">{{ t('save') }}</button></div>
-</form>
-<div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:10px;">
-  <form method="post" action="/settings/ai/test" style="margin:0;">
-    <button type="submit" class="kg-btn kg-btn-ghost">{{ icon('refresh', 15) }} {{ t('set_ai_test') }}</button>
-  </form>
-  <button type="button" class="kg-btn kg-btn-ghost" title="{{ t('set_ai_detect_tip') }}"
-          hx-post="/settings/ai/detect" hx-target="#ai-detect-result" hx-swap="innerHTML"
-          hx-indicator="#ai-detect-spin">{{ icon('sparkles', 15) }} {{ t('set_ai_detect') }}</button>
-  <span id="ai-detect-spin" class="htmx-indicator k-sm" style="color:var(--fg2);">…</span>
-</div>
-<div id="ai-detect-result" style="margin-bottom:24px;"></div>
-
 <!-- Saat dilimi (IX-1) -->
 <h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 4px;">{{ icon('clock', 18) }} {{ t('set_tz_section') }}</h2>
 <p class="k-sm" style="margin:0 0 12px; color:var(--fg2); max-width:760px;">{{ t('set_tz_sub') }}</p>

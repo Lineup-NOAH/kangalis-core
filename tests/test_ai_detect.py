@@ -1,4 +1,4 @@
-"""Yerel AI kurulum sihirbazı (Faz 1 çatısı) — ortam algılama + /settings/ai/detect testleri.
+"""Yerel AI kurulum sihirbazı (Faz 1 çatısı) — ortam algılama + /plugins/ai/detect testleri.
 
 ``detect_ai_paths`` aday endpoint'leri (host-native Ollama/LM Studio + gömülü container + kayıtlı)
 eşzamanlı yoklayıp önerilen yolu seçer; öneri host-native'i önceler (container storage'ını baypas
@@ -64,7 +64,7 @@ async def test_detect_install_when_nothing_reachable(monkeypatch: pytest.MonkeyP
     assert all(c["ok"] is False for c in res["candidates"])
 
 
-# --- Route: /settings/ai/detect (admin-gated, HTMX parçası) ---
+# --- Route: /plugins/ai/detect (admin-gated, HTMX parçası) ---
 
 
 async def _login(
@@ -109,7 +109,7 @@ async def test_settings_ai_detect_admin_returns_fragment(
 
     monkeypatch.setattr(routes, "detect_ai_paths", fake_detect)
     await _login(client, session_factory, "admdetect", Role.admin)
-    resp = await client.post("/settings/ai/detect")
+    resp = await client.post("/plugins/ai/detect")
     assert resp.status_code == 200
     assert "host.docker.internal:11434" in resp.text
     assert "Ollama" in resp.text
@@ -119,10 +119,10 @@ async def test_settings_ai_detect_non_admin_redirect(
     client: AsyncClient, session_factory: async_sessionmaker[AsyncSession]
 ) -> None:
     await _login(client, session_factory, "andetect", Role.analyst)
-    resp = await client.post("/settings/ai/detect", follow_redirects=False)
+    resp = await client.post("/plugins/ai/detect", follow_redirects=False)
     assert resp.status_code == 303
 
 
 async def test_settings_ai_detect_anonymous_redirect(client: AsyncClient) -> None:
-    resp = await client.post("/settings/ai/detect", follow_redirects=False)
+    resp = await client.post("/plugins/ai/detect", follow_redirects=False)
     assert resp.status_code == 303

@@ -49,6 +49,7 @@ DICT: dict[str, dict[str, str]] = {
     "nav_tokens": {"tr": "Token'larım", "en": "My Tokens"},
     "nav_audit": {"tr": "Denetim", "en": "Audit"},
     "nav_system": {"tr": "Sistem", "en": "System"},
+    "nav_plugins": {"tr": "Eklentiler", "en": "Plugins"},
     "nav_settings": {"tr": "Ayarlar", "en": "Settings"},
     # Sistem / Servisler paneli (konteyner durum + CPU/RAM/disk)
     "sys_title": {"tr": "Sistem Servisleri", "en": "System Services"},
@@ -76,6 +77,32 @@ DICT: dict[str, dict[str, str]] = {
     "sys_down": {"tr": "durdu", "en": "down"},
     "sys_no_containers": {"tr": "Konteyner bulunamadı.", "en": "No containers found."},
     "sys_used_of": {"tr": "{used} / {total}", "en": "{used} / {total}"},
+    # Eklentiler paneli (data-only çekirdek: nmap + yerel AI; #218/#219)
+    "plugins_title": {"tr": "Eklentiler", "en": "Plugins"},
+    "plugins_sub": {
+        "tr": "Çekirdek eklentilerin durumu ve nasıl etkinleştirilecekleri: yerel AI asistanı "
+        "(on-prem, sıfır egress) ve nmap tarama motoru.",
+        "en": "Status of the core add-ons and how to enable each: the local AI assistant "
+        "(on-prem, zero egress) and the nmap scan engine.",
+    },
+    "plugin_status_active": {"tr": "Aktif", "en": "Active"},
+    "plugin_status_inactive": {"tr": "Pasif", "en": "Inactive"},
+    "plugin_status_installed": {"tr": "Kurulu", "en": "Installed"},
+    "plugin_howto": {"tr": "Nasıl aktif edilir", "en": "How to enable"},
+    "plugin_nmap_name": {"tr": "nmap tarama motoru", "en": "nmap scan engine"},
+    "plugin_nmap_howto": {
+        "tr": "İmaj derlemesiyle gelir (varsayılan açık). Kapatmak için "
+        "INSTALL_NMAP=false derleme argümanı ile yeniden derleyin.",
+        "en": "Ships with the image build (on by default). To disable, rebuild with the "
+        "INSTALL_NMAP=false build argument.",
+    },
+    "plugin_addon_title": {"tr": "Sömürü eklentisi", "en": "Exploitation add-on"},
+    "plugin_addon_body": {
+        "tr": "Canlı sömürü (searchsploit/Metasploit/sandbox) ayrı ticari kangalis-exploit "
+        "eklentisinde gelir; bu çekirdek yalnızca veri odaklıdır.",
+        "en": "Live exploitation (searchsploit/Metasploit/sandbox) ships in the separate "
+        "commercial kangalis-exploit add-on; this core is data-only.",
+    },
     "logout": {"tr": "Çıkış", "en": "Logout"},
     # Topbar / common
     "search_ph": {"tr": "Ara: CVE, IP, varlık…", "en": "Search CVE, IP, asset…"},
