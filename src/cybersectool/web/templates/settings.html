@@ -200,6 +200,29 @@
   <div style="margin-top:16px;"><button type="submit" class="kg-btn kg-btn-primary">{{ t('save') }}</button></div>
 </form>
 
+<!-- Yetkili tarama kapsamı (ScopePolicy, #C — set_scope CLI yerine; genel web-CLI YOK) -->
+<h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 4px;">{{ icon('shield', 18) }} {{ t('set_scope_section') }}</h2>
+<p class="k-sm" style="margin:0 0 12px; color:var(--fg2); max-width:760px;">{{ t('set_scope_sub') }}</p>
+<form method="post" action="/settings/scope" class="kg-card" style="padding:20px; margin-bottom:14px;">
+  {% if active_policy %}
+  <div class="k-sm" style="margin-bottom:14px; padding:10px 12px; background:var(--bg2); border-radius:8px; color:var(--fg2);">
+    {{ t('set_scope_current') }}: <strong>{{ active_policy.name }}</strong>
+    · {{ t('set_scope_allowed_label') }}: {{ active_policy.allowed_cidrs | length }}
+    · {{ t('set_scope_denied_label') }}: {{ active_policy.denied_cidrs | length }}
+  </div>
+  {% else %}
+  <div class="kg-alert kg-alert-error" style="margin-bottom:14px;">{{ t('set_scope_none') }}</div>
+  {% endif %}
+  <label class="kg-field-label" for="scope-name">{{ t('set_scope_name_label') }}</label>
+  <input id="scope-name" name="name" class="kg-input" value="{{ active_policy.name if active_policy else 'ic-ag' }}" placeholder="ic-ag" />
+  <label class="kg-field-label" for="scope-allowed" style="display:block; margin-top:14px;">{{ t('set_scope_allowed_label') }}</label>
+  <textarea id="scope-allowed" name="allowed_cidrs" rows="4" class="kg-input font-mono" style="resize:vertical;" placeholder="192.168.1.0/24&#10;10.0.0.0/8">{{ active_policy.allowed_cidrs | join('\n') if active_policy else '' }}</textarea>
+  <label class="kg-field-label" for="scope-denied" style="display:block; margin-top:14px;">{{ t('set_scope_denied_label') }}</label>
+  <textarea id="scope-denied" name="denied_cidrs" rows="3" class="kg-input font-mono" style="resize:vertical;" placeholder="10.0.0.1/32">{{ active_policy.denied_cidrs | join('\n') if active_policy else '' }}</textarea>
+  <p class="k-sm" style="margin-top:10px; color:var(--fg2);">{{ t('set_scope_hint') }}</p>
+  <div style="margin-top:16px;"><button type="submit" class="kg-btn kg-btn-primary">{{ t('save') }}</button></div>
+</form>
+
 <!-- Varlık kapsamı (F1) -->
 <h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 4px;">{{ icon('server', 18) }} {{ t('set_asset_scope_section') }}</h2>
 <p class="k-sm" style="margin:0 0 12px; color:var(--fg2); max-width:760px;">{{ t('set_asset_scope_sub') }}</p>

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import ipaddress
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cybersectool.core.infra import own_infra_ips
@@ -64,6 +64,33 @@ async def get_active_policy(session: AsyncSession) -> ScopePolicy | None:
         select(ScopePolicy).where(ScopePolicy.is_active.is_(True)).order_by(ScopePolicy.id.desc())
     )
     return result.scalars().first()
+
+
+async def set_active_scope(
+    session: AsyncSession,
+    *,
+    name: str,
+    allowed_cidrs: list[str],
+    denied_cidrs: list[str],
+) -> ScopePolicy:
+    """Yeni aktif kapsam politikası yazar (set_scope CLI ile AYNI davranış) — #C web formu.
+
+    Önceki tüm politikalar pasifleştirilir, en yeni (en yüksek id) aktif olur; `get_active_policy`
+    `id desc` ile onu seçer. CIDR doğrulaması ÇAĞIRANIN işidir (web formu
+    `app_settings.parse_asset_scope_cidrs` ile doğrular). `validate_target` bunu okur — okuma
+    mantığına DOKUNULMAZ. Commit edilir ve yeni politika döner.
+    """
+    await session.execute(update(ScopePolicy).values(is_active=False))
+    policy = ScopePolicy(
+        name=name,
+        allowed_cidrs=allowed_cidrs,
+        denied_cidrs=denied_cidrs,
+        is_active=True,
+    )
+    session.add(policy)
+    await session.commit()
+    await session.refresh(policy)
+    return policy
 
 
 async def validate_target(session: AsyncSession, target: str) -> None:

@@ -41,6 +41,7 @@ from cybersectool.core.app_settings import (
     ai_brand_enabled,
     format_local,
     get_settings,
+    parse_asset_scope_cidrs,
     probe_ai_endpoint,
     save_ai_settings,
     save_asset_scope_settings,
@@ -215,6 +216,7 @@ from cybersectool.core.schedules import (
     list_schedules,
     set_schedule_active,
 )
+from cybersectool.core.scope import get_active_policy, set_active_scope
 from cybersectool.core.security import verify_password
 from cybersectool.core.session_guard import (
     session_idle_expired,
@@ -5744,6 +5746,8 @@ async def _settings_page(
             "cve_fresh": _cve_freshness(await get_settings(session)),
             "nvd_sync_days_min": NVD_SYNC_DAYS_MIN,
             "nvd_sync_days_max": NVD_SYNC_DAYS_MAX,
+            # Yetkili tarama kapsamı (ScopePolicy) — #C web formu için aktif politikayı göster
+            "active_policy": await get_active_policy(session),
             "error": error,
             "message": message,
         },
@@ -5759,6 +5763,45 @@ async def settings_page(request: Request, session: SessionDep) -> Response:
     if user.role != Role.admin:
         return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
     return await _settings_page(request, session, user, message=request.query_params.get("msg"))
+
+
+@router.post("/settings/scope")
+async def settings_scope_web(
+    request: Request,
+    session: SessionDep,
+    name: Annotated[str, Form()] = "ic-ag",
+    allowed_cidrs: Annotated[str, Form()] = "",
+    denied_cidrs: Annotated[str, Form()] = "",
+) -> Response:
+    """Yetkili tarama kapsamı (ScopePolicy) web formu — set_scope CLI yerine (#C, admin).
+
+    İzinli/yasak CIDR'leri doğrular (geçersiz satırlar atlanır), eski politikayı pasifleştirip
+    yenisini aktif eder (scope.set_active_scope; validate_target bunu okur — okuma mantığına
+    DOKUNULMAZ). Genel web-CLI/komut kutusu YOKTUR (RCE riski) — yalnız bu özel form. En az bir
+    izinli CIDR zorunlu (yanlışlıkla tüm-reddi/kilitlemeyi önler).
+    """
+    user = await _current_user(request, session)
+    if user is None:
+        return _redirect_login()
+    if user.role != Role.admin:
+        return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
+    lang = normalize_lang(request.cookies.get(LANG_COOKIE))
+    t = translator(lang)
+    allowed = parse_asset_scope_cidrs(allowed_cidrs)
+    denied = parse_asset_scope_cidrs(denied_cidrs)
+    if not allowed:
+        return await _settings_page(
+            request,
+            session,
+            user,
+            error=t("set_scope_error_empty"),
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+    await set_active_scope(
+        session, name=name.strip() or "ic-ag", allowed_cidrs=allowed, denied_cidrs=denied
+    )
+    await log_action(session, "settings_update", user_id=user.id, target="scope")
+    return _settings_saved_redirect()
 
 
 def _settings_saved_redirect() -> RedirectResponse:

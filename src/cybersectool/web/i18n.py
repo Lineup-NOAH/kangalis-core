@@ -1986,6 +1986,32 @@ DICT: dict[str, dict[str, str]] = {
         "en": "Default: private/internal networks (RFC1918) + loopback. Add an external IP/range "
         "here to track it. Leave empty to disable enforcement (all IPs become assets).",
     },
+    # Yetkili tarama kapsamı (ScopePolicy, #C)
+    "set_scope_section": {"tr": "Yetkili tarama kapsamı", "en": "Authorized scan scope"},
+    "set_scope_sub": {
+        "tr": "Yalnızca bu izinli CIDR'lerin alt kümesi olan (ve yasaklarla çakışmayan) hedefler "
+        "taranabilir. Taramaya YETKİLİ olduğunuz ağları tanımlar (set_scope CLI yerine).",
+        "en": "Only targets within these allowed CIDRs (and not overlapping denies) can be "
+        "scanned. Defines the networks you are AUTHORIZED to scan (replaces the set_scope CLI).",
+    },
+    "set_scope_current": {"tr": "Aktif politika", "en": "Active policy"},
+    "set_scope_none": {
+        "tr": "Tanımlı kapsam yok — hiçbir tarama çalışmaz. Aşağıdan en az bir izinli CIDR girin.",
+        "en": "No scope defined — no scan will run. Enter at least one allowed CIDR below.",
+    },
+    "set_scope_name_label": {"tr": "Politika adı", "en": "Policy name"},
+    "set_scope_allowed_label": {"tr": "İzinli CIDR'ler", "en": "Allowed CIDRs"},
+    "set_scope_denied_label": {"tr": "Yasak CIDR'ler", "en": "Denied CIDRs"},
+    "set_scope_hint": {
+        "tr": "Her satıra bir CIDR ya da IP (IP → /32). Yasak izinden önce gelir (deny kazanır). "
+        "Yalnız taramaya yetkili olduğunuz ağları girin; geçersiz satırlar atlanır.",
+        "en": "One CIDR or IP per line (IP → /32). Deny wins over allow. Enter only networks you "
+        "are authorized to scan; invalid lines are skipped.",
+    },
+    "set_scope_error_empty": {
+        "tr": "En az bir geçerli izinli CIDR gerekli (boş = tüm hedefler reddedilir).",
+        "en": "At least one valid allowed CIDR is required (empty = all targets denied).",
+    },
     # Zafiyet veritabanı (CVE-COVERAGE FE)
     "set_vulndb_section": {"tr": "Zafiyet veritabanı", "en": "Vulnerability database"},
     "set_vulndb_sub": {
