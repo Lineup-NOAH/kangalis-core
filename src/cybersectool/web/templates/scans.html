@@ -11,28 +11,17 @@
 {% if message %}<div class="kg-alert kg-alert-ok" style="margin-bottom:16px;">{{ message }}</div>{% endif %}
 
 <style>
-.kg-seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.kg-seg-btn{padding:6px 16px;background:transparent;border:0;color:var(--fg2);cursor:pointer;font-size:13px}
-.kg-seg-btn.active{background:var(--accent);color:#fff}
 .scan-step-head{font-weight:600;margin:0 0 10px;font-size:14px;display:flex;align-items:center;gap:8px}
-.scan-step{margin-bottom:16px}
-#scan-form.view-flat .scan-step{padding-bottom:16px;border-bottom:1px solid var(--line)}
-#scan-form.view-flat .scan-step:last-of-type{border-bottom:0;padding-bottom:0}
-#scan-form.view-steps .scan-step{display:none}
-#scan-form.view-steps .scan-step.active{display:block}
-#scan-form.view-flat #scan-step-nav{display:none !important}
+.scan-step{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.scan-step:last-of-type{border-bottom:0;padding-bottom:0}
 .scan-collapse>summary{cursor:pointer;color:var(--accent);font-size:13px;list-style:none}
 .scan-collapse[open]>summary{margin-bottom:8px}
 </style>
 
 <!-- SCAN-MERGE: birleşik Tarama paneli — Hızlı (tek ekran) ↔ Adım-adım; tek backend /scans/start -->
-<form method="post" action="/scans/start" id="scan-form" class="kg-card view-flat" style="padding:20px; margin-bottom:16px;">
+<form method="post" action="/scans/start" id="scan-form" class="kg-card" style="padding:20px; margin-bottom:16px;">
   <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:4px;">
     <h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0;">{{ icon('target', 18) }} {{ t('scan_panel_title') }}</h2>
-    <div class="kg-seg" role="group" aria-label="{{ t('view_label') }}">
-      <button type="button" id="view-flat-btn" class="kg-seg-btn active" onclick="scanView('flat')">{{ t('view_quick') }}</button>
-      <button type="button" id="view-steps-btn" class="kg-seg-btn" onclick="scanView('steps')">{{ t('view_step') }}</button>
-    </div>
   </div>
   <p class="k-sm" style="margin:0 0 16px;">{{ t('scan_panel_sub') }}</p>
 
@@ -205,12 +194,6 @@
     </div>
   </div>
 
-  <!-- Adım navigasyonu (yalnız Adım-adım görünümünde) -->
-  <div id="scan-step-nav" style="margin-top:16px; display:flex; justify-content:space-between; gap:10px;">
-    <button type="button" class="kg-btn kg-btn-subtle" id="step-back-btn" onclick="scanStep(-1)">{{ t('step_back') }}</button>
-    <button type="button" class="kg-btn kg-btn-primary" id="step-next-btn" onclick="scanStep(1)">{{ t('step_next') }}</button>
-  </div>
-
 </form>
 
 <style>
@@ -230,6 +213,13 @@
 <h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:26px 0 4px;">{{ icon('vault', 18) }} {{ t('audit_section_title') }}</h2>
 <p class="k-sm" style="margin:0 0 14px; color:var(--fg2); max-width:760px;">{{ t('audit_section_sub') }}</p>
 
+{# F-215: Denetim & Özel taramalar varsayılan GİZLİ; deneysel uyarı + onay sonrası açılır. #}
+<div id="audit-experimental-gate" class="kg-alert kg-alert-error" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px; max-width:760px;">
+  <span style="flex:1; min-width:220px;">⚠️ {{ t('audit_experimental_warn') }}</span>
+  <button type="button" class="kg-btn kg-btn-subtle kg-btn-sm" onclick="auditExperimentalShow()">{{ t('audit_experimental_show') }}</button>
+</div>
+
+<div id="audit-experimental" style="display:none;">
 <details class="kg-card audit-card" style="padding:16px 18px; margin-bottom:12px;">
   {{ audit_head('exploit', t('sca_title'), t('sca_desc'), t('tag_readonly'), '#d97706') }}
   <div style="margin-top:14px;"></div>
@@ -479,10 +469,20 @@
   <p class="k-sm" style="margin:12px 0 0; color:var(--fg2);">{{ t('esxi_audit_note') }}</p>
 </details>
 {% endif %}
+</div>{# /audit-experimental #}
 
 {% include "scans_table.html" %}
 
 <script>
+/* F-215: Denetim & Özel taramalar deneysel kapısı — onaylanırsa kartları açar, uyarıyı küçültür. */
+function auditExperimentalShow() {
+  if (!confirm({{ t('audit_experimental_confirm') | tojson }})) return;
+  var box = document.getElementById('audit-experimental');
+  if (box) box.style.display = 'block';
+  var gate = document.getElementById('audit-experimental-gate');
+  if (gate) gate.style.display = 'none';
+}
+
 /* Dizin taraması kelime-listesi alt-seçicisi: yalnız "Dizin taraması" işaretliyken görünür. */
 function dirWordlistToggle() {
   var chk = document.getElementById('q-dirscan');
@@ -580,32 +580,6 @@ function auditZoneCount(pid) {
   if (el) el.textContent = n ? AUDIT_ZONE_T.sum.replace('{n}', n) : AUDIT_ZONE_T.none;
 }
 
-/* Görünüm anahtarı (Hızlı = hepsi tek ekran; Adım-adım = tek tek) + adım navigasyonu. */
-var scanStepIdx = 0;
-function scanStepsAll() {
-  return Array.prototype.slice.call(document.querySelectorAll('#scan-form .scan-step'));
-}
-function scanView(v) {
-  var form = document.getElementById('scan-form');
-  form.className = (form.className.replace(/view-(flat|steps)/g, '').trim() + ' view-' + v).trim();
-  document.getElementById('view-flat-btn').classList.toggle('active', v === 'flat');
-  document.getElementById('view-steps-btn').classList.toggle('active', v === 'steps');
-  if (v === 'steps') { scanStepIdx = 0; scanStepShow(); }
-}
-function scanStepShow() {
-  var steps = scanStepsAll();
-  steps.forEach(function (s, i) { s.classList.toggle('active', i === scanStepIdx); });
-  var back = document.getElementById('step-back-btn');
-  var next = document.getElementById('step-next-btn');
-  if (back) back.style.visibility = (scanStepIdx === 0) ? 'hidden' : 'visible';
-  if (next) next.style.display = (scanStepIdx >= steps.length - 1) ? 'none' : '';
-}
-function scanStep(delta) {
-  var steps = scanStepsAll();
-  scanStepIdx = Math.max(0, Math.min(steps.length - 1, scanStepIdx + delta));
-  scanStepShow();
-}
-
 document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') ['qcreds',
     'db-zones', 'snmp-zones', 'smb-zones', 'ldap-zones', 'telnet-zones'].forEach(popClose);
@@ -622,6 +596,5 @@ document.addEventListener('keydown', function (e) {
   if (action && action.indexOf('/scans') === 0) e.preventDefault();
 });
 scanMode();
-scanView('flat');
 </script>
 {% endblock %}

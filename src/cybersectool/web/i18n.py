@@ -347,11 +347,6 @@ DICT: dict[str, dict[str, str]] = {
         "en": "Type a target or pick from inventory; set mode/ports, optionally add "
         "credentials/categories/scheduling. Go Quick (one screen) or Step by step.",
     },
-    "view_label": {"tr": "Görünüm", "en": "View"},
-    "view_quick": {"tr": "Hızlı", "en": "Quick"},
-    "view_step": {"tr": "Adım adım", "en": "Step by step"},
-    "step_next": {"tr": "İleri", "en": "Next"},
-    "step_back": {"tr": "Geri", "en": "Back"},
     "step_confirm": {"tr": "Onay", "en": "Confirm"},
     "target_inventory": {"tr": "Envanterden seç (IP zone / varlık)", "en": "Pick from inventory"},
     "sched_inventory_only": {
@@ -699,6 +694,16 @@ DICT: dict[str, dict[str, str]] = {
         "Çalıştırmak için ilgili kartı aç.",
         "en": "Protocol/service credentialed audits and special scan types. "
         "Expand a card to run it.",
+    },
+    # F-215: Denetim & Özel taramalar deneysel kapısı (varsayılan gizli + onay).
+    "audit_experimental_warn": {
+        "tr": "Bu alan deneyseldir ve yeterince test edilmemiştir.",
+        "en": "This area is experimental and not fully tested.",
+    },
+    "audit_experimental_show": {"tr": "Yine de göster", "en": "Show anyway"},
+    "audit_experimental_confirm": {
+        "tr": "Bu özellikler test edilmemiştir. Devam edilsin mi?",
+        "en": "These features are untested. Continue?",
     },
     "tag_readonly": {"tr": "Salt-okunur", "en": "Read-only"},
     "tag_credentialed": {"tr": "Kimlikli", "en": "Credentialed"},
