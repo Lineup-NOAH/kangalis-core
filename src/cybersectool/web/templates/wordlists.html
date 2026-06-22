@@ -184,7 +184,7 @@
       <div class="kg-card" style="padding:14px 16px; display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
         <div>
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-            <span style="font-weight:600;">{{ w.name }}</span>
+            <span style="font-weight:600;">{{ builtin_wl_name(w.name, lang) if w.is_builtin else w.name }}</span>
             <span class="kg-chip kg-chip-accent">{{ t('wlkind_' + w.kind.value) }}</span>
             <span class="kg-chip">{{ w.entries|length }} {{ t('wl_line_count') }}</span>
             {% if w.is_builtin %}<span class="kg-chip">{{ t('wl_builtin') }}</span>{% endif %}
@@ -195,7 +195,7 @@
           <a href="/wordlists/{{ w.id }}/view" class="kg-btn kg-btn-subtle kg-btn-sm">{{ icon('eye', 14) }} {{ t('wl_view') }}</a>
           {% if not w.is_builtin %}
           <a href="/wordlists/{{ w.id }}/edit" class="kg-btn kg-btn-subtle kg-btn-sm">{{ icon('edit', 14) }} {{ t('edit') }}</a>
-          <form method="post" action="/wordlists/{{ w.id }}/delete" onsubmit="return confirm('?');">
+          <form method="post" action="/wordlists/{{ w.id }}/delete" onsubmit="return confirm('{{ t('wl_delete_confirm') }}');">
             <button type="submit" class="kg-btn kg-btn-sm" style="color:var(--sev-critical); border:1px solid var(--danger-line); background:transparent;">{{ t('delete') }}</button>
           </form>
           {% endif %}

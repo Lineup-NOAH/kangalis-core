@@ -1275,6 +1275,10 @@ DICT: dict[str, dict[str, str]] = {
     "wl_line_count": {"tr": "satır", "en": "lines"},
     "wl_builtin": {"tr": "yerleşik", "en": "built-in"},
     "wl_view": {"tr": "Görüntüle", "en": "View"},
+    "wl_delete_confirm": {
+        "tr": "Bu kelime listesini silmek istediğinize emin misiniz?",
+        "en": "Delete this wordlist?",
+    },
     "wl_view_sub": {
         "tr": "Salt-okunur görünüm — listenin tüm satırları (yerleşik listeler değiştirilemez).",
         "en": "Read-only view — all entries of the list (built-in lists are immutable).",

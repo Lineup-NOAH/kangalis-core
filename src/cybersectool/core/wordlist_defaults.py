@@ -500,6 +500,29 @@ def generate_usernames() -> list[str]:
     return _gen(_FULL_NAMES)
 
 
+# Yerleşik liste adlarının İngilizce gösterimi (yalnızca RENDER-zamanı çeviri — DB'deki
+# kanonik ``name`` DEĞİŞMEZ; seed reconcile ve unique kısıtı kanonik TR adına bağlı kalır).
+BUILTIN_DISPLAY_EN = {
+    "Web dizinleri (EN)": "Web directories (EN)",
+    "Web dizinleri (TR)": "Web directories (TR)",
+    "Kullanıcı adları (EN)": "Usernames (EN)",
+    "Kullanıcı adları (TR)": "Usernames (TR)",
+    "Üretilen kullanıcı adları (AD)": "Generated usernames (AD)",
+    "Zayıf parolalar (EN)": "Weak passwords (EN)",
+    "Zayıf parolalar (TR)": "Weak passwords (TR)",
+    "Politika-uyumlu parolalar (spray)": "Policy-compliant passwords (spray)",
+    "SMB paylaşımları": "SMB shares",
+    "SNMP toplulukları": "SNMP communities",
+}
+
+
+def builtin_display_name(name: str, lang: str) -> str:
+    """Yerleşik liste adını dile göre çevir (TR=kanonik ad; EN=map, yoksa ad)."""
+    if lang == "en":
+        return BUILTIN_DISPLAY_EN.get(name, name)
+    return name
+
+
 def builtin_wordlists() -> list[tuple[str, WordlistKind, list[str]]]:
     """Kanonik yerleşik liste kümesi: (ad, tür, satırlar). seed reconcile bunu kullanır."""
     # web_dir (EN): tarayıcının gömülü DIRSCAN_WORDLIST'i + SNMP gömülü topluluk listesi

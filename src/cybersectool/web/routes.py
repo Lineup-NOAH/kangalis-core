@@ -258,6 +258,7 @@ from cybersectool.core.vulnerabilities import (
     vuln_lifecycle_stats,
     vuln_trend,
 )
+from cybersectool.core.wordlist_defaults import builtin_display_name
 from cybersectool.core.wordlist_generators import (
     USERNAME_PATTERN_KEYS,
     PasswordSpec,
@@ -383,6 +384,8 @@ templates.env.globals["audit_message"] = _audit_message
 templates.env.globals["audit_category"] = category_for
 # OSPKG: raporda OS-paket (OSV.dev) bulgularını rozetlemek için.
 templates.env.globals["is_os_package_title"] = is_os_package_title
+# #214: yerleşik kelime listesi adlarını render-zamanı TR/EN gösterimi (DB kanonik adı değişmez).
+templates.env.globals["builtin_wl_name"] = builtin_display_name
 
 
 async def _current_user(request: Request, session: AsyncSession) -> User | None:
