@@ -9,8 +9,12 @@ docker compose up -d --build
 Write-Host "==> 2/4 Şema migrasyonu (otomatik) + uygulama sağlığı bekleniyor..."
 $ok = $false
 for ($i = 0; $i -lt 80; $i++) {
-    docker compose exec -T app python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" 2>$null
-    if ($LASTEXITCODE -eq 0) { $ok = $true; break }
+    # try/catch + tüm akışları gizle: app henüz açılırken native stderr,
+    # $ErrorActionPreference="Stop" altında script'i sonlandırmasın (yalnız $LASTEXITCODE'a bak).
+    try {
+        docker compose exec -T app python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" 2>$null | Out-Null
+        if ($LASTEXITCODE -eq 0) { $ok = $true; break }
+    } catch { }
     Start-Sleep -Seconds 3
 }
 if (-not $ok) {
