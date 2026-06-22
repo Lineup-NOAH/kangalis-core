@@ -117,7 +117,15 @@ $kuser = Read-Host "  Kullanıcı adı"
 $ksec = Read-Host "  Parola (güçlü bir parola seçin)" -AsSecureString
 $kpass = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto(
     [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($ksec))
-docker compose exec -T app python -m cybersectool.scripts.create_user --username $kuser --password $kpass --role admin
+# Parolayı argv'de göstermeden ortam değişkeniyle geçir (host cmdline sızdırmasın; -e VARNAME =
+# isim-only geçiş -> değer PowerShell ortamından gelir, docker komut satırına yazılmaz). Sonra temizle.
+$env:KANGALIS_ADMIN_PASSWORD = $kpass
+try {
+    docker compose exec -T -e KANGALIS_ADMIN_PASSWORD app python -m cybersectool.scripts.create_user --username $kuser --role admin
+}
+finally {
+    Remove-Item Env:\KANGALIS_ADMIN_PASSWORD -ErrorAction SilentlyContinue
+}
 
 # --- 5/5 Kapsam ----------------------------------------------------------------
 Write-Host "`n==> 5/5 YETKİLİ TARAMA KAPSAMI (ZORUNLU — yoksa hiçbir tarama çalışmaz)"

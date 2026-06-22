@@ -107,8 +107,10 @@ echo ""
 echo "==> 4/5 İlk YÖNETİCİ (admin) kullanıcısı"
 read -rp "  Kullanıcı adı: " KUSER
 read -rsp "  Parola (güçlü bir parola seçin): " KPASS; echo
-docker compose exec -T app python -m cybersectool.scripts.create_user \
-  --username "$KUSER" --password "$KPASS" --role admin
+# Parolayı argv'de göstermeden ortam değişkeniyle geçir (host 'ps'/cmdline sızdırmasın;
+# -e VARNAME = isim-only geçiş -> değer kabuktan gelir, docker komut satırına yazılmaz).
+KANGALIS_ADMIN_PASSWORD="$KPASS" docker compose exec -T -e KANGALIS_ADMIN_PASSWORD \
+  app python -m cybersectool.scripts.create_user --username "$KUSER" --role admin
 
 # --- 5/5 Kapsam ----------------------------------------------------------------
 echo ""
