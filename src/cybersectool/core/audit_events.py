@@ -444,6 +444,12 @@ AUDIT_EVENTS: dict[str, AuditEventMeta] = {
         "AI uyum anlatısı üretildi: {target}",
         "AI compliance narrative generated: {target}",
     ),
+    "ai_ask": AuditEventMeta(
+        8022,
+        "system",
+        "AI yardım sorusu yanıtlandı: {target}",
+        "AI help question answered: {target}",
+    ),
     "demo_task": AuditEventMeta(
         8999, "system", "Demo görevi çalıştırıldı: {target}", "Demo task executed: {target}"
     ),

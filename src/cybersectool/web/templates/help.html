@@ -6,6 +6,25 @@
 <h1 class="k-h1" style="margin-bottom:6px;">{{ icon('info', 22) }} {{ t('help_title') }}</h1>
 <p class="k-sm" style="margin-bottom:18px; color:var(--fg2); max-width:820px;">{{ t('help_sub') }}</p>
 
+{% if ai_active %}
+{# AI açıkken: aynı içerikten (grounding_text) yanıtlayan "AI'ya sor" kutusu (#B/#2c). #}
+<div class="kg-card" style="max-width:820px; margin-bottom:16px; padding:16px 18px; background:color-mix(in srgb, var(--accent) 7%, transparent);">
+  <div class="k-label" style="display:flex; align-items:center; gap:8px; font-weight:600; margin-bottom:6px;">
+    {{ icon('sparkles', 16) }} {{ t('ai_qa_title') }}
+  </div>
+  <p class="k-sm" style="color:var(--fg2); margin:0 0 10px;">{{ t('ai_qa_sub') }}</p>
+  <form hx-post="/ai/ask" hx-target="#qa-result" hx-swap="innerHTML" hx-indicator="#qa-spin"
+        hx-disabled-elt="find button, find input"
+        style="display:flex; gap:8px; flex-wrap:wrap;">
+    <input name="question" type="text" class="kg-input" style="flex:1; min-width:240px;"
+           placeholder="{{ t('ai_qa_placeholder') }}" required maxlength="300" autocomplete="off" />
+    <button type="submit" class="kg-btn kg-btn-primary">{{ icon('sparkles', 15) }} {{ t('ai_qa_btn') }}</button>
+  </form>
+  <div id="qa-spin" class="htmx-indicator k-xs" style="color:var(--fg2); margin-top:8px;">{{ t('ai_qa_loading') }}</div>
+  <div id="qa-result" style="margin-top:10px;"></div>
+</div>
+{% endif %}
+
 <div style="max-width:820px; display:flex; flex-direction:column; gap:14px;">
   {% for sec in sections %}
   <div class="kg-card" style="padding:16px 18px;">

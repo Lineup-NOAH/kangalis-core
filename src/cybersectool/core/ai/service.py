@@ -22,10 +22,16 @@ from cybersectool.core.ai import client
 # Dil koruması — tüm sistem yönergelerine üretim anında eklenir. Yerel modeller (ör. qwen3,
 # Çince kökenli) ara sıra Latin-dışı karakter sızdırıyor; bu Türkçe rapor çıktısını bozar.
 # Tek yerde (üretim katmanı) zorlanır → mevcut + gelecek tüm AI yüzeyleri kapsanır.
-_LANG_GUARD = (
-    " Çok önemli: yanıtın TAMAMINI Türkçe ve YALNIZCA Latin alfabesiyle yaz; "
-    "Çince/Kiril/Arap gibi Latin-dışı hiçbir karakter kullanma."
-)
+_LANG_GUARDS = {
+    "tr": (
+        " Çok önemli: yanıtın TAMAMINI Türkçe ve YALNIZCA Latin alfabesiyle yaz; "
+        "Çince/Kiril/Arap gibi Latin-dışı hiçbir karakter kullanma."
+    ),
+    "en": (
+        " Important: write your entire answer in English using ONLY the Latin alphabet; "
+        "do not use any non-Latin characters (Chinese/Cyrillic/Arabic)."
+    ),
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,19 +80,23 @@ async def generate(
     prompt: str,
     *,
     system: str = "",
+    lang: str = "tr",
     options: dict[str, Any] | None = None,
 ) -> str | None:
     """Verilen config ile metin üret. AI kapalı/erişilemez → ``None`` (graceful).
 
-    Sistem yönergesi verildiyse ``_LANG_GUARD`` eklenir (Latin-dışı karakter sızıntısını önler).
+    Sistem yönergesi verildiyse dile uygun dil-koruması eklenir (Latin-dışı karakter sızıntısını
+    önler + yanıt dilini sabitler). ``lang`` varsayılan 'tr' (mevcut tüm yüzeyler Türkçe);
+    çift-dilli yüzeyler (yardım Q&A) 'en' geçerek İngilizce yanıt alır.
     """
     if not config.available:
         return None
+    guard = _LANG_GUARDS.get(lang, _LANG_GUARDS["tr"])
     return await client.generate(
         config.endpoint,
         config.model,
         prompt,
-        system=(system + _LANG_GUARD) if system else system,
+        system=(system + guard) if system else system,
         timeout=config.timeout,
         options=options,
     )

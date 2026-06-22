@@ -310,6 +310,7 @@ from cybersectool.tasks.exploit_sync import sync_exploits_task
 from cybersectool.tasks.sca_scan import sca_scan_task
 from cybersectool.tasks.web_scan import web_scan_task
 from cybersectool.web.help_content import HELP_SECTIONS
+from cybersectool.web.help_content import grounding_text as help_grounding_text
 from cybersectool.web.i18n import LANG_COOKIE, normalize_lang, translator
 from cybersectool.web.pdf import PdfUnavailableError, render_html_to_pdf
 
@@ -4123,6 +4124,44 @@ async def ai_explain_web(
     return _ai_fragment(request, content=stored.content, model=stored.model, cached=False)
 
 
+@router.post("/ai/ask")
+async def ai_ask_web(
+    request: Request,
+    session: SessionDep,
+    question: Annotated[str, Form()] = "",
+) -> Response:
+    """Uygulama yardımı Q&A (#B/#2c) — kullanıcı 'bunu nasıl yaparım' sorar, AI #A Yardım
+    içeriğine GROUNDED yanıtlar (uydurmaz; kapsam dışı = 'yardımda yok' der). Login gerekli;
+    AI kapalıysa graceful hata. Yanıt önbeleklenir (soru+içerik hash'i) → tekrar üretilmez.
+    """
+    user = await _current_user(request, session)
+    if user is None:
+        return _redirect_login()
+    lang = normalize_lang(request.cookies.get(LANG_COOKIE))
+    t = translator(lang)
+    config = AIConfig.from_app_settings(await get_settings(session))
+    if not ai_available(config):
+        return _ai_fragment(request, error=t("ai_disabled"))
+    q = question.strip()
+    if not q:
+        return _ai_fragment(request, error=t("ai_qa_empty"))
+    grounding = help_grounding_text(lang)
+    # Cache anahtarı prompt'la AYNI normalize edilmiş metinden türesin (sanitize + lower) →
+    # özdeş prompt üreten girdiler tek cache satırını paylaşır (gereksiz üretim olmaz).
+    q_norm = ai_prompts.sanitize_untrusted(q, max_len=300).lower()
+    cache_key = f"qa:{lang}:{ai_cache.digest(q_norm + '|' + grounding)}"
+    hit = await ai_cache.get_cached(session, cache_key)
+    if hit is not None:
+        return _ai_fragment(request, content=hit.content, model=hit.model, cached=True)
+    system, prompt = ai_prompts.build_help_qa_prompt(q, grounding, lang)
+    text = await ai_service.generate(config, prompt, system=system, lang=lang)
+    if not text:
+        return _ai_fragment(request, error=t("ai_generate_failed"))
+    stored = await ai_cache.store(session, cache_key, text, model=config.model)
+    await log_action(session, "ai_ask", user_id=user.id, target=f"qa:{lang}")
+    return _ai_fragment(request, content=stored.content, model=stored.model, cached=False)
+
+
 @router.post("/ai/summary")
 async def ai_summary_web(
     request: Request,
@@ -5665,7 +5704,12 @@ async def help_page(request: Request, session: SessionDep) -> Response:
     return templates.TemplateResponse(
         request,
         "help.html",
-        {"app_name": APP_NAME, "user": user, "sections": HELP_SECTIONS},
+        {
+            "app_name": APP_NAME,
+            "user": user,
+            "sections": HELP_SECTIONS,
+            "ai_active": ai_available(AIConfig.from_app_settings(await get_settings(session))),
+        },
     )
 
 

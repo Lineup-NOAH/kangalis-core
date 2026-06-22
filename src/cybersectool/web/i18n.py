@@ -41,6 +41,39 @@ DICT: dict[str, dict[str, str]] = {
         "en": "For more detailed setup and usage, see the docs/ folder in the repository "
         "(KURULUM.md, EKLENTILER.md, KILAVUZ.md).",
     },
+    # AI Q&A (#B) — Yardım sayfasındaki "AI'ya sor" + Eklentiler kurulum adımları
+    "ai_qa_title": {"tr": "AI'ya sor", "en": "Ask the AI"},
+    "ai_qa_sub": {
+        "tr": "Uygulamayı nasıl kullanacağınızı sorun; AI bu sayfadaki yardım içeriğinden "
+        "yanıtlar (uygulama dışına çıkmaz).",
+        "en": "Ask how to use the app; the AI answers from the help content on this page "
+        "(it won't go outside the app).",
+    },
+    "ai_qa_placeholder": {
+        "tr": "Örn. Nasıl tarama başlatırım?",
+        "en": "e.g. How do I start a scan?",
+    },
+    "ai_qa_btn": {"tr": "Sor", "en": "Ask"},
+    "ai_qa_loading": {
+        "tr": "AI düşünüyor… (CPU'da birkaç dakika sürebilir)",
+        "en": "The AI is thinking… (may take a few minutes on CPU)",
+    },
+    "ai_qa_empty": {"tr": "Lütfen bir soru yazın.", "en": "Please type a question."},
+    "ai_setup_steps_title": {
+        "tr": "Yerel AI'yı başlatma (sunucuda)",
+        "en": "Starting the local AI (on the server)",
+    },
+    "ai_setup_steps_note": {
+        "tr": "Bu komutları sunucuda çalıştırın (uygulama Docker'ı kendisi çalıştıramaz), "
+        "sonra aşağıdan endpoint + modeli girip 'Bağlantıyı test et'.",
+        "en": "Run these on the server (the app cannot run Docker itself), then enter the "
+        "endpoint + model below and click 'Test connection'.",
+    },
+    "ai_setup_step1": {"tr": "1) AI konteynerini başlat:", "en": "1) Start the AI container:"},
+    "ai_setup_step2": {
+        "tr": "2) Modeli bir kez çek (~5 GB):",
+        "en": "2) Pull the model once (~5 GB):",
+    },
     "cvedb_sub": {
         "tr": "Yerel CVE/CPE bilgi bankası (NVD'den çekilen). Sızma cephaneliği olan Exploit "
         "DB'den AYRIDIR — burası 'hangi zafiyetler var' bilgisi, orası gerçek exploit/payload.",
@@ -2097,18 +2130,18 @@ DICT: dict[str, dict[str, str]] = {
         "en": "AI-generated — verify before acting.",
     },
     "ai_disabled": {
-        "tr": "AI asistanı kapalı. Ayarlar > Yerel AI'dan etkinleştirin.",
-        "en": "AI assistant is off. Enable it in Settings > Local AI.",
+        "tr": "AI asistanı kapalı. Eklentiler > Yerel AI'dan etkinleştirin.",
+        "en": "AI assistant is off. Enable it in Plugins > Local AI.",
     },
     "ai_finding_missing": {
         "tr": "Bulgu/CVE bulunamadı.",
         "en": "Finding/CVE not found.",
     },
     "ai_generate_failed": {
-        "tr": "AI üretimi başarısız (model erişilemedi ya da zaman aşımı). Ayarlar > Yerel AI'dan "
-        "bağlantıyı test edin.",
+        "tr": "AI üretimi başarısız (model erişilemedi ya da zaman aşımı). Eklentiler > Yerel "
+        "AI'dan bağlantıyı test edin.",
         "en": "AI generation failed (model unreachable or timed out). Test the connection in "
-        "Settings > Local AI.",
+        "Plugins > Local AI.",
     },
     "ai_summary_btn": {"tr": "AI yönetici özeti üret", "en": "Generate AI executive summary"},
     "ai_summary_label": {"tr": "AI Yönetici Özeti", "en": "AI Executive Summary"},

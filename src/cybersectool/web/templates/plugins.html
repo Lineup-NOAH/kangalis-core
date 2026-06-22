@@ -44,6 +44,15 @@
     {% if ai_active %}<span class="kg-status kg-status-completed">{{ t('plugin_status_active') }}</span>{% else %}<span class="kg-status kg-status-pending">{{ t('plugin_status_inactive') }}</span>{% endif %}
   </h2>
   <p class="k-sm" style="margin:0 0 12px; color:var(--fg2);">{{ t('set_ai_sub') }}</p>
+  {# Kurulum adımları (#B-a): uygulama Docker'ı çalıştıramaz → komutlar + canlı test/algıla. #}
+  <div class="kg-card" style="padding:14px 16px; margin-bottom:10px;">
+    <div class="kg-field-label" style="margin-bottom:6px;">{{ t('ai_setup_steps_title') }}</div>
+    <p class="k-sm" style="margin:0 0 8px; color:var(--fg2);">{{ t('ai_setup_steps_note') }}</p>
+    <div class="k-sm" style="margin-bottom:3px;">{{ t('ai_setup_step1') }}</div>
+    <pre class="k-xs font-mono" style="margin:0 0 8px; padding:8px 10px; background:var(--bg2); border:1px solid var(--border); border-radius:6px; overflow-x:auto;">docker compose --profile ai up -d ollama</pre>
+    <div class="k-sm" style="margin-bottom:3px;">{{ t('ai_setup_step2') }}</div>
+    <pre class="k-xs font-mono" style="margin:0; padding:8px 10px; background:var(--bg2); border:1px solid var(--border); border-radius:6px; overflow-x:auto;">docker compose exec ollama ollama pull qwen3:8b</pre>
+  </div>
   <form method="post" action="/plugins/ai" class="kg-card" style="padding:20px; margin-bottom:10px;">
     <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;" title="{{ t('set_ai_enabled_tip') }}">
       <input id="ai-enabled" name="ai_enabled" type="checkbox" {{ 'checked' if s.ai_enabled else '' }} />
