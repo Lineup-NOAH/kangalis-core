@@ -5925,7 +5925,7 @@ async def settings_ai_web(
         ai_timeout_sec=ai_timeout_sec,
     )
     await log_action(session, "settings_update", user_id=user.id, target="ai")
-    msg = quote("Ayarlar kaydedildi.")
+    msg = quote("AI ayarları kaydedildi.")
     return RedirectResponse(f"/plugins?msg={msg}", status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -5953,7 +5953,7 @@ async def settings_ai_test_web(request: Request, session: SessionDep) -> Respons
         msg = quote(
             f"AI endpoint'ine ulaşıldı (sunulan modeller: {installed}). "
             f"Ayarlardaki model '{model}' listede yok — model adını sunulanlarla eşleştirin "
-            "(Ollama tek-model sunar, ad etiket olabilir)."
+            "(Ollama, ad etiket olabilir)."
         )
     return RedirectResponse(f"/plugins?msg={msg}", status_code=status.HTTP_303_SEE_OTHER)
 
