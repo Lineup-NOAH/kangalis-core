@@ -212,7 +212,11 @@ async def _run(scan_id: int, target: str, mode: str = "safe") -> str:
             # collect_cve_targets hedefleri bulur. Kapılar: does_exploitation + msfrpcd/kill-switch
             # (+ çağıran uçta admin + ack + ALLOW_AGGRESSIVE). Aktif DAST'ın kendisi de web sömürüsü
             # (gerçek payload); bu adım ek olarak CVE-eşli exploit'leri dener. ---
-            if does_exploitation(parse_mode(mode)):
+            # LİSANS KAPISI: ``exploit`` sömürüsü için geçerli ticari lisans GEREKİR — eklenti
+            # kurulu olsa bile lisans yoksa sömürü fazı hiç başlamaz (web tespiti tam sürer).
+            from cybersectool.core.licensing import feature_licensed
+
+            if does_exploitation(parse_mode(mode)) and await feature_licensed(session, "exploit"):
                 created_by = scan.created_by if scan is not None else None
                 # Sömürü eklentisi (opsiyonel): yoksa web tespiti tam, yalnız sömürü atlanır.
                 try:

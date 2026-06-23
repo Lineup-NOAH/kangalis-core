@@ -514,7 +514,11 @@ async def _process_results(
     # (2) Exploit-DB: eşleşen PoC'ler "staged" ExploitAttempt olarak hazırlanır (EXDB-A)
     #     — msfrpcd GEREKTİRMEZ, hiçbir şey çalıştırmaz; operatör (ya da sandbox, EXDB-C)
     #     labda dener. Böylece Metasploit kapalı olsa bile Exploit-DB devreye girer.
-    if is_vuln and does_exploitation(scan_mode):
+    # LİSANS KAPISI: ``exploit`` sömürüsü için geçerli ticari lisans GEREKİR — eklenti kurulu
+    # olsa bile lisans yoksa sömürü fazı hiç başlamaz (tespit/rapor tam sürer).
+    from cybersectool.core.licensing import feature_licensed
+
+    if is_vuln and does_exploitation(scan_mode) and await feature_licensed(session, "exploit"):
         created_by = current.created_by if current is not None else None
         # Sömürü eklentisi (kapalı/ticari, opsiyonel) — açık-kaynak çekirdekte bulunmayabilir.
         # GEÇ/KOŞULLU import: paket yoksa tespit tam tamamlanır, yalnız sömürü fazı atlanır.

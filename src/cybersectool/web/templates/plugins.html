@@ -102,11 +102,25 @@
     {% else %}
     <span class="kg-status kg-status-pending">{{ t('plugin_status_inactive') }}</span>
     {% endif %}
+    {# İkinci kapı: sömürü için eklentinin yanında geçerli ``exploit`` lisansı da gerekir. #}
+    {% if exploit_licensed %}
+    <span class="kg-status kg-status-completed">{{ t('plugin_exploit_licensed') }}</span>
+    {% else %}
+    <span class="kg-status kg-status-pending">{{ t('plugin_exploit_unlicensed') }}</span>
+    {% endif %}
   </div>
   <p class="k-sm" style="margin:10px 0 0; color:var(--fg2);">{{ t('plugin_addon_body') }}</p>
-  <div style="margin-top:12px;">
-    <div class="kg-field-label" style="margin-bottom:4px;">{{ t('plugin_howto') }}</div>
-    <p class="k-sm" style="margin:0; color:var(--fg2);">{{ t('plugin_exploit_install') }}</p>
+  {# Eklenti-imajı kurulum sihirbazı: ticari imajı edinince izlenecek adımlar (AI kartı deseni;
+     uygulama Docker'ı çalıştıramaz → komut blokları + Lisans'a kısayol). #}
+  <div class="kg-card" style="padding:14px 16px; margin-top:12px;">
+    <div class="kg-field-label" style="margin-bottom:6px;">{{ t('plugin_exploit_setup_title') }}</div>
+    <p class="k-sm" style="margin:0 0 10px; color:var(--fg2);">{{ t('plugin_exploit_install') }}</p>
+    <div class="k-sm" style="margin-bottom:3px;">{{ t('plugin_exploit_step1') }}</div>
+    <pre class="k-xs font-mono" style="margin:0 0 8px; padding:8px 10px; background:var(--bg2); border:1px solid var(--border); border-radius:6px; overflow-x:auto;">docker compose --profile exploit up -d   # imaj: ticari pakette</pre>
+    <div class="k-sm" style="margin-bottom:3px;">{{ t('plugin_exploit_step2') }}</div>
+    <pre class="k-xs font-mono" style="margin:0 0 8px; padding:8px 10px; background:var(--bg2); border:1px solid var(--border); border-radius:6px; overflow-x:auto;">MSF_RPC_HOST=msf   MSF_RPC_PASSWORD=…</pre>
+    <div class="k-sm" style="margin-bottom:6px;">{{ t('plugin_exploit_step3') }}</div>
+    <a href="/settings" class="kg-btn kg-btn-ghost kg-btn-sm">{{ icon('shield', 14) }} {{ t('plugin_exploit_step3_btn') }}</a>
   </div>
   <p class="k-sm" style="margin:12px 0 0; padding:9px 11px; border-radius:8px; background:var(--bg2); color:var(--fg2);">{{ t('plugin_exploit_authorized') }}</p>
 </div>

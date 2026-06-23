@@ -269,6 +269,15 @@ async def save_ratelimit_settings(
     return row
 
 
+async def save_license_key(session: AsyncSession, *, license_key: str) -> AppSettings:
+    """Ticari lisans kodunu kaydeder (kırpılır; doğrulama core/licensing.py'de yapılır)."""
+    row = await get_settings(session)
+    row.license_key = license_key.strip()
+    await session.commit()
+    await session.refresh(row)
+    return row
+
+
 async def save_smtp_settings(
     session: AsyncSession,
     *,

@@ -48,6 +48,7 @@ from cybersectool.core.app_settings import (
     save_asset_scope_settings,
     save_hardening_settings,
     save_ldap_sync_settings,
+    save_license_key,
     save_network_settings,
     save_nvd_settings,
     save_ratelimit_settings,
@@ -139,6 +140,7 @@ from cybersectool.core.ldap import (
     ldap_test_connection,
 )
 from cybersectool.core.ldap_config import get_bind_password, get_ldap_config, save_ldap_config
+from cybersectool.core.licensing import active_license, feature_licensed
 from cybersectool.core.login_guard import (
     clear_login_failures,
     login_lockout_remaining,
@@ -5728,6 +5730,8 @@ async def plugins_page(request: Request, session: SessionDep) -> Response:
     ai_active = bool(getattr(row, "ai_enabled", False))
     # Sömürü eklentisi (ticari kangalis-exploit) kurulu mu — yan-etkisiz import tespiti (#F Faz 0).
     exploitation_available = exploit_plugin_available()
+    # Sömürü için İKİ kapı: eklenti (yukarıda) + geçerli ``exploit`` lisansı (kartta ayrı satır).
+    exploit_licensed = await feature_licensed(session, "exploit")
     return templates.TemplateResponse(
         request,
         "plugins.html",
@@ -5736,6 +5740,7 @@ async def plugins_page(request: Request, session: SessionDep) -> Response:
             "user": user,
             "ai_active": ai_active,
             "exploitation_available": exploitation_available,
+            "exploit_licensed": exploit_licensed,
             "s": row,
             "message": request.query_params.get("msg"),
             "error": request.query_params.get("error"),
@@ -5798,6 +5803,8 @@ async def _settings_page(
             "nvd_sync_days_max": NVD_SYNC_DAYS_MAX,
             # Yetkili tarama kapsamı (ScopePolicy) — #C web formu için aktif politikayı göster
             "active_policy": await get_active_policy(session),
+            # Ticari lisans durumu (Lisans kartı): geçerli/süresi-dolmuş/geçersiz/yok/devre-dışı
+            "license_info": await active_license(session),
             "error": error,
             "message": message,
         },
@@ -5881,6 +5888,24 @@ async def settings_ratelimit_web(
         lockout_sec=lockout_sec,
     )
     await log_action(session, "settings_update", user_id=user.id, target="ratelimit")
+    return _settings_saved_redirect()
+
+
+@router.post("/settings/license")
+async def settings_license_web(
+    request: Request,
+    session: SessionDep,
+    license_key: Annotated[str, Form()] = "",
+) -> Response:
+    """Ticari lisans kodunu kaydeder (admin). Doğrulama core/licensing.py'de yapılır —
+    kaydetme her zaman kabul edilir; geçersiz/boş kod Lisans kartında durum olarak gösterilir."""
+    user = await _current_user(request, session)
+    if user is None:
+        return _redirect_login()
+    if user.role != Role.admin:
+        return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
+    await save_license_key(session, license_key=license_key)
+    await log_action(session, "settings_update", user_id=user.id, target="license")
     return _settings_saved_redirect()
 
 

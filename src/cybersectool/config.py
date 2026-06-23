@@ -84,6 +84,10 @@ class Settings(BaseSettings):
     ai_ratelimit_enabled: bool = True
     ai_ratelimit_max: int = 60  # pencere başına kullanıcı başına en çok üretim
     ai_ratelimit_window_sec: int = 60  # sayaç penceresi (saniye)
+    # TİCARİ LİSANS açık anahtarı (Ed25519, ham 32 baytın base64'ü) — patronun ürettiği;
+    # lisans kodlarının imzasını ÇEVRİMDIŞI doğrular (sunucu/internet gerekmez). Boşsa
+    # lisanslama devre dışı (``exploit`` özelliği kilitli kalır). bkz. core/licensing.py.
+    license_public_key: str = ""  # env LICENSE_PUBLIC_KEY
 
     @model_validator(mode="after")
     def _enforce_production_secrets(self) -> Settings:

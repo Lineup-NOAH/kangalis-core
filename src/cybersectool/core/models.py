@@ -816,6 +816,11 @@ class AppSettings(Base):
     )  # boş → config.ai_model (qwen3:8b)
     ai_timeout_sec: Mapped[int] = mapped_column(default=300, server_default="300")  # CPU yavaş
 
+    # --- Ticari lisans (çevrimdışı, imza-temelli) ---
+    # Patronun ürettiği lisans kodu (base64url(payload).base64url(sig)); uzun olabilir.
+    # core/licensing.py açık anahtarla imzayı doğrular → ``exploit`` özelliğini açar. Boş = yok.
+    license_key: Mapped[str] = mapped_column(String(2048), default="", server_default="")
+
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )

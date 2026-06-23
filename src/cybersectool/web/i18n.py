@@ -157,6 +157,23 @@ DICT: dict[str, dict[str, str]] = {
         "environment/image, (2) restart the worker, (3) configure msfrpcd (endpoint/password). "
         "This card shows 'Installed' once the add-on is importable.",
     },
+    "plugin_exploit_setup_title": {"tr": "Kurulum sihirbazı", "en": "Setup wizard"},
+    "plugin_exploit_step1": {
+        "tr": "1) Ticari eklenti imajını worker ortamına kurun/başlatın "
+        "(imaj adı + tam komut ticari pakette gelir; örnek):",
+        "en": "1) Install/start the commercial add-on image in the worker environment "
+        "(image name + exact command ship with the commercial package; example):",
+    },
+    "plugin_exploit_step2": {
+        "tr": "2) Metasploit RPC (msfrpcd) bağlantısını yapılandırın (worker env):",
+        "en": "2) Configure the Metasploit RPC (msfrpcd) connection (worker env):",
+    },
+    "plugin_exploit_step3": {
+        "tr": "3) Lisans kodunu girin → bu kartta 'Kurulu' + 'Lisanslı' olunca sömürü açılır:",
+        "en": "3) Enter the license code → exploitation unlocks once this card shows "
+        "'Installed' + 'Licensed':",
+    },
+    "plugin_exploit_step3_btn": {"tr": "Ayarlar → Lisans", "en": "Settings → License"},
     "plugin_exploit_authorized": {
         "tr": "⚠️ Yalnız YETKİLİ sistemlerde çalıştırın. Sömürünün meşruiyeti araçtan değil, "
         "hedef-yetkisinden gelir; yetkisiz kullanım yasa dışı olabilir. Her deneme denetim "
@@ -165,6 +182,9 @@ DICT: dict[str, dict[str, str]] = {
         "not the tool; unauthorized use may be illegal. Every attempt is audit-logged. "
         "(Not legal advice.)",
     },
+    # Sömürü ikinci kapısı: geçerli ``exploit`` lisansı (Ayarlar > Lisans) — eklentiden ayrı
+    "plugin_exploit_licensed": {"tr": "Lisanslı", "en": "Licensed"},
+    "plugin_exploit_unlicensed": {"tr": "Lisans gerekli", "en": "License required"},
     "logout": {"tr": "Çıkış", "en": "Logout"},
     # Topbar / common
     "search_ph": {"tr": "Ara: CVE, IP, varlık…", "en": "Search CVE, IP, asset…"},
@@ -2030,6 +2050,24 @@ DICT: dict[str, dict[str, str]] = {
         "tr": "En az bir geçerli izinli CIDR gerekli (boş = tüm hedefler reddedilir).",
         "en": "At least one valid allowed CIDR is required (empty = all targets denied).",
     },
+    # Ticari lisans (çevrimdışı, imza-temelli) — ``exploit`` özelliğini açar
+    "set_license_section": {"tr": "Lisans", "en": "License"},
+    "set_license_sub": {
+        "tr": "Ticari lisans kodunu yapıştırın — sömürü (exploit) özelliğini açar. Çevrimdışı "
+        "imzayla doğrulanır (sunucu gerekmez). Sömürü için ayrıca ticari eklenti de kurulu olmalı.",
+        "en": "Paste your commercial license code — unlocks the exploit feature. Verified offline "
+        "via signature (no server). The commercial add-on must also be installed to exploit.",
+    },
+    "set_license_label": {"tr": "Lisans kodu", "en": "License code"},
+    "set_license_status": {"tr": "Durum", "en": "Status"},
+    "license_status_valid": {"tr": "Geçerli", "en": "Valid"},
+    "license_status_expired": {"tr": "Süresi dolmuş", "en": "Expired"},
+    "license_status_invalid": {"tr": "Geçersiz", "en": "Invalid"},
+    "license_status_none": {"tr": "Yok", "en": "None"},
+    "license_status_disabled": {"tr": "Devre dışı", "en": "Disabled"},
+    "set_license_customer": {"tr": "Müşteri", "en": "Customer"},
+    "set_license_expires": {"tr": "Bitiş", "en": "Expires"},
+    "set_license_features": {"tr": "Özellikler", "en": "Features"},
     # Zafiyet veritabanı (CVE-COVERAGE FE)
     "set_vulndb_section": {"tr": "Zafiyet veritabanı", "en": "Vulnerability database"},
     "set_vulndb_sub": {
