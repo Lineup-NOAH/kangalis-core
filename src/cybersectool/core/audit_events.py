@@ -307,6 +307,18 @@ AUDIT_EVENTS: dict[str, AuditEventMeta] = {
         "Kullanıcı etkin/pasif durumu değiştirildi: {target}",
         "User active state toggled: {target}",
     ),
+    "user_password_reset": AuditEventMeta(
+        4009,
+        "user",
+        "Kullanıcı parolası (admin) sıfırlandı: {target}",
+        "User password reset (by admin): {target}",
+    ),
+    "self_password_change": AuditEventMeta(
+        4010,
+        "user",
+        "Kendi parolasını değiştirdi: {target}",
+        "Changed own password: {target}",
+    ),
     # 409x — kimlik doğrulama olayları (auth; güvenlik açısından kritik)
     "login_failed": AuditEventMeta(
         4090, "auth", "Başarısız giriş denemesi: {target}", "Failed login attempt: {target}"

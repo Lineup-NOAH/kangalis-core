@@ -6,6 +6,7 @@ Bu testler saftır (DB/IO yok): kayıt defteri tutarlılığı, mesaj oluşturma
 
 from __future__ import annotations
 
+import json
 import re
 from datetime import UTC, datetime
 from pathlib import Path
@@ -128,6 +129,17 @@ def test_parser_regex_roundtrip_all_formats() -> None:
         pattern = parser_regex_for_format(fmt)
         match = re.match(pattern, line)
         assert match is not None, f"{fmt}: regex satırı eşleyemedi:\n{line}\n{pattern}"
+        if fmt == "json":
+            # JSON yapısaldır → SIEM JSON olarak ayrıştırır (regex yalnız zarfı doğrular;
+            # adlandırılmış grup YOKTUR). Alanları JSON'dan çöz + doğrula.
+            obj = json.loads(line)
+            assert str(obj["event_id"]) == "4090"
+            assert obj["action"] == "login_failed"
+            assert str(obj["user"]) == "7"
+            assert obj["category"] == "auth"
+            assert obj["target"] == "admin@10.0.0.5"
+            assert "Başarısız giriş denemesi" in obj["msg"]
+            continue
         gd = match.groupdict()
         assert gd["event_id"] == "4090"
         assert gd["action"] == "login_failed"
