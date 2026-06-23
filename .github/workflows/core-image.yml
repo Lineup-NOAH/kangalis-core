@@ -1,0 +1,43 @@
+name: Core imajı (uygulama/worker/beat/mcp)
+
+# Kangalis OSS çekirdek imajını (kangalis-core) derler + ghcr'a basar.
+# migrate/app/worker/beat/mcp servisleri AYNI imajı kullanır (yalnız `command` farklı) → TEK imaj
+# yayınlanır. Dağıtım B'de müşteri bu imajı `docker compose pull` ile çeker, DERLEMEZ.
+# ELLE tetiklenir (workflow_dispatch); her push'ta koşmaz.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "İmaj etiketi (ghcr.io/<owner>/kangalis-core:<tag>)"
+        default: "latest"
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # ghcr imaj referansları küçük-harf olmalı; owner'ı (ör. Lineup-NOAH) küçült.
+      - name: Sahip adını küçük harfe çevir
+        id: owner
+        run: echo "lc=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+
+      - name: ghcr girişi
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Derle + push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: ghcr.io/${{ steps.owner.outputs.lc }}/kangalis-core:${{ github.event.inputs.tag }}

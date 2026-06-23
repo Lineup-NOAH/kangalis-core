@@ -31,6 +31,9 @@ services:
   # çalışır ve çıkar — kullanıcı elle migration koşmaz (otomatik). İdempotent; her up'ta güvenli.
   migrate:
     build: .
+    # Dağıtım B (çek-çalıştır): `docker compose pull` bu yayınlanmış imajı çeker (DERLEME yok).
+    # Yayınlama TEK yol: GitHub Actions → 'Core imajı' (core-image.yml) workflow'u. 5 servis AYNI imaj.
+    image: ${KANGALIS_IMAGE:-ghcr.io/lineup-noah/kangalis-core:latest}
     command: alembic upgrade head
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-cyber}:${POSTGRES_PASSWORD:-cyber}@db:5432/${POSTGRES_DB:-cybersectool}
@@ -41,6 +44,9 @@ services:
 
   app:
     build: .
+    # Dağıtım B (çek-çalıştır): `docker compose pull` bu yayınlanmış imajı çeker (DERLEME yok).
+    # Yayınlama TEK yol: GitHub Actions → 'Core imajı' (core-image.yml) workflow'u. 5 servis AYNI imaj.
+    image: ${KANGALIS_IMAGE:-ghcr.io/lineup-noah/kangalis-core:latest}
     environment:
       APP_ENV: development
       SECRET_KEY: ${SECRET_KEY:-dev-secret}
@@ -98,6 +104,9 @@ services:
 
   worker:
     build: .
+    # Dağıtım B (çek-çalıştır): `docker compose pull` bu yayınlanmış imajı çeker (DERLEME yok).
+    # Yayınlama TEK yol: GitHub Actions → 'Core imajı' (core-image.yml) workflow'u. 5 servis AYNI imaj.
+    image: ${KANGALIS_IMAGE:-ghcr.io/lineup-noah/kangalis-core:latest}
     command: celery -A cybersectool.tasks.celery_app worker --loglevel=info
     environment:
       APP_ENV: development
@@ -132,6 +141,9 @@ services:
 
   beat:
     build: .
+    # Dağıtım B (çek-çalıştır): `docker compose pull` bu yayınlanmış imajı çeker (DERLEME yok).
+    # Yayınlama TEK yol: GitHub Actions → 'Core imajı' (core-image.yml) workflow'u. 5 servis AYNI imaj.
+    image: ${KANGALIS_IMAGE:-ghcr.io/lineup-noah/kangalis-core:latest}
     command: celery -A cybersectool.tasks.celery_app beat --loglevel=info
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-cyber}:${POSTGRES_PASSWORD:-cyber}@db:5432/${POSTGRES_DB:-cybersectool}
@@ -150,6 +162,9 @@ services:
 
   mcp:
     build: .
+    # Dağıtım B (çek-çalıştır): `docker compose pull` bu yayınlanmış imajı çeker (DERLEME yok).
+    # Yayınlama TEK yol: GitHub Actions → 'Core imajı' (core-image.yml) workflow'u. 5 servis AYNI imaj.
+    image: ${KANGALIS_IMAGE:-ghcr.io/lineup-noah/kangalis-core:latest}
     command: python -m cybersectool.mcp.server
     environment:
       MCP_TRANSPORT: http

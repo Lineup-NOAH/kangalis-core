@@ -129,6 +129,32 @@ Servislerin ayağa kalktığını doğrulayın:
 docker compose ps
 ```
 
+### 3.1-B — Yayınlanmış imajla kurulum (çek-çalıştır, DERLEME yok)
+
+Yerelde derlemek yerine **yayınlanmış hazır imajı** çekip çalıştırabilirsiniz (Dağıtım B).
+`migrate/app/worker/beat/mcp` servislerinin tümü tek bir imajı kullanır.
+
+```bash
+# 1) İmajı çek (derleme yok). Sürüm sabitlemek için .env'de KANGALIS_IMAGE'i ayarlayın,
+#    ör. KANGALIS_IMAGE=ghcr.io/lineup-noah/kangalis-core:v1.0.0  (varsayılan: :latest)
+docker compose pull
+
+# 2) Başlat (migrate otomatik şemayı kurar)
+docker compose up -d
+```
+
+Sonraki **ZORUNLU** adımlar derlemeli kurulumla aynıdır: yönetici kullanıcı (**§3.2**) ve
+tarama kapsamı (**§3.3** — kapsam tanımlanmadan hiçbir tarama çalışmaz). `.env` özelleştirmesi
+için **§7**. Bu komutlar (`docker compose exec app …`) çekilen imajdan birebir çalışır.
+
+> Not: imaj yerelde varsa `docker compose up` onu kullanır; yoksa **önce ghcr'dan çekmeyi dener**
+> (Compose varsayılanı `pull_policy=missing`), yalnız çekme başarısız olursa (private paket +
+> giriş yapılmadıysa ya da çevrimdışı) `build:` tanımlı olduğu için **yerel derlemeye düşer**.
+> Bu yüzden public paket + internet varsa `up` tek başına da çeker; yine de net olması için
+> **`docker compose pull`**'u açıkça çalıştırmanız önerilir. Public ghcr paketi için giriş
+> gerekmez; private ise önce `docker login ghcr.io`. Yerel AI imajı için bkz.
+> [§8](#8-yerel-ai-opsiyonel-on-prem-sıfır-egress).
+
 ### 3.2 — Yönetici (admin) kullanıcı oluştur
 
 ```bash
