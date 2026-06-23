@@ -18,6 +18,7 @@ from cybersectool.config import settings
 from cybersectool.core.app_settings import get_settings
 from cybersectool.core.assets import list_assets
 from cybersectool.core.audit import log_action
+from cybersectool.core.compliance import store_compliance
 from cybersectool.core.cpe import match_service_cves_offline
 from cybersectool.core.findings import create_finding
 from cybersectool.core.infra import own_infra_ips
@@ -44,6 +45,7 @@ from cybersectool.core.scan_policy import (
 from cybersectool.core.scans import get_scan, set_scan_progress, set_scan_status
 from cybersectool.core.scope import ScopeError, validate_target
 from cybersectool.core.vuln import apply_risk_scores, enrich_cves, match_service_cves
+from cybersectool.scanners.credentialless_compliance import run_credentialless_compliance
 from cybersectool.scanners.default_creds import check_ssh_default_creds
 from cybersectool.scanners.exposed_services import scan_exposed_services
 from cybersectool.scanners.network import (
@@ -533,6 +535,17 @@ async def _process_results(
     # Son iptal yoklaması: exploit fazı sürerken gelen "Durdur" da 'tamamlandı' ile ezilmesin.
     if await _scan_cancelled(session, scan_id):
         return "cancelled"
+    # Kimliksiz uyum (roadmap #E): taramanın açık-servis/yönetim-portu/HTTP uyum sonuçlarını
+    # türet → mevcut ComplianceCheck tablosuna sakla (KVKK/ISO/PCI tablosunda kimlikli denetimlerle
+    # birlikte görünür). tls_checked=False: ağ taraması check_tls çalıştırmaz → 443 açık olsa bile
+    # TLS denetlenmemiştir (sahte TLS-pass üretilmez; TLS denetimleri web taramasına aittir).
+    # Best-effort: hata taramayı bozmaz.
+    with contextlib.suppress(Exception):
+        cl_results = await run_credentialless_compliance(
+            session, scan_id, services=services, tls_checked=False
+        )
+        if cl_results:
+            await store_compliance(session, scan_id, cl_results)
     await notify_if_critical(session, scan_id, target)
     await set_scan_progress(session, scan_id, 100, "Tamamlandı")
     await set_scan_status(session, scan_id, ScanStatus.completed)

@@ -14,6 +14,7 @@ from sqlalchemy.pool import NullPool
 from cybersectool.config import settings
 from cybersectool.core.assets import upsert_asset, upsert_service
 from cybersectool.core.audit import log_action
+from cybersectool.core.compliance import store_compliance
 from cybersectool.core.cpe import find_matching_cves, match_service_cves_offline
 from cybersectool.core.findings import create_finding
 from cybersectool.core.models import CVE, ScanStatus, Severity
@@ -28,6 +29,7 @@ from cybersectool.core.scope import (
 )
 from cybersectool.core.vuln import apply_risk_scores, enrich_cves
 from cybersectool.core.wordlists import get_wordlist
+from cybersectool.scanners.credentialless_compliance import run_credentialless_compliance
 from cybersectool.scanners.web import (
     WebFinding,
     active_dast,
@@ -229,6 +231,14 @@ async def _run(scan_id: int, target: str, mode: str = "safe") -> str:
                     await set_scan_progress(session, scan_id, 98, phase="Exploit-DB PoC eşleştirme")
                     with contextlib.suppress(Exception):
                         await stage_exploitdb_attempts(session, scan_id, user_id=created_by)
+            # Kimliksiz uyum (roadmap #E): web taramasının TLS/HSTS bulgularından TLS + HTTP
+            # uyum sonuçlarını türet → mevcut ComplianceCheck tablosuna sakla (kimlik gerekmez).
+            # tls_checked=True: web taraması check_tls'i GERÇEKTEN çalıştırır → TLS denetlenmiştir.
+            # Best-effort: hata web taramasını bozmaz.
+            with contextlib.suppress(Exception):
+                cl_results = await run_credentialless_compliance(session, scan_id, tls_checked=True)
+                if cl_results:
+                    await store_compliance(session, scan_id, cl_results)
             await notify_if_critical(session, scan_id, target)
             await set_scan_status(session, scan_id, ScanStatus.completed)
             await set_scan_progress(session, scan_id, 100, phase="Tamamlandı")

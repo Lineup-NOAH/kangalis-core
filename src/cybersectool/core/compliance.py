@@ -176,8 +176,21 @@ def derive_compliance(
 async def store_compliance(
     session: AsyncSession, scan_id: int, results: list[ComplianceResult]
 ) -> int:
-    """Bir taramanın uyum sonuçlarını yazar (önce eskileri siler — idempotent)."""
-    await session.execute(delete(ComplianceCheck).where(ComplianceCheck.scan_id == scan_id))
+    """Bir taramanın uyum sonuçlarını yazar (yalnız AYNI çerçevelerin eskilerini siler).
+
+    Silme scan_id GENELİ değil, ``results`` çerçeveleriyle SINIRLI: aynı scan_id'ye birden çok
+    üretici yazabilir (NESSUS tek tarama → kimlikli CIS + kimliksiz Ağ/TLS; ya da Linux/Windows/
+    DB modülleri ayrı). Her çağrı yalnız kendi çerçevesini değiştirir → üreticiler birbirini EZMEZ
+    (yazma sırasından/yarıştan bağımsız; çerçeve-başına idempotent).
+    """
+    frameworks = {r.framework for r in results}
+    if frameworks:
+        await session.execute(
+            delete(ComplianceCheck).where(
+                ComplianceCheck.scan_id == scan_id,
+                ComplianceCheck.framework.in_(frameworks),
+            )
+        )
     for r in results:
         session.add(
             ComplianceCheck(
@@ -265,6 +278,24 @@ REGULATION_MAP: dict[str, dict[str, str]] = {
     # CIS VMware ESXi / vCenter (VII-2c)
     "V1.1": {"KVKK": "md.12", "ISO 27001": "A.8.9", "PCI-DSS": "2.2.1"},
     "V2.1": {"KVKK": "md.12", "ISO 27001": "A.8.24", "PCI-DSS": "4.2.1"},
+    # --- Kimliksiz ağ/TLS duruş denetimleri (roadmap #E) — kimlik bilgisi GEREKTİRMEZ.
+    # Ağ/web taramasının bulgu+servis verisinden türetilir (TLS/açık-servis/yönetim portu).
+    "N-TLS.1": {"KVKK": "md.12", "ISO 27001": "A.8.24", "PCI-DSS": "4.2.1"},  # zayıf TLS sürümü
+    "N-TLS.2": {"KVKK": "md.12", "ISO 27001": "A.8.24", "PCI-DSS": "4.2.1"},  # zayıf cipher
+    "N-TLS.3": {"KVKK": "md.12", "ISO 27001": "A.8.24", "PCI-DSS": "4.2.1"},  # self-signed
+    "N-TLS.4": {"KVKK": "md.12", "ISO 27001": "A.8.24", "PCI-DSS": "4.2.1"},  # süre dolmuş/yakın
+    "N-EXP.1": {"KVKK": "md.12", "ISO 27001": "A.5.16", "PCI-DSS": "8.2.2"},  # unauth Redis
+    "N-EXP.2": {"KVKK": "md.12", "ISO 27001": "A.5.16", "PCI-DSS": "8.2.2"},  # unauth Elasticsearch
+    "N-EXP.3": {"KVKK": "md.12", "ISO 27001": "A.5.16", "PCI-DSS": "8.2.2"},  # unauth Docker API
+    "N-EXP.4": {"KVKK": "md.12", "ISO 27001": "A.5.16", "PCI-DSS": "8.2.2"},  # anonim kubelet
+    "N-EXP.5": {"KVKK": "md.12", "ISO 27001": "A.5.16", "PCI-DSS": "8.2.2"},  # anonim FTP
+    "N-EXP.6": {
+        "KVKK": "md.12",
+        "ISO 27001": "A.5.16",
+        "PCI-DSS": "8.2.2",
+    },  # unauth Kubernetes API
+    "N-MGT.1": {"KVKK": "md.12", "ISO 27001": "A.8.20", "PCI-DSS": "1.2.1"},  # yönetim portu açık
+    "N-HTTP.1": {"KVKK": "md.12", "ISO 27001": "A.8.24", "PCI-DSS": "4.2.1"},  # HTTP/HSTS yok
 }
 
 
