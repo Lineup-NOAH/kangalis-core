@@ -95,9 +95,28 @@ DICT: dict[str, dict[str, str]] = {
     "nav_tokens": {"tr": "Token'larım", "en": "My Tokens"},
     "nav_audit": {"tr": "Denetim", "en": "Audit"},
     "nav_system": {"tr": "Sistem", "en": "System"},
+    "nav_console": {"tr": "Konsol", "en": "Console"},
     "nav_plugins": {"tr": "Eklentiler", "en": "Plugins"},
     "nav_license": {"tr": "Lisans", "en": "License"},
     "nav_settings": {"tr": "Ayarlar", "en": "Settings"},
+    # Admin güvenli komut konsolu (terminal-UI; allowlist'li komutlar, KABUK DEĞİL)
+    "console_title": {"tr": "Yönetici Konsolu", "en": "Admin Console"},
+    "console_sub": {
+        "tr": "Komut yazarak yönetim işlemlerini tetikleyin (tarama, senkron, kullanıcı, "
+        "sistem). 'help' yazıp komut listesini görün.",
+        "en": "Trigger admin operations by typing commands (scan, sync, user, system). "
+        "Type 'help' to list commands.",
+    },
+    "console_safe_note": {
+        "tr": "Bu bir kabuk DEĞİLDİR: yalnız önceden tanımlı, allowlist'li komutlar çalışır; "
+        "her komut yetkilendirilir ve denetime kaydedilir. Keyfi sistem komutu çalıştırılamaz.",
+        "en": "This is NOT a shell: only predefined, allowlisted commands run; every command "
+        "is authorized and audited. Arbitrary system commands cannot be executed.",
+    },
+    "console_welcome": {
+        "tr": "Kangalis yönetici konsolu. 'help' yazarak komutları listeleyin.",
+        "en": "Kangalis admin console. Type 'help' to list commands.",
+    },
     # Sistem / Servisler paneli (konteyner durum + CPU/RAM/disk)
     "sys_title": {"tr": "Sistem Servisleri", "en": "System Services"},
     "sys_sub": {

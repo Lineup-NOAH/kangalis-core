@@ -1,0 +1,6 @@
+{# Tek komut sonucu (HTMX fragment, #kgc-output'a beforeend eklenir).
+   {{ cmd }} ve {{ output }} Jinja autoescape ile KAÇIRILIR → XSS yok (asla |safe kullanma). #}
+<div class="kgc-block">
+  <div class="kgc-echo"><span class="kgc-sym">kangalis$</span> {{ cmd }}</div>
+  <pre class="kgc-out{{ ' kgc-err' if not ok else '' }}">{{ output }}</pre>
+</div>

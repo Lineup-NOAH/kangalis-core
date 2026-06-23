@@ -41,6 +41,8 @@ celery_app = Celery(
     include=_task_modules,
 )
 celery_app.conf.task_track_started = True
+# Admin konsolundan 'worker restart' (pool_restart uzak-kontrol komutu) çalışabilsin diye.
+celery_app.conf.worker_pool_restarts = True
 celery_app.conf.beat_schedule = {
     "check-scheduled-scans": {
         "task": "check_scheduled_scans",

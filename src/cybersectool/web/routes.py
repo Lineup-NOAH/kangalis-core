@@ -87,6 +87,7 @@ from cybersectool.core.compliance import (
     regulation_summary,
     top_failed_controls,
 )
+from cybersectool.core.console import run_console
 from cybersectool.core.cpe import count_cpe_matches
 from cybersectool.core.credentials import (
     create_credential,
@@ -5954,6 +5955,45 @@ async def license_save_web(
     lang = normalize_lang(request.cookies.get(LANG_COOKIE))
     msg = quote(translator(lang)("license_saved"))
     return RedirectResponse(f"/license?msg={msg}", status_code=status.HTTP_303_SEE_OTHER)
+
+
+# --- Admin güvenli komut konsolu (terminal-UI + allowlist'li komut registry) ---
+# GÜVENLİK: keyfi kabuk/RCE YOK. Yalnız core/console.py'deki kayıtlı komutlar çalışır;
+# her çalıştırma admin-gated + console_exec ile audit'lenir (bkz. core/console.py başlığı).
+
+
+@router.get("/console", response_class=HTMLResponse)
+async def console_page(request: Request, session: SessionDep) -> Response:
+    user = await _current_user(request, session)
+    if user is None:
+        return _redirect_login()
+    if user.role != Role.admin:
+        return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
+    return templates.TemplateResponse(request, "console.html", {"app_name": APP_NAME, "user": user})
+
+
+@router.post("/console/exec", response_class=HTMLResponse)
+async def console_exec_web(
+    request: Request,
+    session: SessionDep,
+    cmd: Annotated[str, Form()] = "",
+) -> Response:
+    user = await _current_user(request, session)
+    if user is None:
+        return _redirect_login()
+    if user.role != Role.admin:
+        return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
+    lang = normalize_lang(request.cookies.get(LANG_COOKIE))
+    command = (cmd or "").strip()
+    # Her komutu denetime yaz (ham komut satırı target olarak; 255'e kırp).
+    await log_action(session, "console_exec", user_id=user.id, target=command[:255] or "(boş)")
+    result = await run_console(session, user, command, lang)
+    # Fragment: komut yankısı + çıktı (Jinja autoescape AÇIK → XSS yok; |safe KULLANILMAZ).
+    return templates.TemplateResponse(
+        request,
+        "_console_output.html",
+        {"cmd": command, "ok": result.ok, "output": result.output},
+    )
 
 
 @router.post("/settings/smtp")
