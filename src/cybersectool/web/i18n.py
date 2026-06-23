@@ -2171,6 +2171,11 @@ DICT: dict[str, dict[str, str]] = {
         "en": "AI generation failed (model unreachable or timed out). Test the connection in "
         "Plugins > Local AI.",
     },
+    "ai_rate_limited": {
+        "tr": "AI istek sınırına ulaşıldı — yaklaşık {sec} sn sonra tekrar deneyin "
+        "(CPU'yu korumak için).",
+        "en": "AI request limit reached — try again in about {sec}s (to protect the CPU).",
+    },
     "ai_summary_btn": {"tr": "AI yönetici özeti üret", "en": "Generate AI executive summary"},
     "ai_summary_label": {"tr": "AI Yönetici Özeti", "en": "AI Executive Summary"},
     "ai_summary_exec_btn": {

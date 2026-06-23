@@ -74,6 +74,16 @@ class Settings(BaseSettings):
     # modelle bile ~3-5 dk sürebilir (#273 ölçümü). Soğuk yükleme +~70sn. Bu yüzden cömert
     # varsayılan; ayrıca Ollama motorunu OLLAMA_KEEP_ALIVE=-1 ile sıcak tut (soğuk yüklemeyi siler).
     ai_timeout: int = 300
+    # YEREL AI hız sınırı (DoS koruması): /ai/* üretim uçları login'li HER kullanıcıya açıktır ve
+    # CPU-pahalı yerel LLM üretimini tetikler. Düşük-yetkili biri parametreyi değiştirip önbelleği
+    # atlayarak üretimi sınırsız tetikleyip AI'yı tüm kullanıcılara kapatabilir. Üretim kullanıcı
+    # başına sabit pencerede sınırlanır (önbellek isabetleri SAYILMAZ). Varsayılan AÇIK + cömert
+    # (60/dk) → tek-kullanıcılı kullanım etkilenmez; betikli kötüye-kullanım ucuz reddedilir.
+    # Çok-kullanıcılı sertleştirmede düşür; AI_RATELIMIT_ENABLED=false ile kapat (Redis kesintisinde
+    # zaten fail-open → AI açık kalır).
+    ai_ratelimit_enabled: bool = True
+    ai_ratelimit_max: int = 60  # pencere başına kullanıcı başına en çok üretim
+    ai_ratelimit_window_sec: int = 60  # sayaç penceresi (saniye)
 
     @model_validator(mode="after")
     def _enforce_production_secrets(self) -> Settings:

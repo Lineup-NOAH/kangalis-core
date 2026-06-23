@@ -14,7 +14,7 @@ import ipaddress
 import json
 import socket
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from datetime import UTC, datetime, timedelta
 from html import escape
 from pathlib import Path
@@ -32,6 +32,7 @@ from cybersectool.core.ai import AIConfig, ai_available, detect_ai_paths
 from cybersectool.core.ai import cache as ai_cache
 from cybersectool.core.ai import prompts as ai_prompts
 from cybersectool.core.ai import service as ai_service
+from cybersectool.core.ai_limiter import ai_rate_limited
 from cybersectool.core.app_settings import (
     COMMON_TIMEZONES,
     NVD_SYNC_DAYS_MAX,
@@ -4009,6 +4010,24 @@ def _ai_fragment(
     )
 
 
+async def _ai_rate_guard(
+    request: Request, user_id: int, t: Callable[[str], str]
+) -> Response | None:
+    """AI üretim kotası dolduysa görünür 'biraz sonra dene' parçası, değilse None (DoS koruması).
+
+    Her /ai/* üretim rotasında, önbellek-ıskası + boş-veri erken-dönüşleri geçildikten SONRA,
+    ``generate()`` çağrısından HEMEN ÖNCE çağrılır → yalnız gerçek (pahalı) üretim kotaya sayılır.
+
+    NOT: HTMX 2.x varsayılanı 2xx-dışı yanıtı hedefe YAZMAZ (swap etmez); 429 dönersek kullanıcı
+    rate-limit mesajını GÖRMEZ. Bu yüzden mevcut tüm AI hata parçaları gibi 200 + parça döneriz —
+    asıl koruma zaten üretimin atlanmasıdır (durum kodu burada yalnız kozmetik olurdu).
+    """
+    wait = await ai_rate_limited(user_id)
+    if wait:
+        return _ai_fragment(request, error=t("ai_rate_limited").format(sec=wait))
+    return None
+
+
 # Sömürü-zinciri özeti (Dalga 3) için grounded bloklar. ÇIKTI DETERMİNİSTİK (AI yok): host bazında
 # bulgular + GERÇEKLEŞMİŞ sömürü denemeleri; AI yalnız bu gerçek veriden zincir anlatısı kurar.
 _CHAIN_MAX_HOSTS = 30
@@ -4118,6 +4137,9 @@ async def ai_explain_web(
     if hit is not None:
         return _ai_fragment(request, content=hit.content, model=hit.model, cached=True)
     system, prompt = prompt_pair
+    guard = await _ai_rate_guard(request, user.id, t)
+    if guard is not None:
+        return guard
     text = await ai_service.generate(config, prompt, system=system)
     if not text:
         return _ai_fragment(request, error=t("ai_generate_failed"))
@@ -4156,6 +4178,9 @@ async def ai_ask_web(
     if hit is not None:
         return _ai_fragment(request, content=hit.content, model=hit.model, cached=True)
     system, prompt = ai_prompts.build_help_qa_prompt(q, grounding, lang)
+    guard = await _ai_rate_guard(request, user.id, t)
+    if guard is not None:
+        return guard
     text = await ai_service.generate(config, prompt, system=system, lang=lang)
     if not text:
         return _ai_fragment(request, error=t("ai_generate_failed"))
@@ -4232,6 +4257,9 @@ async def ai_summary_web(
         top_findings=top,
         audience=audience,
     )
+    guard = await _ai_rate_guard(request, user.id, t)
+    if guard is not None:
+        return guard
     text = await ai_service.generate(config, prompt, system=system)
     if not text:
         return _ai_fragment(request, error=t("ai_generate_failed"))
@@ -4307,6 +4335,9 @@ async def ai_priorities_web(
     else:
         target = "Tüm kapsam"
     system, prompt = ai_prompts.build_priorities_prompt(target=target, ranked_findings=ranked)
+    guard = await _ai_rate_guard(request, user.id, t)
+    if guard is not None:
+        return guard
     text = await ai_service.generate(config, prompt, system=system)
     if not text:
         return _ai_fragment(request, error=t("ai_generate_failed"))
@@ -4383,6 +4414,9 @@ async def ai_exploit_chain_web(
         finding_count=finding_count,
         truncated=truncated,
     )
+    guard = await _ai_rate_guard(request, user.id, t)
+    if guard is not None:
+        return guard
     text = await ai_service.generate(config, prompt, system=system)
     if not text:
         return _ai_fragment(request, error=t("ai_generate_failed"))
@@ -4433,6 +4467,9 @@ async def ai_trend_web(request: Request, session: SessionDep) -> Response:
         aging=cast("dict[str, int]", trend["aging"]),
         points=cast("list[dict[str, object]]", trend["points"]),
     )
+    guard = await _ai_rate_guard(request, user.id, t)
+    if guard is not None:
+        return guard
     text = await ai_service.generate(config, prompt, system=system)
     if not text:
         return _ai_fragment(request, error=t("ai_generate_failed"))
@@ -4521,6 +4558,9 @@ async def ai_compliance_web(
         reg_scores=reg_scores,
         failed_controls=failed_controls,
     )
+    guard = await _ai_rate_guard(request, user.id, t)
+    if guard is not None:
+        return guard
     text = await ai_service.generate(config, prompt, system=system)
     if not text:
         return _ai_fragment(request, error=t("ai_generate_failed"))
@@ -4570,6 +4610,9 @@ async def ai_remediation_script_web(
         service=service,
         remediation=remediation,
     )
+    guard = await _ai_rate_guard(request, user.id, t)
+    if guard is not None:
+        return guard
     text = await ai_service.generate(config, prompt, system=system)
     if not text:
         return _ai_fragment(request, error=t("ai_generate_failed"))
@@ -4638,6 +4681,9 @@ async def ai_asset_story_web(
         ip=cast("str | None", grp["ip"]) if grp else None,
         findings=findings_data,
     )
+    guard = await _ai_rate_guard(request, user.id, t)
+    if guard is not None:
+        return guard
     text = await ai_service.generate(config, prompt, system=system)
     if not text:
         return _ai_fragment(request, error=t("ai_generate_failed"))
