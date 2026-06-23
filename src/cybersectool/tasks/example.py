@@ -1,6 +1,6 @@
 """Örnek Celery görevi — kuyruk → worker → DB akışını gösterir.
 
-Gerçek tarama görevleri (PR-08) bu deseni izleyecek: senkron Celery görevi,
+Gerçek tarama görevleri (network_scan, web_scan vb.) bu deseni izler: senkron Celery görevi,
 içinde ``asyncio.run`` ile async DB servislerini çağırır. Görev kendi (NullPool)
 engine'ini açıp kapatır; böylece worker süreçlerinde event-loop çakışması olmaz.
 """

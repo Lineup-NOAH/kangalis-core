@@ -1,6 +1,5 @@
-"""ORM modelleri.
-
-Şimdilik yalnızca `User`. Asset/Scan/Finding vb. PR-05'te eklenecek.
+"""ORM modelleri (SQLAlchemy) — kullanıcı, varlık/servis, tarama/bulgu, zafiyet,
+kimlik, zone, kelime listesi, uyum, exploit, uygulama ayarları ve denetim kayıtları.
 """
 
 from __future__ import annotations

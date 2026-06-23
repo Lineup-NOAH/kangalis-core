@@ -16,7 +16,7 @@ from cybersectool.config import settings
 
 
 class Base(DeclarativeBase):
-    """Tum ORM modelleri icin temel sinif (modeller PR-05'te eklenecek)."""
+    """Tum ORM modelleri icin temel sinif (models.py'de tanimli)."""
 
 
 engine: AsyncEngine = create_async_engine(

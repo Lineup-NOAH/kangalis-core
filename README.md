@@ -3,7 +3,7 @@
 > **İç ağınızın bekçisi** — Kangalis ekibinin Python tabanlı, web panelli, ağırlıklı **iç ağ/sistem taramasına** odaklı zafiyet yönetim platformu.
 
 [![CI](https://github.com/Lineup-NOAH/kangalis-core/actions/workflows/ci.yml/badge.svg)](https://github.com/Lineup-NOAH/kangalis-core/actions/workflows/ci.yml)
-[![durum](https://img.shields.io/badge/durum-beta-yellow)]()
+[![sürüm](https://img.shields.io/badge/sürüm-1.0.0-blue)]()
 [![python](https://img.shields.io/badge/python-3.12%2B-blue)]()
 [![lisans](https://img.shields.io/badge/lisans-MIT-green)]()
 
