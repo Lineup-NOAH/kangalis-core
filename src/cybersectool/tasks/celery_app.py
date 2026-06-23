@@ -21,6 +21,7 @@ _task_modules = [
     "cybersectool.tasks.cpe_sync",
     "cybersectool.tasks.epss_refresh",
     "cybersectool.tasks.ldap_sync",
+    "cybersectool.tasks.update_check",
 ]
 
 # Sömürü eklentisi (kapalı/ticari, OPSİYONEL): PoC-çalıştırma görevi yalnız ``cybersectool.exploit``
@@ -41,8 +42,6 @@ celery_app = Celery(
     include=_task_modules,
 )
 celery_app.conf.task_track_started = True
-# Admin konsolundan 'worker restart' (pool_restart uzak-kontrol komutu) çalışabilsin diye.
-celery_app.conf.worker_pool_restarts = True
 celery_app.conf.beat_schedule = {
     "check-scheduled-scans": {
         "task": "check_scheduled_scans",
@@ -67,5 +66,9 @@ celery_app.conf.beat_schedule = {
     "ldap-sync-check": {
         "task": "ldap_sync",
         "schedule": 3600.0,  # saatte bir: LDAP senkron zamanı geldiyse kullanıcıları çek (X-6)
+    },
+    "update-check-daily": {
+        "task": "update_check",
+        "schedule": 86400.0,  # günde bir: yeni sürüm denetimi (egress, kapatılabilir)
     },
 }

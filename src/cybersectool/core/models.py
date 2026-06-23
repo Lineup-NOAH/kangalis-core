@@ -770,6 +770,24 @@ class AppSettings(Base):
         String(64), default="Europe/Istanbul", server_default="Europe/Istanbul"
     )
 
+    # --- Güncelleme denetimi (her gün beat kontrol eder; /update sayfası gösterir) ---
+    # DIŞ-ERİŞİM (egress): YALNIZ bu denetim internete çıkar; kapatılabilir (air-gap/sıfır-egress)
+    # + URL değiştirilebilir (kendi ayna/sürüm sunucusu). Uygulamanın geri kalanı tamamen yereldir.
+    update_check_enabled: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    # Sürüm kaynağı (GitHub Releases API). core/update_check.DEFAULT_UPDATE_CHECK_URL ile AYNI.
+    update_check_url: Mapped[str] = mapped_column(
+        String(500),
+        default="https://api.github.com/repos/Lineup-NOAH/kangalis-core/releases/latest",
+        server_default="https://api.github.com/repos/Lineup-NOAH/kangalis-core/releases/latest",
+    )
+    # Son denetimde bulunan en güncel sürüm (boş = henüz bilinmiyor; yalnız denetim yazar).
+    latest_version: Mapped[str] = mapped_column(String(64), default="", server_default="")
+    update_last_checked: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), default=None
+    )
+    # Son denetim durumu: ok | unreachable | no_release | error | disabled (UI dürüst gösterir).
+    update_last_status: Mapped[str] = mapped_column(String(16), default="", server_default="")
+
     # --- Exploit veritabanı tazelik durumu (VI-9; saatlik beat günceller) ---
     exploit_last_sync: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), default=None

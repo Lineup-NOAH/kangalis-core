@@ -95,28 +95,90 @@ DICT: dict[str, dict[str, str]] = {
     "nav_tokens": {"tr": "Token'larım", "en": "My Tokens"},
     "nav_audit": {"tr": "Denetim", "en": "Audit"},
     "nav_system": {"tr": "Sistem", "en": "System"},
-    "nav_console": {"tr": "Konsol", "en": "Console"},
+    "nav_update": {"tr": "Güncelleme", "en": "Update"},
     "nav_plugins": {"tr": "Eklentiler", "en": "Plugins"},
     "nav_license": {"tr": "Lisans", "en": "License"},
     "nav_settings": {"tr": "Ayarlar", "en": "Settings"},
-    # Admin güvenli komut konsolu (terminal-UI; allowlist'li komutlar, KABUK DEĞİL)
-    "console_title": {"tr": "Yönetici Konsolu", "en": "Admin Console"},
-    "console_sub": {
-        "tr": "Komut yazarak yönetim işlemlerini tetikleyin (tarama, senkron, kullanıcı, "
-        "sistem). 'help' yazıp komut listesini görün.",
-        "en": "Trigger admin operations by typing commands (scan, sync, user, system). "
-        "Type 'help' to list commands.",
+    # Güncelleme sayfası (sürüm bilgisi + yeni-sürüm denetimi + nasıl-güncellenir)
+    "update_title": {"tr": "Güncelleme", "en": "Update"},
+    "update_sub": {
+        "tr": "Yüklü sürüm + bileşen sürümleri, yeni sürüm denetimi ve nasıl güncelleneceği.",
+        "en": "Installed version + component versions, update check, and how to update.",
     },
-    "console_safe_note": {
-        "tr": "Bu bir kabuk DEĞİLDİR: yalnız önceden tanımlı, allowlist'li komutlar çalışır; "
-        "her komut yetkilendirilir ve denetime kaydedilir. Keyfi sistem komutu çalıştırılamaz.",
-        "en": "This is NOT a shell: only predefined, allowlisted commands run; every command "
-        "is authorized and audited. Arbitrary system commands cannot be executed.",
+    "update_versions_title": {"tr": "Sürüm Bilgisi", "en": "Version Info"},
+    "update_component": {"tr": "Bileşen", "en": "Component"},
+    "update_version": {"tr": "Sürüm", "en": "Version"},
+    "update_unknown": {"tr": "bilinmiyor", "en": "unknown"},
+    "update_v_app": {"tr": "Kangalis (ürün)", "en": "Kangalis (product)"},
+    "update_v_nmap": {"tr": "nmap (tarama motoru)", "en": "nmap (scan engine)"},
+    "update_v_python": {"tr": "Python", "en": "Python"},
+    "update_v_postgres": {"tr": "PostgreSQL", "en": "PostgreSQL"},
+    "update_v_redis": {"tr": "Redis", "en": "Redis"},
+    "update_v_ai": {"tr": "Yerel AI modeli", "en": "Local AI model"},
+    "update_check_title": {"tr": "Güncelleme Denetimi", "en": "Update Check"},
+    "update_check_sub": {
+        "tr": "Her gün otomatik denetlenir. Bu denetim İNTERNETE çıkar (tek dış-erişim); "
+        "kapatabilir ya da kendi sürüm kaynağınızı verebilirsiniz (air-gap dostu).",
+        "en": "Checked automatically every day. This check reaches the INTERNET (the only "
+        "egress); you can disable it or point to your own source (air-gap friendly).",
     },
-    "console_welcome": {
-        "tr": "Kangalis yönetici konsolu. 'help' yazarak komutları listeleyin.",
-        "en": "Kangalis admin console. Type 'help' to list commands.",
+    "update_current": {"tr": "Yüklü sürüm", "en": "Installed version"},
+    "update_latest": {"tr": "En güncel sürüm", "en": "Latest version"},
+    "update_last_checked": {"tr": "Son denetim", "en": "Last checked"},
+    "update_check_now": {"tr": "Şimdi denetle", "en": "Check now"},
+    "update_uptodate": {"tr": "Günceldir", "en": "Up to date"},
+    "update_available_badge": {"tr": "Yeni sürüm var!", "en": "Update available!"},
+    "update_status_unreachable": {
+        "tr": "Sürüm sunucusuna erişilemedi (internet yok ya da engelli).",
+        "en": "Could not reach the version server (no internet or blocked).",
     },
+    "update_status_no_release": {
+        "tr": "Yayınlanmış sürüm bulunamadı (depo henüz public değil ya da release yok).",
+        "en": "No published release found (repo not public yet or no releases).",
+    },
+    "update_status_error": {
+        "tr": "Sürüm denetimi hata verdi (sunucu yanıtı beklenmedik).",
+        "en": "Update check errored (unexpected server response).",
+    },
+    "update_status_disabled": {
+        "tr": "Otomatik denetim kapalı. 'Şimdi denetle' ile elle bakabilirsiniz.",
+        "en": "Automatic check is off. Use 'Check now' to check manually.",
+    },
+    "update_status_never": {
+        "tr": "Henüz denetlenmedi.",
+        "en": "Not checked yet.",
+    },
+    "update_how_title": {"tr": "Nasıl güncellerim?", "en": "How to update"},
+    "update_how_sub": {
+        "tr": "Aşağıdaki komutu sunucunun (host) terminalinde çalıştırın. Veriniz korunur "
+        "(veritabanı ayrı bir Docker volume'unda durur); şema göçü otomatik uygulanır.",
+        "en": "Run the command below in the server's (host) terminal. Your data is preserved "
+        "(the database lives in a separate Docker volume); schema migration runs automatically.",
+    },
+    "update_how_image": {
+        "tr": "Yayınlanmış imaj (pull) kullanıyorsanız:",
+        "en": "If using the published image (pull):",
+    },
+    "update_how_source": {"tr": "Kaynaktan derliyorsanız:", "en": "If building from source:"},
+    "update_backup_note": {
+        "tr": "Büyük sürüm yükseltmeleri öncesi veritabanı yedeği (pg_dump) almanız önerilir.",
+        "en": "Taking a database backup (pg_dump) before major upgrades is recommended.",
+    },
+    "update_copy": {"tr": "Kopyala", "en": "Copy"},
+    "update_copied": {"tr": "Kopyalandı", "en": "Copied"},
+    "update_settings_title": {"tr": "Denetim Ayarları", "en": "Check Settings"},
+    "update_enabled_label": {
+        "tr": "Günlük otomatik denetim (internet erişimi gerektirir)",
+        "en": "Daily automatic check (requires internet access)",
+    },
+    "update_url_label": {"tr": "Sürüm kaynağı (URL)", "en": "Version source (URL)"},
+    "update_url_hint": {
+        "tr": "Varsayılan GitHub Releases. Kendi aynanız/sürüm sunucunuz için değiştirin.",
+        "en": "Defaults to GitHub Releases. Change for your own mirror/version server.",
+    },
+    "update_save": {"tr": "Kaydet", "en": "Save"},
+    "update_flash_checked": {"tr": "Güncelleme denetimi yapıldı.", "en": "Update check performed."},
+    "update_flash_saved": {"tr": "Ayarlar kaydedildi.", "en": "Settings saved."},
     # Sistem / Servisler paneli (konteyner durum + CPU/RAM/disk)
     "sys_title": {"tr": "Sistem Servisleri", "en": "System Services"},
     "sys_sub": {

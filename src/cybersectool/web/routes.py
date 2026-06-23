@@ -57,6 +57,7 @@ from cybersectool.core.app_settings import (
     save_smtp_settings,
     save_syslog_settings,
     save_timezone_settings,
+    save_update_settings,
 )
 from cybersectool.core.assets import (
     count_inventory_assets,
@@ -87,7 +88,6 @@ from cybersectool.core.compliance import (
     regulation_summary,
     top_failed_controls,
 )
-from cybersectool.core.console import run_console
 from cybersectool.core.cpe import count_cpe_matches
 from cybersectool.core.credentials import (
     create_credential,
@@ -236,6 +236,7 @@ from cybersectool.core.tokens import (
     list_user_tokens,
     revoke_user_token,
 )
+from cybersectool.core.update_check import run_update_check, stored_status
 from cybersectool.core.users import (
     authenticate_user,
     begin_email_enrollment,
@@ -255,6 +256,7 @@ from cybersectool.core.users import (
     set_user_password,
     set_user_role,
 )
+from cybersectool.core.versions import app_version, gather_versions
 from cybersectool.core.vuln import count_cves, cves_by_ids
 from cybersectool.core.vuln_category import VULN_CATEGORIES, is_os_package_title
 from cybersectool.core.vulnerabilities import (
@@ -339,6 +341,7 @@ def _i18n_context(request: Request) -> dict[str, object]:
         "t": translator(lang),
         "ai_brand": ai_brand,
         "brand_name": f"{APP_NAME} AI" if ai_brand else APP_NAME,
+        "app_version": app_version(),
     }
 
 
@@ -5957,43 +5960,81 @@ async def license_save_web(
     return RedirectResponse(f"/license?msg={msg}", status_code=status.HTTP_303_SEE_OTHER)
 
 
-# --- Admin güvenli komut konsolu (terminal-UI + allowlist'li komut registry) ---
-# GÜVENLİK: keyfi kabuk/RCE YOK. Yalnız core/console.py'deki kayıtlı komutlar çalışır;
-# her çalıştırma admin-gated + console_exec ile audit'lenir (bkz. core/console.py başlığı).
+# --- Güncelleme (bileşen sürümleri + yeni-sürüm denetimi) ---
+# GÜVENLİK: "uygula" adımı yalnız host KOMUTUNU GÖSTERİR (kopyalanabilir); uygulama Docker'a
+# ya da host'a ERİŞMEZ → RCE/host-escape yok. Denetim = tek dış-erişim (egress), kapatılabilir.
+
+# Host'ta çalıştırılacak güncelleme komutları (iki dağıtım yolu için sabit; kullanıcı girdisi yok).
+_UPDATE_APPLY_CMDS = {
+    "image": "docker compose pull && docker compose up -d",
+    "source": "git pull && docker compose up -d --build",
+}
 
 
-@router.get("/console", response_class=HTMLResponse)
-async def console_page(request: Request, session: SessionDep) -> Response:
-    user = await _current_user(request, session)
-    if user is None:
-        return _redirect_login()
-    if user.role != Role.admin:
-        return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
-    return templates.TemplateResponse(request, "console.html", {"app_name": APP_NAME, "user": user})
-
-
-@router.post("/console/exec", response_class=HTMLResponse)
-async def console_exec_web(
-    request: Request,
-    session: SessionDep,
-    cmd: Annotated[str, Form()] = "",
+async def _update_page(
+    request: Request, session: AsyncSession, user: User, *, message: str | None = None
 ) -> Response:
-    user = await _current_user(request, session)
-    if user is None:
-        return _redirect_login()
-    if user.role != Role.admin:
-        return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
-    lang = normalize_lang(request.cookies.get(LANG_COOKIE))
-    command = (cmd or "").strip()
-    # Her komutu denetime yaz (ham komut satırı target olarak; 255'e kırp).
-    await log_action(session, "console_exec", user_id=user.id, target=command[:255] or "(boş)")
-    result = await run_console(session, user, command, lang)
-    # Fragment: komut yankısı + çıktı (Jinja autoescape AÇIK → XSS yok; |safe KULLANILMAZ).
+    """Güncelleme sayfası: bileşen sürümleri + son denetim durumu + uygulama komutları."""
+    row = await get_settings(session)
     return templates.TemplateResponse(
         request,
-        "_console_output.html",
-        {"cmd": command, "ok": result.ok, "output": result.output},
+        "update.html",
+        {
+            "app_name": APP_NAME,
+            "user": user,
+            "versions": await gather_versions(session, row),
+            "update": stored_status(row),
+            "s": row,
+            "apply_cmds": _UPDATE_APPLY_CMDS,
+            "message": message,
+        },
     )
+
+
+@router.get("/update", response_class=HTMLResponse)
+async def update_page(request: Request, session: SessionDep) -> Response:
+    user = await _current_user(request, session)
+    if user is None:
+        return _redirect_login()
+    if user.role != Role.admin:
+        return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
+    return await _update_page(request, session, user, message=request.query_params.get("msg"))
+
+
+@router.post("/update/check")
+async def update_check_now(request: Request, session: SessionDep) -> Response:
+    """Admin "Şimdi denetle" → uzak sürüm denetimini ZORLA çalıştırır (toggle'ı yok sayar)."""
+    user = await _current_user(request, session)
+    if user is None:
+        return _redirect_login()
+    if user.role != Role.admin:
+        return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
+    result = await run_update_check(session, force=True)
+    await log_action(
+        session,
+        "update_check",
+        user_id=user.id,
+        target=f"{result.current} -> {result.latest or '?'} ({result.status})",
+    )
+    return RedirectResponse("/update?msg=checked", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/update/settings")
+async def update_settings_save(
+    request: Request,
+    session: SessionDep,
+    update_check_enabled: Annotated[bool, Form()] = False,
+    update_check_url: Annotated[str, Form()] = "",
+) -> Response:
+    """Güncelleme denetimi ayarlarını kaydeder (egress aç/kapa + sürüm-kaynak URL)."""
+    user = await _current_user(request, session)
+    if user is None:
+        return _redirect_login()
+    if user.role != Role.admin:
+        return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
+    await save_update_settings(session, enabled=update_check_enabled, url=update_check_url)
+    await log_action(session, "settings_update", user_id=user.id, target="update")
+    return RedirectResponse("/update?msg=saved", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.post("/settings/smtp")

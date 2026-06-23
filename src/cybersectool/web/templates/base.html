@@ -77,7 +77,7 @@
     {'path': '/audit',       'key': 'nav_audit',     'icon': 'audit',     'admin': true},
     {'path': '/tokens',      'key': 'nav_tokens',    'icon': 'tokens',    'admin': false},
     {'path': '/system',      'key': 'nav_system',    'icon': 'server',    'admin': true},
-    {'path': '/console',     'key': 'nav_console',   'icon': 'terminal',  'admin': true},
+    {'path': '/update',      'key': 'nav_update',    'icon': 'download',  'admin': true},
     {'path': '/plugins',     'key': 'nav_plugins',   'icon': 'plug',      'admin': true},
     {'path': '/license',     'key': 'nav_license',   'icon': 'shield',    'admin': true},
     {'path': '/settings',    'key': 'nav_settings',  'icon': 'settings',  'admin': true},
@@ -95,6 +95,11 @@
         {% endfor %}
       </nav>
       <div style="margin-top:auto; padding:12px;">
+        {% if user.role.value == 'admin' %}
+        <a href="/update" class="kg-nav-link" style="font-size:11px; color:var(--fg2);" title="{{ t('nav_update') }}">{{ icon('info') }}<span>Kangalis v{{ app_version }}</span></a>
+        {% else %}
+        <div style="font-size:11px; color:var(--fg2); padding:6px 12px;">Kangalis v{{ app_version }}</div>
+        {% endif %}
         <a href="/logout" class="kg-nav-link">{{ icon('logout') }}<span>{{ t('logout') }}</span></a>
       </div>
     </aside>

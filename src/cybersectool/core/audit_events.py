@@ -450,11 +450,11 @@ AUDIT_EVENTS: dict[str, AuditEventMeta] = {
         "AI yardım sorusu yanıtlandı: {target}",
         "AI help question answered: {target}",
     ),
-    "console_exec": AuditEventMeta(
-        8023,
+    "update_check": AuditEventMeta(
+        8024,
         "system",
-        "Admin konsol komutu çalıştırıldı: {target}",
-        "Admin console command executed: {target}",
+        "Güncelleme denetimi yapıldı: {target}",
+        "Update check performed: {target}",
     ),
     "demo_task": AuditEventMeta(
         8999, "system", "Demo görevi çalıştırıldı: {target}", "Demo task executed: {target}"

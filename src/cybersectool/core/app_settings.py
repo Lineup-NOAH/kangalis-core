@@ -292,6 +292,26 @@ async def save_license_public_key(session: AsyncSession, *, public_key: str) -> 
     return row
 
 
+async def save_update_settings(session: AsyncSession, *, enabled: bool, url: str) -> AppSettings:
+    """Güncelleme denetimi ayarlarını kaydeder (egress aç/kapa + sürüm-kaynak URL).
+
+    URL boş ise varsayılana düşer; http(s) değilse de varsayılana çekilir (SSRF/şema koruması —
+    admin-ayarlı olsa bile file://, gopher:// vb. engellenir). Sonuç değerleri (latest_version,
+    update_last_*) buradan DEĞİŞTİRİLMEZ; onları yalnız denetim (run_update_check) yazar.
+    """
+    from cybersectool.core.update_check import DEFAULT_UPDATE_CHECK_URL
+
+    row = await get_settings(session)
+    row.update_check_enabled = enabled
+    clean = (url or "").strip()
+    if not clean.lower().startswith(("http://", "https://")):
+        clean = DEFAULT_UPDATE_CHECK_URL
+    row.update_check_url = clean[:500]
+    await session.commit()
+    await session.refresh(row)
+    return row
+
+
 async def save_smtp_settings(
     session: AsyncSession,
     *,
