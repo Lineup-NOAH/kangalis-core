@@ -56,8 +56,13 @@ async def assets_payload(session: AsyncSession) -> list[dict[str, Any]]:
         {
             "id": asset.id,
             "ip": asset.ip,
+            # Web UI ile hizalı: dostça ad (V1) + çözülmüş gösterim adı + URL varlığı + ayakta mı.
+            "name": asset.name,
+            "display_name": asset.display_name,
             "hostname": asset.hostname,
+            "url": asset.url,
             "os": asset.os,
+            "is_up": asset.is_up,
             "services": [
                 {
                     "port": s.port,
