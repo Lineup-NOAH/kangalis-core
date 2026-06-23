@@ -96,6 +96,7 @@ DICT: dict[str, dict[str, str]] = {
     "nav_audit": {"tr": "Denetim", "en": "Audit"},
     "nav_system": {"tr": "Sistem", "en": "System"},
     "nav_plugins": {"tr": "Eklentiler", "en": "Plugins"},
+    "nav_license": {"tr": "Lisans", "en": "License"},
     "nav_settings": {"tr": "Ayarlar", "en": "Settings"},
     # Sistem / Servisler paneli (konteyner durum + CPU/RAM/disk)
     "sys_title": {"tr": "Sistem Servisleri", "en": "System Services"},
@@ -173,7 +174,7 @@ DICT: dict[str, dict[str, str]] = {
         "en": "3) Enter the license code → exploitation unlocks once this card shows "
         "'Installed' + 'Licensed':",
     },
-    "plugin_exploit_step3_btn": {"tr": "Ayarlar → Lisans", "en": "Settings → License"},
+    "plugin_exploit_step3_btn": {"tr": "Lisans sayfası", "en": "License page"},
     "plugin_exploit_authorized": {
         "tr": "⚠️ Yalnız YETKİLİ sistemlerde çalıştırın. Sömürünün meşruiyeti araçtan değil, "
         "hedef-yetkisinden gelir; yetkisiz kullanım yasa dışı olabilir. Her deneme denetim "
@@ -182,7 +183,7 @@ DICT: dict[str, dict[str, str]] = {
         "not the tool; unauthorized use may be illegal. Every attempt is audit-logged. "
         "(Not legal advice.)",
     },
-    # Sömürü ikinci kapısı: geçerli ``exploit`` lisansı (Ayarlar > Lisans) — eklentiden ayrı
+    # Sömürü ikinci kapısı: geçerli ``exploit`` lisansı (Lisans sekmesi) — eklentiden ayrı
     "plugin_exploit_licensed": {"tr": "Lisanslı", "en": "Licensed"},
     "plugin_exploit_unlicensed": {"tr": "Lisans gerekli", "en": "License required"},
     "logout": {"tr": "Çıkış", "en": "Logout"},
@@ -2068,6 +2069,14 @@ DICT: dict[str, dict[str, str]] = {
     "set_license_customer": {"tr": "Müşteri", "en": "Customer"},
     "set_license_expires": {"tr": "Bitiş", "en": "Expires"},
     "set_license_features": {"tr": "Özellikler", "en": "Features"},
+    "license_two_layer": {
+        "tr": "Not: Bu doğrulama yalnız arayüz kilidini açar. Gerçek sömürü ayrıca worker'a "
+        "kurulu ticari eklentinin kendi lisans kapısından da geçmek zorundadır (iki katmanlı).",
+        "en": "Note: This verification only unlocks the UI. Actual exploitation must also pass the "
+        "commercial add-on's own license gate installed on the worker (two layers).",
+    },
+    "license_plugins_link": {"tr": "Eklenti durumu", "en": "Add-on status"},
+    "license_saved": {"tr": "Lisans kaydedildi.", "en": "License saved."},
     # Zafiyet veritabanı (CVE-COVERAGE FE)
     "set_vulndb_section": {"tr": "Zafiyet veritabanı", "en": "Vulnerability database"},
     "set_vulndb_sub": {

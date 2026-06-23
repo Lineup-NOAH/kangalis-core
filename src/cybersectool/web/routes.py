@@ -5803,8 +5803,6 @@ async def _settings_page(
             "nvd_sync_days_max": NVD_SYNC_DAYS_MAX,
             # Yetkili tarama kapsamı (ScopePolicy) — #C web formu için aktif politikayı göster
             "active_policy": await get_active_policy(session),
-            # Ticari lisans durumu (Lisans kartı): geçerli/süresi-dolmuş/geçersiz/yok/devre-dışı
-            "license_info": await active_license(session),
             "error": error,
             "message": message,
         },
@@ -5891,14 +5889,53 @@ async def settings_ratelimit_web(
     return _settings_saved_redirect()
 
 
-@router.post("/settings/license")
-async def settings_license_web(
+# --- Lisans (ayrı admin sekmesi: ticari lisans girişi + çevrimdışı imza doğrulama) ---
+
+
+async def _license_page(
+    request: Request,
+    session: AsyncSession,
+    user: User,
+    *,
+    error: str | None = None,
+    message: str | None = None,
+    status_code: int = status.HTTP_200_OK,
+) -> Response:
+    """Lisans sayfasını (ticari lisans girişi + çevrimdışı imza doğrulama durumu) döndürür."""
+    return templates.TemplateResponse(
+        request,
+        "license.html",
+        {
+            "app_name": APP_NAME,
+            "user": user,
+            "s": await get_settings(session),
+            # Ticari lisans durumu: geçerli/süresi-dolmuş/geçersiz/yok/devre-dışı
+            "license_info": await active_license(session),
+            "error": error,
+            "message": message,
+        },
+        status_code=status_code,
+    )
+
+
+@router.get("/license", response_class=HTMLResponse)
+async def license_page(request: Request, session: SessionDep) -> Response:
+    user = await _current_user(request, session)
+    if user is None:
+        return _redirect_login()
+    if user.role != Role.admin:
+        return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
+    return await _license_page(request, session, user, message=request.query_params.get("msg"))
+
+
+@router.post("/license")
+async def license_save_web(
     request: Request,
     session: SessionDep,
     license_key: Annotated[str, Form()] = "",
 ) -> Response:
-    """Ticari lisans kodunu kaydeder (admin). Doğrulama core/licensing.py'de yapılır —
-    kaydetme her zaman kabul edilir; geçersiz/boş kod Lisans kartında durum olarak gösterilir."""
+    """Ticari lisans kodunu kaydeder (admin). Doğrulama core/licensing.py'de (çevrimdışı imza) —
+    kaydetme her zaman kabul edilir; geçersiz/boş kod Lisans sayfasında durum olarak gösterilir."""
     user = await _current_user(request, session)
     if user is None:
         return _redirect_login()
@@ -5906,7 +5943,9 @@ async def settings_license_web(
         return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
     await save_license_key(session, license_key=license_key)
     await log_action(session, "settings_update", user_id=user.id, target="license")
-    return _settings_saved_redirect()
+    lang = normalize_lang(request.cookies.get(LANG_COOKIE))
+    msg = quote(translator(lang)("license_saved"))
+    return RedirectResponse(f"/license?msg={msg}", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.post("/settings/smtp")

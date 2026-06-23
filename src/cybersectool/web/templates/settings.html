@@ -223,32 +223,6 @@
   <div style="margin-top:16px;"><button type="submit" class="kg-btn kg-btn-primary">{{ t('save') }}</button></div>
 </form>
 
-<!-- Ticari lisans (çevrimdışı, imza-temelli) — ``exploit`` özelliğini açar -->
-<h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 4px;">{{ icon('shield', 18) }} {{ t('set_license_section') }}</h2>
-<p class="k-sm" style="margin:0 0 12px; color:var(--fg2); max-width:760px;">{{ t('set_license_sub') }}</p>
-<form method="post" action="/settings/license" class="kg-card" style="padding:20px; margin-bottom:24px;">
-  <div class="k-sm" style="margin-bottom:14px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-    <span style="color:var(--fg2);">{{ t('set_license_status') }}:</span>
-    {% if license_info.status == 'valid' %}
-    <span class="kg-status kg-status-completed">{{ t('license_status_valid') }}</span>
-    {% elif license_info.status == 'expired' %}
-    <span class="kg-status kg-status-failed">{{ t('license_status_expired') }}</span>
-    {% elif license_info.status == 'invalid' %}
-    <span class="kg-status kg-status-failed">{{ t('license_status_invalid') }}</span>
-    {% elif license_info.status == 'disabled' %}
-    <span class="kg-status kg-status-pending">{{ t('license_status_disabled') }}</span>
-    {% else %}
-    <span class="kg-status kg-status-pending">{{ t('license_status_none') }}</span>
-    {% endif %}
-    {% if license_info.customer %}<span style="color:var(--fg2);">· {{ t('set_license_customer') }}: <strong>{{ license_info.customer }}</strong></span>{% endif %}
-    {% if license_info.expires %}<span style="color:var(--fg2);">· {{ t('set_license_expires') }}: {{ license_info.expires }}</span>{% endif %}
-    {% if license_info.features %}<span style="color:var(--fg2);">· {{ t('set_license_features') }}: {{ license_info.features | join(', ') }}</span>{% endif %}
-  </div>
-  <label class="kg-field-label" for="license-key">{{ t('set_license_label') }}</label>
-  <textarea id="license-key" name="license_key" rows="3" class="kg-input font-mono" style="resize:vertical;" placeholder="eyJ...payload....c2ln...">{{ s.license_key }}</textarea>
-  <div style="margin-top:16px;"><button type="submit" class="kg-btn kg-btn-primary">{{ t('save') }}</button></div>
-</form>
-
 <!-- Varlık kapsamı (F1) -->
 <h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 4px;">{{ icon('server', 18) }} {{ t('set_asset_scope_section') }}</h2>
 <p class="k-sm" style="margin:0 0 12px; color:var(--fg2); max-width:760px;">{{ t('set_asset_scope_sub') }}</p>

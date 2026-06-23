@@ -230,27 +230,51 @@ async def test_license_form_admin_saves(
     """Admin lisans kodunu kaydeder → DB'ye yazılır + feature_licensed açılır."""
     await _login(client, session_factory, "lic_adm", Role.admin)
     code = _make_license(signing_key, customer="Acme", features=("exploit",))
-    resp = await client.post(
-        "/settings/license", data={"license_key": code}, follow_redirects=False
-    )
+    resp = await client.post("/license", data={"license_key": code}, follow_redirects=False)
     assert resp.status_code in (302, 303)
+    # Kayıttan sonra ayrı Lisans sekmesine yönlenir (Ayarlar'a değil).
+    assert resp.headers["location"].startswith("/license")
     async with session_factory() as s:
         assert await feature_licensed(s, "exploit") is True
 
 
-async def test_settings_page_shows_license_status(
+async def test_license_page_admin_renders(
+    client: AsyncClient,
+    session_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    """Admin için /license sayfası 200 döner + lisans formunu (action=/license) içerir."""
+    await _login(client, session_factory, "lic_get_adm", Role.admin)
+    resp = await client.get("/license")
+    assert resp.status_code == 200
+    assert 'action="/license"' in resp.text
+
+
+async def test_license_page_shows_license_status(
     signing_key: ed25519.Ed25519PrivateKey,
     client: AsyncClient,
     session_factory: async_sessionmaker[AsyncSession],
 ) -> None:
-    """Geçerli lisans kaydedilince Ayarlar sayfasında 'Geçerli' durumu + müşteri görünür."""
+    """Geçerli lisans kaydedilince Lisans sayfasında müşteri adı görünür."""
     await _login(client, session_factory, "lic_adm2", Role.admin)
     code = _make_license(signing_key, customer="GorunenMusteri")
-    await client.post("/settings/license", data={"license_key": code}, follow_redirects=False)
+    await client.post("/license", data={"license_key": code}, follow_redirects=False)
+    resp = await client.get("/license")
+    assert resp.status_code == 200
+    assert 'action="/license"' in resp.text
+    assert "GorunenMusteri" in resp.text
+
+
+async def test_settings_page_no_license_card(
+    signing_key: ed25519.Ed25519PrivateKey,
+    client: AsyncClient,
+    session_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    """Lisans kartı Ayarlar'dan taşındı → Ayarlar sayfası artık lisans formunu içermez."""
+    await _login(client, session_factory, "lic_adm3", Role.admin)
     resp = await client.get("/settings")
     assert resp.status_code == 200
-    assert "/settings/license" in resp.text
-    assert "GorunenMusteri" in resp.text
+    assert "/settings/license" not in resp.text
+    assert "license_key" not in resp.text
 
 
 async def test_license_form_non_admin_redirected(
@@ -259,10 +283,12 @@ async def test_license_form_non_admin_redirected(
 ) -> None:
     """Admin olmayan lisans yazamaz (yönlendirilir, lisans yazılmaz)."""
     await _login(client, session_factory, "lic_an", Role.analyst)
-    resp = await client.post(
-        "/settings/license", data={"license_key": "x.y"}, follow_redirects=False
-    )
+    resp = await client.post("/license", data={"license_key": "x.y"}, follow_redirects=False)
     assert resp.status_code in (302, 303)
+    # GET sayfası da admin değilse köke yönlenir.
+    get_resp = await client.get("/license", follow_redirects=False)
+    assert get_resp.status_code in (302, 303)
+    assert get_resp.headers["location"] == "/"
     async with session_factory() as s:
         from cybersectool.core.app_settings import get_settings
 

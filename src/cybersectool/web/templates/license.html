@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ t('set_license_section') }} · {{ app_name }}{% endblock %}
+
+{% block content %}
+<h1 class="k-h1" style="margin-bottom:6px; display:flex; align-items:center; gap:10px;">{{ icon('shield', 22) }} {{ t('set_license_section') }}</h1>
+<p class="k-sm" style="margin-bottom:18px; max-width:760px;">{{ t('set_license_sub') }}</p>
+
+{% if error %}<div class="kg-alert kg-alert-error" style="margin-bottom:16px;">{{ error }}</div>{% endif %}
+{% if message %}<div class="kg-alert kg-alert-ok" style="margin-bottom:16px;">{{ message }}</div>{% endif %}
+
+<!-- Ticari lisans (çevrimdışı, imza-temelli) — ``exploit`` özelliğini açar -->
+<form method="post" action="/license" class="kg-card" style="padding:20px; margin-bottom:16px; max-width:780px;">
+  <div class="k-sm" style="margin-bottom:14px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+    <span style="color:var(--fg2);">{{ t('set_license_status') }}:</span>
+    {% if license_info.status == 'valid' %}
+    <span class="kg-status kg-status-completed">{{ t('license_status_valid') }}</span>
+    {% elif license_info.status == 'expired' %}
+    <span class="kg-status kg-status-failed">{{ t('license_status_expired') }}</span>
+    {% elif license_info.status == 'invalid' %}
+    <span class="kg-status kg-status-failed">{{ t('license_status_invalid') }}</span>
+    {% elif license_info.status == 'disabled' %}
+    <span class="kg-status kg-status-pending">{{ t('license_status_disabled') }}</span>
+    {% else %}
+    <span class="kg-status kg-status-pending">{{ t('license_status_none') }}</span>
+    {% endif %}
+    {% if license_info.customer %}<span style="color:var(--fg2);">· {{ t('set_license_customer') }}: <strong>{{ license_info.customer }}</strong></span>{% endif %}
+    {% if license_info.expires %}<span style="color:var(--fg2);">· {{ t('set_license_expires') }}: {{ license_info.expires }}</span>{% endif %}
+    {% if license_info.features %}<span style="color:var(--fg2);">· {{ t('set_license_features') }}: {{ license_info.features | join(', ') }}</span>{% endif %}
+  </div>
+  <label class="kg-field-label" for="license-key">{{ t('set_license_label') }}</label>
+  <textarea id="license-key" name="license_key" rows="3" class="kg-input font-mono" style="resize:vertical;" placeholder="eyJ...payload....c2ln...">{{ s.license_key }}</textarea>
+  <div style="margin-top:16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+    <button type="submit" class="kg-btn kg-btn-primary">{{ t('save') }}</button>
+    <a href="/plugins" class="kg-btn kg-btn-ghost kg-btn-sm">{{ icon('plug', 14) }} {{ t('license_plugins_link') }}</a>
+  </div>
+</form>
+
+<!-- İki katmanlı güven modeli notu (öz): OSS doğrulama yalnız arayüz kilidini açar -->
+<p class="k-sm" style="margin:0; padding:9px 11px; border-radius:8px; background:var(--bg2); color:var(--fg2); max-width:780px;">{{ t('license_two_layer') }}</p>
+{% endblock %}
