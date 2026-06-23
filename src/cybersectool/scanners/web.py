@@ -394,8 +394,11 @@ class PageResult:
 
 async def fetch_page(url: str) -> PageResult | None:
     """URL'yi GET eder; başlık + Set-Cookie listesi + gövde (kırpılmış) döner. Hata'da None."""
+    # SSRF/scope-kaçağı koruması: yönlendirmeleri TAKİP ETME. İstek doğrulanan IP'ye pinlenir;
+    # bir 302 iç servise / bulut-metadata'ya (169.254.169.254) yönlendirip IP-pin scope guard'ını
+    # atlatabilirdi. Aktif problar zaten follow_redirects=False — pasif fetch de hizalanır.
     try:
-        async with httpx.AsyncClient(timeout=15.0, verify=False, follow_redirects=True) as client:
+        async with httpx.AsyncClient(timeout=15.0, verify=False, follow_redirects=False) as client:
             resp = await client.get(url)
         return PageResult(
             status=resp.status_code,
@@ -580,8 +583,10 @@ def check_security_headers(headers: Mapping[str, str]) -> list[WebFinding]:
 
 async def fetch_headers(url: str) -> dict[str, str] | None:
     """URL'nin HTTP yanıt başlıklarını (küçük harfli) döndürür. Hata'da None."""
+    # SSRF/scope-kaçağı koruması: yönlendirme TAKİP EDİLMEZ (bkz. fetch_page). 302 ile pinlenen
+    # IP'den iç servise/metadata'ya sıçramayı engeller.
     try:
-        async with httpx.AsyncClient(timeout=15.0, verify=False, follow_redirects=True) as client:
+        async with httpx.AsyncClient(timeout=15.0, verify=False, follow_redirects=False) as client:
             resp = await client.get(url)
             return {key.lower(): value for key, value in resp.headers.items()}
     except httpx.HTTPError:

@@ -67,3 +67,19 @@ def first_denied_tool(role: Role | None, body: bytes) -> str | None:
         if not is_tool_allowed(role, name):
             return name
     return None
+
+
+def is_parseable_jsonrpc(body: bytes) -> bool:
+    """Gövde fail-closed RBAC için kabul edilebilir mi?
+
+    Boş gövde (GET/SSE el sıkışması) ya da geçerli JSON → ``True``. Boş-OLMAYAN ama geçersiz JSON
+    → ``False`` (middleware 400 ile reddeder). Aksi halde bozuk gövde ``extract_tool_calls``'da
+    sessizce ``[]``'e düşüp "araç çağrısı yok" sayılır ve RBAC'tan geçerdi (latent atlatma).
+    """
+    if not body:
+        return True
+    try:
+        json.loads(body)
+    except (ValueError, TypeError):
+        return False
+    return True

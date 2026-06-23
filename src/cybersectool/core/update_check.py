@@ -27,6 +27,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from cybersectool import __version__
 from cybersectool.core.app_settings import get_settings
 from cybersectool.core.models import AppSettings
+from cybersectool.core.net_guard import is_blocked_url
 
 # AppSettings.update_check_url server_default ile AYNI tutulur (oradaki literal = buradaki).
 DEFAULT_UPDATE_CHECK_URL = "https://api.github.com/repos/Lineup-NOAH/kangalis-core/releases/latest"
@@ -106,8 +107,10 @@ async def run_update_check(session: AsyncSession, *, force: bool = False) -> Upd
         )
 
     url = (row.update_check_url or "").strip() or DEFAULT_UPDATE_CHECK_URL
-    # SSRF/şema koruması: yalnız http(s) (admin-ayarlı olsa da file://, gopher:// vb. engellenir).
-    if not url.lower().startswith(("http://", "https://")):
+    # SSRF/şema koruması: admin-ayarlı URL http(s) DEĞİLSE (file://, gopher:// vb.) VEYA link-local/
+    # bulut-metadata literal IP'sine (169.254.x) gidiyorsa güvenli varsayılana (GitHub) döner. Meşru
+    # şirket-içi ayna (RFC1918/hostname) korunur; yalnız asla-meşru-olmayan hedefler elenir.
+    if not url.lower().startswith(("http://", "https://")) or is_blocked_url(url):
         url = DEFAULT_UPDATE_CHECK_URL
 
     headers = {

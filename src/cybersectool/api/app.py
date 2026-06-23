@@ -7,9 +7,11 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import asyncssh
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy import text
@@ -88,20 +90,76 @@ app.add_middleware(
 )
 
 
+# İçerik Güvenlik Politikası (CSP): enjeksiyon yüzeyini daraltır + çerçevelemeyi (clickjacking)
+# engeller. Inline script/style ZORUNLU olarak 'unsafe-inline' (UI inline stil/script kullanıyor)
+# + Tailwind Play CDN JIT için 'unsafe-eval'; dış kaynaklar yalnız bilinen CDN'ler (Tailwind/htmx/
+# Google Fonts). Asıl sertleştirme: frame-ancestors/object-src/base-uri/form-action 'none'/'self'.
+_CSP = (
+    "default-src 'self'; "
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' "
+    "https://cdn.tailwindcss.com https://unpkg.com; "
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+    "font-src 'self' https://fonts.gstatic.com; "
+    "img-src 'self' data:; "
+    "connect-src 'self'; "
+    "frame-ancestors 'none'; "
+    "base-uri 'self'; "
+    "object-src 'none'; "
+    "form-action 'self'"
+)
+
+# CSRF: durum-değiştiren metotlarda Origin/Referer aynı-köken doğrulaması yapılır.
+_CSRF_UNSAFE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
+
+
 @app.middleware("http")
 async def _security_headers(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
-    """Tıklama-hırsızlığı (clickjacking) + MIME-sniffing + referrer sızıntısı korumaları."""
+    """Güvenlik başlıkları: XFO + nosniff + referrer-policy + CSP (enjeksiyon/çerçeveleme)."""
     response = await call_next(request)
     response.headers.setdefault("X-Frame-Options", "DENY")
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Content-Security-Policy", _CSP)
     if _IS_PROD:
         response.headers.setdefault(
             "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
         )
     return response
+
+
+@app.middleware("http")
+async def _csrf_origin_guard(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    """CSRF koruması: cookie-oturumlu durum-değiştiren isteklerde Origin/Referer aynı-köken olmalı.
+
+    Asıl katman çerezin ``SameSite=lax`` olmasıdır (çapraz-köken POST'ta oturum çerezi GÖNDERİLMEZ);
+    bu middleware üstüne **derinlemesine-savunma** Origin/Referer kontrolüdür (gizli token yok →
+    düşük regresyon). Kurallar:
+    - ``Bearer`` token (programatik) istekleri MUAF — cookie yok = CSRF yok.
+    - Origin (yoksa Referer) VARSA host'u app host'una eşleşmeli; aksi halde 403. Header VAR ama
+      host ayrıştırılamıyorsa (``Origin: null`` — sandbox iframe / ``data:`` kökeni) bu bir
+      UYUŞMAZLIKTIR → 403 (allow-on-empty tuzağı kapanır).
+    - İkisi de YOKSA izin verilir: çapraz-köken tarayıcı saldırısı kurbanın çerezini taşıyamaz
+      (SameSite=lax) ve POST'ta Origin'i kaldıramaz; bu yol yalnız tarayıcı-dışı istemcide olur.
+    Kıyas yalnız **host** üzerinden (``hostname``): userinfo/port/şema ve proxy-arkası netloc
+    kırılganlıklarından kaçınır.
+    """
+    if request.method in _CSRF_UNSAFE_METHODS:
+        auth = request.headers.get("authorization", "")
+        if not auth.startswith("Bearer "):
+            origin = request.headers.get("origin")
+            source = origin if origin is not None else request.headers.get("referer")
+            if source is not None:
+                src_host = (urlsplit(source).hostname or "").lower()
+                if src_host != (request.url.hostname or "").lower():
+                    return JSONResponse(
+                        {"detail": "CSRF doğrulaması başarısız: Origin/Referer aynı köken değil."},
+                        status_code=403,
+                    )
+    return await call_next(request)
 
 
 app.mount(

@@ -36,7 +36,7 @@ from cybersectool.core.users import authenticate_user
 from cybersectool.core.vuln import cves_by_ids
 from cybersectool.core.wordlists import list_wordlists as list_wordlists_svc
 from cybersectool.core.zones import list_zones
-from cybersectool.mcp.rbac import first_denied_tool
+from cybersectool.mcp.rbac import first_denied_tool, is_parseable_jsonrpc
 from cybersectool.tasks.network_scan import network_scan_task
 from cybersectool.tasks.ping_scan import ping_scan_task
 
@@ -422,6 +422,13 @@ class TokenAuthASGIMiddleware:
                     break
             else:  # http.disconnect
                 break
+
+        # Fail-closed: boş-olmayan ama ayrıştırılamayan JSON-RPC gövdesini REDDET. Aksi halde
+        # geçersiz gövde "araç çağrısı yok" sayılıp RBAC kontrolünden sessizce geçerdi (latent
+        # atlatma). Geçerli JSON → RBAC çalışır; boş gövde (GET/SSE) → dokunulmaz.
+        if not is_parseable_jsonrpc(body):
+            await _send_json(send, 400, {"error": "Geçersiz JSON-RPC gövdesi"})
+            return
 
         denied = first_denied_tool(user.role, body)
         if denied is not None:

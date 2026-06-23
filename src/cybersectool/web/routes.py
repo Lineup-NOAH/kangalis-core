@@ -666,8 +666,10 @@ async def login_mfa_resend(request: Request, session: SessionDep) -> Response:
     return RedirectResponse("/login/mfa", status_code=status.HTTP_303_SEE_OTHER)
 
 
-@router.get("/logout")
+@router.post("/logout")
 async def logout(request: Request) -> Response:
+    # POST (GET değil): oturum sonlandırma durum-değiştiren bir eylem; GET olması logout-CSRF'e
+    # (zararsız ama can sıkıcı zorla-çıkış) açık bırakırdı. Nav'daki bağlantı artık POST formu.
     request.session.clear()
     return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
 

@@ -22,6 +22,8 @@ from typing import Any
 
 import httpx
 
+from cybersectool.core.net_guard import is_blocked_url
+
 logger = logging.getLogger(__name__)
 
 # Akıl-yürüten modeller (qwen3 vb.) çıktıya ``<think>...</think>`` bloğu gömer — bu, kullanıcıya
@@ -60,6 +62,11 @@ async def generate(
     if not endpoint or not model:
         return None
     url = endpoint.rstrip("/") + "/chat/completions"
+    # SSRF derinlemesine-savunma: admin-ayarlı endpoint link-local/metadata IP'sine (169.254.x)
+    # gidiyorsa reddet. Hostname (ollama) / RFC1918 motor adresi meşru → dokunulmaz.
+    if is_blocked_url(url):
+        logger.warning("AI endpoint engellendi (link-local/metadata SSRF koruması): %s", url)
+        return None
     messages: list[dict[str, str]] = []
     if system:
         messages.append({"role": "system", "content": system})
@@ -102,6 +109,9 @@ async def list_models(endpoint: str, *, timeout: float = 10.0) -> list[str] | No
     if not endpoint:
         return None
     url = endpoint.rstrip("/") + "/models"
+    if is_blocked_url(url):  # SSRF: link-local/metadata endpoint reddedilir (bkz. generate)
+        logger.warning("AI endpoint engellendi (link-local/metadata SSRF koruması): %s", url)
+        return None
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
             resp = await client.get(url)

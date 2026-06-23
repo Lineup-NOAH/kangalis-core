@@ -65,6 +65,11 @@ async def user_from_token(session: AsyncSession, raw: str) -> User | None:
     """Ham Bearer token'ı geçerli, aktif bir kullanıcıya çözer; aksi halde None."""
     if not raw.startswith(TOKEN_PREFIX):
         return None
+    # Arama ham sırrın DEĞİL, onun SHA-256 HASH'inin eşitliğiyle yapılır. Saklanan değer 256-bit
+    # yüksek-entropili token'ın hash'i olduğundan indeksli eşitlik aramasındaki zamanlama
+    # yan-kanalı, taklit edilebilir bir sır SIZDIRAMAZ (ön-görüntü direnci) → sabit-zamanlı
+    # karşılaştırmaya gerek yok. (hmac.compare_digest tam-tablo taraması gerektirir, ölçeklenmez,
+    # bu eşik için güvenlik kazancı sıfır — bilinçli olarak indeksli hash-araması korunur.)
     result = await session.execute(select(ApiToken).where(ApiToken.token_hash == _hash_token(raw)))
     token = result.scalar_one_or_none()
     if token is None or token.revoked:

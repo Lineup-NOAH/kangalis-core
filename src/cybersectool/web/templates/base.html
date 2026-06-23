@@ -100,7 +100,9 @@
         {% else %}
         <div style="font-size:11px; color:var(--fg2); padding:6px 12px;">Kangalis v{{ app_version }}</div>
         {% endif %}
-        <a href="/logout" class="kg-nav-link">{{ icon('logout') }}<span>{{ t('logout') }}</span></a>
+        <form method="post" action="/logout" style="margin:0;">
+          <button type="submit" class="kg-nav-link" style="width:100%; background:none; border:none; cursor:pointer; font:inherit; color:inherit;">{{ icon('logout') }}<span>{{ t('logout') }}</span></button>
+        </form>
       </div>
     </aside>
     <div class="kg-main">

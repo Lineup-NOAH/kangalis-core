@@ -40,6 +40,33 @@ ilkesine uyun:
 - Düzeltme yayımlandıktan sonra, izniniz dahilinde katkınız sürüm notlarında
   anılır.
 
+## Uygulama Güvenliği / Sertleştirme
+
+Panelin kendi güvenliği için uygulanan başlıca önlemler (operatörlerin bilmesi gereken
+davranışlar dahil):
+
+- **Kimlik & oturum:** parolalar argon2 ile saklanır; oturum çerezi `HttpOnly` +
+  `SameSite=lax` (+ üretimde `Secure`); isteğe bağlı MFA (TOTP/e-posta) ve giriş
+  kilitleme.
+- **CSRF:** durum-değiştiren istekler (`POST/PUT/PATCH/DELETE`) için `Origin`/`Referer`
+  **aynı-köken** kontrolü yapılır; uyuşmazlık `403` döner. `Bearer` API-token istekleri
+  muaftır (çerez yok = CSRF yok). Asıl katman `SameSite=lax` çerezdir; bu kontrol
+  derinlemesine-savunmadır. **Not:** Paneli, `Host`/`Origin` başlığını değiştiren bir ters
+  vekil (reverse proxy) arkasına alırsanız beklenmedik `403`'ler görebilirsiniz — vekili
+  gerçek `Host`'u koruyacak şekilde yapılandırın.
+- **Güvenlik başlıkları:** `Content-Security-Policy` (çerçeveleme/enjeksiyon daraltma),
+  `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy` ve üretimde
+  HSTS.
+- **SSRF/kapsam:** web taraması doğrulanan IP'ye pinlenir ve **yönlendirme takip etmez**;
+  nmap XML'i `defusedxml` ile (XXE-güvenli) ayrıştırılır.
+- **Dış erişim (egress):** Panel tamamen yereldir. İnternete çıkan tek admin-ayarlı uç,
+  **sürüm denetimi** (`update_check_url`, varsayılan GitHub Releases) ve **yerel AI motoru**
+  (`ai_endpoint_url`, ör. `http://ollama:11434/v1`) adresleridir. Diğer veri kaynakları
+  (NVD/OSV/CISA KEV/EPSS/Exploit-DB) sabit, bilinen genel adreslerdir. Bu iki admin-ayarlı uç,
+  link-local/bulut-metadata (ör. `169.254.169.254`) adreslerine — her sayısal kodlamada —
+  gitmeye karşı süzülür; şirket-içi ayna/motor (özel-ağ/hostname) çalışmaya devam eder.
+  Hava-boşluklu (air-gap) kurulumda sürüm denetimi `update_check_enabled` ile kapatılabilir.
+
 ## Desteklenen Sürümler
 
 Güvenlik düzeltmeleri `main` dalına ve en son yayımlanan sürüme uygulanır. Eski

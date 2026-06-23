@@ -16,6 +16,10 @@ import threading
 from dataclasses import dataclass, field
 from typing import Any
 
+# XXE/billion-laughs koruması: python-libnmap, ``defusedxml`` kuruluysa XML ayrıştırmada onu
+# OTOMATİK kullanır (parser.py: ``try: import defusedxml.ElementTree``). defusedxml pyproject'te
+# zorunlu bağımlılıktır; tests/test_security_hardening.py bu seçimi sabitler. Tarama hedefi banner
+# vb. yoluyla nmap XML'ini etkileyebilse de güvenli ayrıştırılır.
 from libnmap.parser import NmapParser
 from sqlalchemy.ext.asyncio import AsyncSession
 
