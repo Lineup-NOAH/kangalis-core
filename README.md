@@ -45,12 +45,13 @@ Mimari/tasarım: [`docs/PROJE_PLANI.md`](docs/PROJE_PLANI.md)
 
 ## Kurulum (hızlı başlangıç)
 
-**Tek önkoşul: Docker + Docker Compose.** Başka hiçbir şeyi elle kurmanıza gerek yok —
-`nmap` dahil her şey `docker compose up --build` sırasında imaja otomatik gelir
-(NPSL ile; ayrıntı [`docs/KURULUM.md`](docs/KURULUM.md)).
+**Tek önkoşul: Docker + Docker Compose.** Tamamen **on-prem** çalışır: tarama, veri ve AI
+hepsi kendi makinenizde kalır — hiçbir veri dışarı çıkmaz.
 
-Tek komutla kurulum sihirbazı (derle + başlat → migrate **otomatik** → admin kullanıcı sor →
-yetkili tarama kapsamı/CIDR sor):
+### Seçenek 1 — Kurulum sihirbazı (en kolay; kaynaktan derler)
+
+Tek komut: derle + başlat → migrate **otomatik** → admin kullanıcı sor → yetkili tarama
+kapsamı/CIDR sor. `nmap` dahil her şey imaja otomatik gelir (elle kurulum yok).
 
 ```bash
 # Linux / macOS
@@ -60,10 +61,41 @@ bash setup.sh          # veya:  make setup
 powershell -ExecutionPolicy Bypass -File setup.ps1
 ```
 
+### Seçenek 2 — Yayınlanmış imajla (derleme yok; daha hızlı)
+
+Hazır imajları doğrudan kayıt defterinden (ghcr.io) çekip çalıştırın — yerel derleme gerekmez:
+
+```bash
+git clone https://github.com/Lineup-NOAH/kangalis.git && cd kangalis
+cp .env.example .env              # gizli anahtarları doldurun (ya da Seçenek 1 sihirbazını çalıştırın)
+
+docker compose pull              # yayınlanmış çekirdek imajını çeker (derleme YOK)
+docker compose up -d             # başlatır; migrate şemayı otomatik kurar
+
+# Yönetici kullanıcı + yetkili tarama kapsamı (ZORUNLU):
+docker compose exec app python -m cybersectool.scripts.create_user \
+    --username <ad> --password <parola> --role admin
+# Kapsamı panelden (Ayarlar → Yetkili Kapsam) ya da docs/KURULUM.md §3.3 ile tanımlayın.
+```
+
+> Sürüm sabitlemek için `.env`'de `KANGALIS_IMAGE=ghcr.io/lineup-noah/kangalis-core:vX.Y.Z`.
+
 Ardından panel: **http://localhost:8000/login**
 
-> ⚠️ Tarama yetkili **kapsam** (CIDR) tanımlanmadan çalışmaz; sihirbaz bunu sorar.
-> Yalnızca taramaya yetkili olduğunuz ağları girin.
+> ⚠️ Tarama yetkili **kapsam** (CIDR) tanımlanmadan çalışmaz. Yalnızca taramaya **yetkili
+> olduğunuz** ağları girin.
+
+### Yerel AI (opsiyonel, on-prem, sıfır egress)
+
+Model **gömülü** ön-paketli AI imajını çekip çalıştırın (çalışma anında sıfır indirme):
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.ai-baked.yml --profile ai pull
+docker compose -f docker-compose.yml -f docker-compose.ai-baked.yml --profile ai up -d ollama
+```
+
+Sonra panelde **Eklentiler → AI** kartından bağlantıyı test edin. AI tamamen yereldir
+(CPU'da çalışır); yalnız öneri/taslak hazırlar, eylemi her zaman insan tetikler.
 
 - 📘 Ayrıntılı kurulum / manuel adımlar / üretime geçiş: [`docs/KURULUM.md`](docs/KURULUM.md)
 - 🧩 Opsiyonel özellikler (yerel AI, MCP, eklentiler): [`docs/EKLENTILER.md`](docs/EKLENTILER.md)
