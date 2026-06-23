@@ -1,6 +1,6 @@
 # Kangalis
 
-> **İç ağınızın bekçisi** — Lineup-NOAH ekibinin Python tabanlı, web panelli, ağırlıklı **iç ağ/sistem taramasına** odaklı zafiyet yönetim platformu.
+> **İç ağınızın bekçisi** — Kangalis ekibinin Python tabanlı, web panelli, ağırlıklı **iç ağ/sistem taramasına** odaklı zafiyet yönetim platformu.
 
 [![CI](https://github.com/Lineup-NOAH/kangalis-core/actions/workflows/ci.yml/badge.svg)](https://github.com/Lineup-NOAH/kangalis-core/actions/workflows/ci.yml)
 [![durum](https://img.shields.io/badge/durum-beta-yellow)]()
