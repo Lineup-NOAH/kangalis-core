@@ -118,6 +118,15 @@ eklentisinde tutulur ve bu depoya dahil **değildir**.
   **"Kangalis Exploit Agent"** ile konuşması planlanır; gerçek exploit yürütme her zaman
   çekirdeğin **dışında**, ayrı/izole bir bileşende kalır.
 
+**Eklenti kontratı (seam).** Çekirdek, eklentiyi yalnız **kuruluysa** geç-import (`try/except
+ImportError`) ile çağırır; kontrat [`core/exploit_seam.py`](../src/cybersectool/core/exploit_seam.py)
+içinde belgelidir. Eklenti (`cybersectool.exploit` namespace paketi) şunları sağlamalı:
+`msf_client.msf_configured()` (msfrpcd hazır mı), `runner.run_exploitation_for_scan(session,
+scan_id, *, user_id=None)` (gerçek MSF exploitation), `exploitdb_stage.stage_exploitdb_attempts(...)`
+(Exploit-DB PoC staging). **Eklentiler** sayfasındaki *Sömürü* kartı durumu (Kurulu/Pasif) +
+kurulum adımlarını + **yalnız yetkili kullanım** uyarısını gösterir. Yetkilendirme/EULA kapısı
+(scope ack + yetki beyanı) ayrı bir fazda eklenip sömürü ateşlenmeden önce zorunlu olacaktır.
+
 **Gereksinim / maliyet.** Sinyaller için ek maliyet yok (yerel depo ~70k kayıt ≈ 20-25 MB; NVD
 toplu çekme `NVD_API_KEY` ile hızlanır). Gerçek sömürü eklentisi ayrı/ticari bir ürün olduğundan
 çekirdeğin önkoşullarını değiştirmez.

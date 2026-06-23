@@ -149,6 +149,22 @@ DICT: dict[str, dict[str, str]] = {
         "en": "Live exploitation (searchsploit/Metasploit/sandbox) ships in the separate "
         "commercial kangalis-exploit add-on; this core is data-only.",
     },
+    "plugin_exploit_install": {
+        "tr": "Ticari eklentiyi edindiyseniz: (1) kangalis-exploit'i worker ortamına/imajına "
+        "kurun, (2) worker'ı yeniden başlatın, (3) msfrpcd'yi yapılandırın (endpoint/parola). "
+        "Eklenti import-edilebilir olunca bu kart 'Kurulu' gösterir.",
+        "en": "If you have the commercial add-on: (1) install kangalis-exploit into the worker "
+        "environment/image, (2) restart the worker, (3) configure msfrpcd (endpoint/password). "
+        "This card shows 'Installed' once the add-on is importable.",
+    },
+    "plugin_exploit_authorized": {
+        "tr": "⚠️ Yalnız YETKİLİ sistemlerde çalıştırın. Sömürünün meşruiyeti araçtan değil, "
+        "hedef-yetkisinden gelir; yetkisiz kullanım yasa dışı olabilir. Her deneme denetim "
+        "günlüğüne yazılır. (Hukuki tavsiye değildir.)",
+        "en": "⚠️ Run against AUTHORIZED systems only. Legitimacy comes from target authorization, "
+        "not the tool; unauthorized use may be illegal. Every attempt is audit-logged. "
+        "(Not legal advice.)",
+    },
     "logout": {"tr": "Çıkış", "en": "Logout"},
     # Topbar / common
     "search_ph": {"tr": "Ara: CVE, IP, varlık…", "en": "Search CVE, IP, asset…"},

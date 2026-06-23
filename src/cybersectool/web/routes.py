@@ -116,6 +116,7 @@ from cybersectool.core.exploit_attempts import (
 )
 from cybersectool.core.exploit_classify import CATEGORIES
 from cybersectool.core.exploit_freshness import compute_up_to_date
+from cybersectool.core.exploit_seam import exploit_plugin_available
 from cybersectool.core.exploits import (
     build_exploit_arsenal,
     categories_for_cves,
@@ -5725,6 +5726,8 @@ async def plugins_page(request: Request, session: SessionDep) -> Response:
         return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
     row = await get_settings(session)
     ai_active = bool(getattr(row, "ai_enabled", False))
+    # Sömürü eklentisi (ticari kangalis-exploit) kurulu mu — yan-etkisiz import tespiti (#F Faz 0).
+    exploitation_available = exploit_plugin_available()
     return templates.TemplateResponse(
         request,
         "plugins.html",
@@ -5732,6 +5735,7 @@ async def plugins_page(request: Request, session: SessionDep) -> Response:
             "app_name": APP_NAME,
             "user": user,
             "ai_active": ai_active,
+            "exploitation_available": exploitation_available,
             "s": row,
             "message": request.query_params.get("msg"),
             "error": request.query_params.get("error"),

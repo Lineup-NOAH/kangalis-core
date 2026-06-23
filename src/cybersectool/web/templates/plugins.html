@@ -90,9 +90,24 @@
   <div id="ai-detect-result"></div>
 </div>
 
-{# Nötr eklenti tanıtım kartı: canlı sömürü ayrı ticari eklentide; bu çekirdek data-only. #}
+{# Sömürü eklenti kartı (#F Faz 0): canlı durum (kurulu/pasif, yan-etkisiz import tespiti) +
+   ticari kurulum adımları + yetkili-kullanım uyarısı. Gerçek sömürü ayrı ticari kangalis-exploit
+   eklentisinde; bu çekirdek data-only (eklenti yoksa sömürü atlanır, tespit/rapor tam sürer). #}
 <div class="kg-card" style="max-width:780px; margin-top:26px; padding:16px 18px;">
-  <h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 6px;">{{ icon('plug', 18) }} {{ t('plugin_addon_title') }}</h2>
-  <p class="k-sm" style="margin:0; color:var(--fg2);">{{ t('plugin_addon_body') }}</p>
+  <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+    <span style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:9px; background:color-mix(in srgb, var(--accent) 12%, transparent); color:var(--accent); flex-shrink:0;">{{ icon('plug', 18) }}</span>
+    <span class="k-h3" style="margin:0; flex:1; min-width:160px;">{{ t('plugin_addon_title') }}</span>
+    {% if exploitation_available %}
+    <span class="kg-status kg-status-completed">{{ t('plugin_status_installed') }}</span>
+    {% else %}
+    <span class="kg-status kg-status-pending">{{ t('plugin_status_inactive') }}</span>
+    {% endif %}
+  </div>
+  <p class="k-sm" style="margin:10px 0 0; color:var(--fg2);">{{ t('plugin_addon_body') }}</p>
+  <div style="margin-top:12px;">
+    <div class="kg-field-label" style="margin-bottom:4px;">{{ t('plugin_howto') }}</div>
+    <p class="k-sm" style="margin:0; color:var(--fg2);">{{ t('plugin_exploit_install') }}</p>
+  </div>
+  <p class="k-sm" style="margin:12px 0 0; padding:9px 11px; border-radius:8px; background:var(--bg2); color:var(--fg2);">{{ t('plugin_exploit_authorized') }}</p>
 </div>
 {% endblock %}
