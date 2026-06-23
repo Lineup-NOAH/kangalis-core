@@ -186,26 +186,6 @@ async def test_feature_licensed_false_without_license(
         assert await feature_licensed(s, "exploit") is False
 
 
-def test_generator_roundtrip(signing_key: ed25519.Ed25519PrivateKey) -> None:
-    """scripts/gen_license ürettiği kodu verify_license kabul eder (uçtan uca)."""
-    # ``scripts`` paket olarak kurulu değil (depo kökü sys.path'te olmayabilir) → dosyadan yükle.
-    import importlib.util
-    from pathlib import Path
-
-    script_path = Path(__file__).resolve().parent.parent / "scripts" / "gen_license.py"
-    spec = importlib.util.spec_from_file_location("gen_license", script_path)
-    assert spec is not None and spec.loader is not None
-    gen_license = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(gen_license)
-
-    private_b64 = base64.b64encode(signing_key.private_bytes_raw()).decode("ascii")
-    code = gen_license.build_license(private_b64, "Acme", days=10, features=("exploit",))
-    info = verify_license(code)
-    assert info.status == "valid"
-    assert info.customer == "Acme"
-    assert "exploit" in info.features
-
-
 # --- Web formu (Lisans kartı) ---
 
 

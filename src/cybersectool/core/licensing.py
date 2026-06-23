@@ -1,7 +1,7 @@
 """Çevrimdışı, imza-temelli ticari LİSANS doğrulama — ``exploit`` özelliğini açar.
 
-Patron KENDİ özel anahtarıyla (Ed25519) lisans kodları üretir (``scripts/gen_license.py``)
-ve müşteriye dağıtır. Çekirdek YALNIZ patronun açık anahtarıyla (``LICENSE_PUBLIC_KEY``)
+Satıcı KENDİ özel anahtarıyla (Ed25519) lisans kodları üretip (ayrı, harici imzalama aracı)
+müşteriye dağıtır. Çekirdek YALNIZ satıcının açık anahtarıyla (``LICENSE_PUBLIC_KEY``)
 imzayı doğrular — sunucuya/internete ihtiyaç YOK (air-gap dostu). Lisans kodu kendi-kendine
 imzalı bir token'dır; kurcalanırsa ya da süresi dolduysa geçersiz sayılır.
 
