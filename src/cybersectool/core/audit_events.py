@@ -462,6 +462,16 @@ AUDIT_EVENTS: dict[str, AuditEventMeta] = {
         "AI yardım sorusu yanıtlandı: {target}",
         "AI help question answered: {target}",
     ),
+    # EMEKLİ: admin konsolu (/console) kaldırıldı (Güncelleme sayfasıyla değiştirildi), ama
+    # eski denetim kayıtları okunaklı kalsın diye bu giriş KORUNUR. KURAL: kayıt defteri
+    # ekleme-yalnızdır — bir özellik kalksa bile event_id/girişi SİLİNMEZ (yoksa o tarihsel
+    # satırlar "Kayıtsız eylem 9000" olur). Yeni eylem yoksa kullanılmaz; yalnız geçmiş için.
+    "console_exec": AuditEventMeta(
+        8023,
+        "system",
+        "Admin konsol komutu çalıştırıldı: {target}",
+        "Admin console command executed: {target}",
+    ),
     "update_check": AuditEventMeta(
         8024,
         "system",
