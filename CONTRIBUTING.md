@@ -16,7 +16,7 @@ yerine [SECURITY.md](SECURITY.md) belgesindeki sorumlu açıklama sürecini izle
 1. Depoyu **fork**'layın.
 2. Fork'unuzda açıklayıcı bir dal oluşturun (ör. `feature/web-tls-denetimi`).
 3. Değişikliğinizi yapın ve aşağıdaki **kalite kapısını** yerelde geçirin.
-4. `Lineup-NOAH/kangalis` deposunun **`main`** dalına bir **Pull Request** açın.
+4. `Lineup-NOAH/kangalis-core` deposunun **`main`** dalına bir **Pull Request** açın.
 5. PR'ınızda CI'nin **yeşil** olması gerekir; değilse birleştirilemez.
 
 ## Geliştirme kurulumu

@@ -5,7 +5,7 @@ type: application
 # Chart sürümü (paketleme); appVersion uygulama sürümünü izler.
 version: 0.1.0
 appVersion: "0.1.0"
-home: https://github.com/Lineup-NOAH/kangalis
+home: https://github.com/Lineup-NOAH/kangalis-core
 keywords:
   - security
   - vulnerability-scanner

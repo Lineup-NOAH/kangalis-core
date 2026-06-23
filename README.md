@@ -2,7 +2,7 @@
 
 > **İç ağınızın bekçisi** — Lineup-NOAH ekibinin Python tabanlı, web panelli, ağırlıklı **iç ağ/sistem taramasına** odaklı zafiyet yönetim platformu.
 
-[![CI](https://github.com/Lineup-NOAH/kangalis/actions/workflows/ci.yml/badge.svg)](https://github.com/Lineup-NOAH/kangalis/actions/workflows/ci.yml)
+[![CI](https://github.com/Lineup-NOAH/kangalis-core/actions/workflows/ci.yml/badge.svg)](https://github.com/Lineup-NOAH/kangalis-core/actions/workflows/ci.yml)
 [![durum](https://img.shields.io/badge/durum-beta-yellow)]()
 [![python](https://img.shields.io/badge/python-3.12%2B-blue)]()
 [![lisans](https://img.shields.io/badge/lisans-MIT-green)]()
@@ -66,7 +66,7 @@ powershell -ExecutionPolicy Bypass -File setup.ps1
 Hazır imajları doğrudan kayıt defterinden (ghcr.io) çekip çalıştırın — yerel derleme gerekmez:
 
 ```bash
-git clone https://github.com/Lineup-NOAH/kangalis.git && cd kangalis
+git clone https://github.com/Lineup-NOAH/kangalis-core.git && cd kangalis-core
 cp .env.example .env              # gizli anahtarları doldurun (ya da Seçenek 1 sihirbazını çalıştırın)
 
 docker compose pull              # yayınlanmış çekirdek imajını çeker (derleme YOK)
