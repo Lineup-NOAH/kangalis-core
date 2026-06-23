@@ -820,6 +820,10 @@ class AppSettings(Base):
     # Patronun ürettiği lisans kodu (base64url(payload).base64url(sig)); uzun olabilir.
     # core/licensing.py açık anahtarla imzayı doğrular → ``exploit`` özelliğini açar. Boş = yok.
     license_key: Mapped[str] = mapped_column(String(2048), default="", server_default="")
+    # Doğrulama AÇIK anahtarı (patronun Ed25519 public key'i, base64). GİZLİ DEĞİLDİR.
+    # İmza bununla doğrulanır. Boş ise config.license_public_key (env LICENSE_PUBLIC_KEY)
+    # fallback olur — böylece açık anahtar .env'e dokunmadan UI'dan girilebilir.
+    license_public_key: Mapped[str] = mapped_column(String(255), default="", server_default="")
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

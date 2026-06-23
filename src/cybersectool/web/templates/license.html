@@ -28,7 +28,16 @@
     {% if license_info.expires %}<span style="color:var(--fg2);">· {{ t('set_license_expires') }}: {{ license_info.expires }}</span>{% endif %}
     {% if license_info.features %}<span style="color:var(--fg2);">· {{ t('set_license_features') }}: {{ license_info.features | join(', ') }}</span>{% endif %}
   </div>
-  <label class="kg-field-label" for="license-key">{{ t('set_license_label') }}</label>
+
+  <!-- Doğrulama AÇIK anahtarı (gizli değil) — env LICENSE_PUBLIC_KEY yerine UI'dan girilebilir -->
+  <label class="kg-field-label" for="license-pubkey">{{ t('license_pubkey_label') }}</label>
+  <input id="license-pubkey" name="license_public_key" type="text" class="kg-input font-mono" autocomplete="off" placeholder="MCowBQYDK2VwAyEA..." value="{{ s.license_public_key }}" />
+  <p class="k-sm" style="margin:6px 0 0; color:var(--fg2);">{{ t('license_pubkey_hint') }}</p>
+  {% if pubkey_env_set and not s.license_public_key %}
+  <p class="k-sm" style="margin:6px 0 0; color:var(--accent);">{{ t('license_pubkey_env_active') }}</p>
+  {% endif %}
+
+  <label class="kg-field-label" for="license-key" style="display:block; margin-top:18px;">{{ t('set_license_label') }}</label>
   <textarea id="license-key" name="license_key" rows="3" class="kg-input font-mono" style="resize:vertical;" placeholder="eyJ...payload....c2ln...">{{ s.license_key }}</textarea>
   <div style="margin-top:16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
     <button type="submit" class="kg-btn kg-btn-primary">{{ t('save') }}</button>

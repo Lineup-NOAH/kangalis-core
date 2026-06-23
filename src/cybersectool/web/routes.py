@@ -49,6 +49,7 @@ from cybersectool.core.app_settings import (
     save_hardening_settings,
     save_ldap_sync_settings,
     save_license_key,
+    save_license_public_key,
     save_network_settings,
     save_nvd_settings,
     save_ratelimit_settings,
@@ -5901,7 +5902,7 @@ async def _license_page(
     message: str | None = None,
     status_code: int = status.HTTP_200_OK,
 ) -> Response:
-    """Lisans sayfasını (ticari lisans girişi + çevrimdışı imza doğrulama durumu) döndürür."""
+    """Lisans sayfasını (açık anahtar + lisans kodu girişi + imza doğrulama durumu) döndürür."""
     return templates.TemplateResponse(
         request,
         "license.html",
@@ -5911,6 +5912,8 @@ async def _license_page(
             "s": await get_settings(session),
             # Ticari lisans durumu: geçerli/süresi-dolmuş/geçersiz/yok/devre-dışı
             "license_info": await active_license(session),
+            # env LICENSE_PUBLIC_KEY tanımlı mı — DB alanı boşken fallback olduğunu UI'da göster
+            "pubkey_env_set": bool(settings.license_public_key.strip()),
             "error": error,
             "message": message,
         },
@@ -5932,15 +5935,20 @@ async def license_page(request: Request, session: SessionDep) -> Response:
 async def license_save_web(
     request: Request,
     session: SessionDep,
+    license_public_key: Annotated[str, Form()] = "",
     license_key: Annotated[str, Form()] = "",
 ) -> Response:
-    """Ticari lisans kodunu kaydeder (admin). Doğrulama core/licensing.py'de (çevrimdışı imza) —
-    kaydetme her zaman kabul edilir; geçersiz/boş kod Lisans sayfasında durum olarak gösterilir."""
+    """Doğrulama açık anahtarını + ticari lisans kodunu kaydeder (admin, tek form).
+
+    Açık anahtar gizli DEĞİL; imza bununla doğrulanır (boşsa env LICENSE_PUBLIC_KEY fallback).
+    Doğrulama core/licensing.py'de (çevrimdışı imza); kaydetme her zaman kabul edilir —
+    geçersiz/boş anahtar veya kod Lisans sayfasında durum olarak gösterilir."""
     user = await _current_user(request, session)
     if user is None:
         return _redirect_login()
     if user.role != Role.admin:
         return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
+    await save_license_public_key(session, public_key=license_public_key)
     await save_license_key(session, license_key=license_key)
     await log_action(session, "settings_update", user_id=user.id, target="license")
     lang = normalize_lang(request.cookies.get(LANG_COOKIE))

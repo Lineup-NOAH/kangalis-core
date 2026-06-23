@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from cybersectool.config import settings as app_config
 from cybersectool.core.app_settings import save_license_key
-from cybersectool.core.licensing import feature_licensed, verify_license
+from cybersectool.core.licensing import active_license, feature_licensed, verify_license
 from cybersectool.core.models import Role
 from cybersectool.core.users import create_user
 
@@ -294,3 +294,57 @@ async def test_license_form_non_admin_redirected(
 
         row = await get_settings(s)
         assert row.license_key == ""
+
+
+# --- Açık anahtar (public key) DB'den / UI'dan (env yerine) ---
+
+
+def test_verify_license_uses_db_pubkey_without_env(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Açık anahtar parametre olarak verilince env GEREKMEZ → 'valid'."""
+    monkeypatch.setattr(app_config, "license_public_key", "")  # env boş
+    priv = ed25519.Ed25519PrivateKey.generate()
+    pub_b64 = base64.b64encode(priv.public_key().public_bytes_raw()).decode("ascii")
+    code = _make_license(priv, customer="DbKeyCo")
+    info = verify_license(code, public_key=pub_b64)
+    assert info.status == "valid"
+    assert info.customer == "DbKeyCo"
+
+
+def test_verify_license_db_pubkey_wins_over_env(
+    signing_key: ed25519.Ed25519PrivateKey,
+) -> None:
+    """DB açık anahtarı env'i EZER: env doğru olsa da yanlış DB anahtarı → 'invalid'."""
+    # signing_key fixture env'i DOĞRU anahtara ayarlar; ama yanlış bir DB anahtarı verelim.
+    other_pub = base64.b64encode(
+        ed25519.Ed25519PrivateKey.generate().public_key().public_bytes_raw()
+    ).decode("ascii")
+    code = _make_license(signing_key, customer="Acme")
+    assert verify_license(code, public_key=other_pub).status == "invalid"
+    # Aynı kod, DB anahtarı boş → env fallback (doğru) → 'valid'.
+    assert verify_license(code, public_key="").status == "valid"
+
+
+async def test_license_page_pubkey_saved_and_used(
+    monkeypatch: pytest.MonkeyPatch,
+    client: AsyncClient,
+    session_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    """Açık anahtar + kod UI'dan (env'siz) kaydedilince active_license 'valid' olur."""
+    monkeypatch.setattr(app_config, "license_public_key", "")  # env yok → yalnız DB anahtarı
+    priv = ed25519.Ed25519PrivateKey.generate()
+    pub_b64 = base64.b64encode(priv.public_key().public_bytes_raw()).decode("ascii")
+    code = _make_license(priv, customer="UiKeyCo", features=("exploit",))
+    await _login(client, session_factory, "lic_pk_adm", Role.admin)
+    resp = await client.post(
+        "/license",
+        data={"license_public_key": pub_b64, "license_key": code},
+        follow_redirects=False,
+    )
+    assert resp.status_code in (302, 303)
+    async with session_factory() as s:
+        info = await active_license(s)
+        assert info.status == "valid"
+        assert info.customer == "UiKeyCo"
+        assert await feature_licensed(s, "exploit") is True

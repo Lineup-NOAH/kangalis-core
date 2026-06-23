@@ -278,6 +278,20 @@ async def save_license_key(session: AsyncSession, *, license_key: str) -> AppSet
     return row
 
 
+async def save_license_public_key(session: AsyncSession, *, public_key: str) -> AppSettings:
+    """Doğrulama açık anahtarını kaydeder (gizli DEĞİL; imza bununla doğrulanır).
+
+    Boş bırakılırsa config.license_public_key (env LICENSE_PUBLIC_KEY) fallback olur →
+    açık anahtar .env'e dokunmadan UI'dan (Lisans sekmesi) yönetilebilir. Sığabilmesi için
+    kolon String(255) — ham Ed25519 açık anahtarın base64'ü ~44 karakterdir.
+    """
+    row = await get_settings(session)
+    row.license_public_key = public_key.strip()[:255]
+    await session.commit()
+    await session.refresh(row)
+    return row
+
+
 async def save_smtp_settings(
     session: AsyncSession,
     *,

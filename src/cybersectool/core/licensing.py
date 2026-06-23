@@ -55,28 +55,35 @@ def _b64url_decode(data: str) -> bytes:
     return base64.urlsafe_b64decode(data + padding)
 
 
-def verify_license(license_str: str) -> LicenseInfo:
+def verify_license(license_str: str, *, public_key: str | None = None) -> LicenseInfo:
     """Lisans kodunu Ed25519 imzasıyla doğrular — ASLA istisna fırlatmaz.
 
-    Akış: boş → "none"; açık anahtar yapılandırılmamış → "disabled"; imza/biçim/çözme
+    Açık anahtar çözümü: ``public_key`` verilmiş (ve boş değil) ise o kullanılır (DB'den
+    gelen değer, Lisans sekmesinden girilir); aksi hâlde config.license_public_key (env
+    ``LICENSE_PUBLIC_KEY``) fallback olur. Böylece açık anahtar .env'e dokunmadan UI'dan
+    yönetilebilir, ama env yine de çalışır.
+
+    Akış: boş lisans → "none"; açık anahtar (DB+env) hiç yok → "disabled"; imza/biçim/çözme
     hatası → "invalid"; geçerli imza ama süresi dolmuş → "expired" (yine de müşteri/özellik
     görüntü için döner); aksi → "valid".
     """
     if not license_str or not license_str.strip():
         return LicenseInfo(status="none")
 
-    public_key_b64 = app_config.license_public_key.strip()
+    # DB değeri (UI'dan) önceliklidir; boşsa env'e düş.
+    public_key_b64 = (public_key or "").strip() or app_config.license_public_key.strip()
     if not public_key_b64:
         # Lisanslama yapılandırılmamış (patron açık anahtarı koymamış) → özellik kilitli kalır.
         return LicenseInfo(status="disabled")
 
     try:
-        public_key = ed25519.Ed25519PublicKey.from_public_bytes(_b64url_decode(public_key_b64))
+        # NOT: yerel değişken adı parametre 'public_key' (str) ile çakışmasın diye '_obj' soneki.
+        public_key_obj = ed25519.Ed25519PublicKey.from_public_bytes(_b64url_decode(public_key_b64))
         payload_b64, sig_b64 = license_str.strip().split(".", 1)
         payload_bytes = _b64url_decode(payload_b64)
         signature = _b64url_decode(sig_b64)
         # İmzayı ham payload baytları üzerinde doğrula (InvalidSignature → geçersiz).
-        public_key.verify(signature, payload_bytes)
+        public_key_obj.verify(signature, payload_bytes)
     except Exception:
         # Her hata (kötü biçim/çözme/imza ya da beklenmedik) → kilit-tarafa düş: "invalid".
         # Modül ASLA istisna fırlatmamalı; çağıranlar lisansı güven kararı olarak kullanır.
@@ -118,9 +125,13 @@ def verify_license(license_str: str) -> LicenseInfo:
 
 
 async def active_license(session: AsyncSession) -> LicenseInfo:
-    """DB'deki (``AppSettings.license_key``) lisans kodunu okuyup doğrular."""
+    """DB'deki lisans kodunu, yine DB'deki açık anahtarla (yoksa env) doğrular.
+
+    Açık anahtar ``AppSettings.license_public_key``'ten okunur (Lisans sekmesinden girilir);
+    boşsa ``verify_license`` config/env fallback'ine düşer.
+    """
     row = await get_settings(session)
-    return verify_license(row.license_key)
+    return verify_license(row.license_key, public_key=row.license_public_key)
 
 
 async def feature_licensed(session: AsyncSession, feature: str) -> bool:

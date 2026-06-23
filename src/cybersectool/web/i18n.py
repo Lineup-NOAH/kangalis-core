@@ -2077,6 +2077,22 @@ DICT: dict[str, dict[str, str]] = {
     },
     "license_plugins_link": {"tr": "Eklenti durumu", "en": "Add-on status"},
     "license_saved": {"tr": "Lisans kaydedildi.", "en": "License saved."},
+    "license_pubkey_label": {
+        "tr": "Doğrulama açık anahtarı (public key)",
+        "en": "Verification public key",
+    },
+    "license_pubkey_hint": {
+        "tr": "Patronun Ed25519 AÇIK anahtarı (base64) — GİZLİ DEĞİLDİR. Lisans imzaları bununla "
+        "doğrulanır. Boş bırakılırsa ortam değişkeni (LICENSE_PUBLIC_KEY) kullanılır.",
+        "en": "The vendor's Ed25519 PUBLIC key (base64) — NOT secret. License signatures are "
+        "verified with it. If left blank, the environment variable (LICENSE_PUBLIC_KEY) is used.",
+    },
+    "license_pubkey_env_active": {
+        "tr": "Şu an ortam değişkeninden (LICENSE_PUBLIC_KEY) geliyor. "
+        "Buraya girersen onu geçersiz kılar.",
+        "en": "Currently provided via the environment (LICENSE_PUBLIC_KEY). "
+        "Entering one here overrides it.",
+    },
     # Zafiyet veritabanı (CVE-COVERAGE FE)
     "set_vulndb_section": {"tr": "Zafiyet veritabanı", "en": "Vulnerability database"},
     "set_vulndb_sub": {
