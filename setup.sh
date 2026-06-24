@@ -105,11 +105,7 @@ fi
 # --- 4/5 Admin -----------------------------------------------------------------
 echo ""
 echo "==> 4/5 İlk YÖNETİCİ (admin) kullanıcısı"
-while :; do
-  read -rp "  Kullanıcı adı: " KUSER
-  [ -n "$(printf '%s' "$KUSER" | tr -d '[:space:]')" ] && break
-  echo "  Kullanıcı adı boş olamaz; lütfen bir ad girin."
-done
+KUSER="$(read_safe 'Kullanıcı adı' 'admin' '^[A-Za-z0-9._-]+$' 'Yalnız harf/rakam/. _ - kullanın.')"
 while :; do
   read -rsp "  Parola (güçlü bir parola seçin): " KPASS; echo
   [ -n "$KPASS" ] && break
