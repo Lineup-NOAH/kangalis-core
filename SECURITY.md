@@ -19,7 +19,8 @@ kullanılmalıdır:
 - Bulgular gizli bilgi içerebilir; raporları yalnızca yetkili paydaşlarla paylaşın.
 
 Bu kuralların ihlalinden kaynaklanan hiçbir zarardan Lineup-NOAH ve katkıda
-bulunanlar sorumlu tutulamaz.
+bulunanlar sorumlu tutulamaz. Tam **sorumluluk reddi ve kullanım koşulları**:
+[DISCLAIMER.md](DISCLAIMER.md).
 
 ## Zafiyet Bildirimi (Sorumlu Açıklama)
 

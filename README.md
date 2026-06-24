@@ -13,7 +13,8 @@ CISA KEV, EPSS) zenginleştirerek **risk önceliklendirmesi** yapar. Ayrıca **M
 Claude ile konuşabilir.
 
 > ⚠️ **Yasal uyarı:** Bu araç yalnızca **yetkili kapsam** içinde (sahip olduğunuz ya da
-> izin verilen ağlar) kullanılmalıdır. İzinsiz tarama yasa dışıdır.
+> izin verilen ağlar) kullanılmalıdır. İzinsiz tarama yasa dışıdır. Yazılım **"olduğu gibi",
+> garantisiz** sunulur; kullanmak [Sorumluluk Reddi](DISCLAIMER.md)'ni kabul etmek demektir.
 
 ## 📦 Açık-kaynak çekirdek
 
@@ -183,3 +184,4 @@ Ayrıntılar için: [CONTRIBUTING.md](CONTRIBUTING.md)
 
 - Üçüncü taraf bağımlılık lisansları: [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)
 - Güvenlik & sorumlu/yetkili kullanım: [SECURITY.md](SECURITY.md)
+- **Sorumluluk reddi & kullanım koşulları:** [DISCLAIMER.md](DISCLAIMER.md)
