@@ -87,15 +87,22 @@ Ardından panel: **http://localhost:8000/login**
 
 ### Yerel AI (opsiyonel, on-prem, sıfır egress)
 
-Model **gömülü** ön-paketli AI imajını çekip çalıştırın (çalışma anında sıfır indirme):
+AI tamamen yereldir (CPU'da çalışır); yalnız öneri/taslak hazırlar, eylemi her zaman insan
+tetikler. **Önerilen yol — Ollama** (resmi `ollama/ollama` imajı; model çalışma anında iner):
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.ai-baked.yml --profile ai pull
-docker compose -f docker-compose.yml -f docker-compose.ai-baked.yml --profile ai up -d ollama
+docker compose --profile ai up -d ollama          # Ollama motoru (Docker Hub, public)
+docker compose exec ollama ollama pull qwen3:8b   # modeli indir (~5 GB, tek seferlik)
 ```
 
-Sonra panelde **Eklentiler → AI** kartından bağlantıyı test edin. AI tamamen yereldir
-(CPU'da çalışır); yalnız öneri/taslak hazırlar, eylemi her zaman insan tetikler.
+Sonra panelde **Eklentiler → AI**: endpoint `http://ollama:11434/v1`, model `qwen3:8b`,
+"Bağlantıyı test et" → yeşil.
+
+> **Air-gap / sıfır çalışma-anı indirme (opsiyonel):** modeli **gömülü** taşıyan `kangalis-ai`
+> imajını kullanabilirsiniz (`-f docker-compose.ai-baked.yml`). Yayınlanmış imajı çekmek için ghcr
+> paketinin **public** olması gerekir — aksi halde `unauthorized` alırsınız. Alternatif: internetli
+> bir makinede yerelde derleyin (`bash build-ai-image.sh` / `powershell -File build-ai-image.ps1`).
+> Ayrıntı: [`docs/EKLENTILER.md`](docs/EKLENTILER.md).
 
 - 📘 Ayrıntılı kurulum / manuel adımlar / üretime geçiş: [`docs/KURULUM.md`](docs/KURULUM.md)
 - 🧩 Opsiyonel özellikler (yerel AI, MCP, eklentiler): [`docs/EKLENTILER.md`](docs/EKLENTILER.md)
