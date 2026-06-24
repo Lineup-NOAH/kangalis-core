@@ -36,6 +36,12 @@ async def create_user(
     role: Role = Role.viewer,
     email: str | None = None,
 ) -> User:
+    # Boş / yalnız-boşluk kullanıcı adı engellenir: login formu (required) bu hesaba ASLA
+    # erişemez -> "hayalet" admin = kilitlenme (kurulum sihirbazında ad boş bırakılınca yaşandı).
+    # Tek yerde (servis katmanı) engelle ki CLI/UI/sihirbaz hangi yoldan gelirse gelsin korunsun.
+    username = username.strip()
+    if not username:
+        raise ValueError("Kullanıcı adı boş olamaz.")
     user = User(
         username=username,
         email=email,

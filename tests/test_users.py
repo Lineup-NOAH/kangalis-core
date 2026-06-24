@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from cybersectool.core.models import Role
@@ -37,3 +38,17 @@ async def test_user_management(
         assert await delete_user(session, user.id) is True
         assert await delete_user(session, user.id) is False
         assert await list_users(session) == []
+
+
+async def test_create_user_rejects_blank_username(
+    session_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    """Boş / yalnız-boşluk kullanıcı adı reddedilir (login formu required -> erişilemez hesap)."""
+    async with session_factory() as session:
+        for blank in ("", "   ", "\t"):
+            with pytest.raises(ValueError):
+                await create_user(session, blank, "pw", role=Role.admin)
+        # Geçerli ad baştaki/sondaki boşluklardan arındırılarak saklanır.
+        user = await create_user(session, "  bob  ", "pw", role=Role.admin)
+        assert user.username == "bob"
+        assert await get_user_by_username(session, "bob") is not None

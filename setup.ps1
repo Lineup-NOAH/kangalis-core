@@ -113,10 +113,16 @@ if (-not $ok) {
 
 # --- 4/5 Admin -----------------------------------------------------------------
 Write-Host "`n==> 4/5 İlk YÖNETİCİ (admin) kullanıcısı"
-$kuser = Read-Host "  Kullanıcı adı"
-$ksec = Read-Host "  Parola (güçlü bir parola seçin)" -AsSecureString
-$kpass = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto(
-    [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($ksec))
+do {
+    $kuser = (Read-Host "  Kullanıcı adı").Trim()
+    if (-not $kuser) { Write-Host "  Kullanıcı adı boş olamaz; lütfen bir ad girin." -ForegroundColor Yellow }
+} while (-not $kuser)
+do {
+    $ksec = Read-Host "  Parola (güçlü bir parola seçin)" -AsSecureString
+    $kpass = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto(
+        [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($ksec))
+    if (-not $kpass) { Write-Host "  Parola boş olamaz; lütfen bir parola girin." -ForegroundColor Yellow }
+} while (-not $kpass)
 # Parolayı argv'de göstermeden ortam değişkeniyle geçir (host cmdline sızdırmasın; -e VARNAME =
 # isim-only geçiş -> değer PowerShell ortamından gelir, docker komut satırına yazılmaz). Sonra temizle.
 $env:KANGALIS_ADMIN_PASSWORD = $kpass

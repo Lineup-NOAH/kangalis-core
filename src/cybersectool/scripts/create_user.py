@@ -74,8 +74,13 @@ def main() -> None:
     parser.add_argument("--role", choices=[r.value for r in Role], default=Role.viewer.value)
     parser.add_argument("--email", default=None)
     args = parser.parse_args()
+    # --username "" (sihirbaz boş bırakılırsa) argparse'in required kontrolünü geçer; burada
+    # açıkça reddet ki erişilemeyen boş-adlı hesap oluşmasın.
+    username = args.username.strip()
+    if not username:
+        raise SystemExit("Kullanıcı adı boş olamaz (--username boş geçilemez).")
     password = _resolve_password(args)
-    asyncio.run(_run(args.username, password, Role(args.role), args.email))
+    asyncio.run(_run(username, password, Role(args.role), args.email))
 
 
 if __name__ == "__main__":
