@@ -102,3 +102,6 @@ disallow_untyped_decorators = false
 testpaths = ["tests"]
 addopts = "-q"
 asyncio_mode = "auto"
+markers = [
+    "disclaimer_gate: sorumluluk reddi kapısını gerçek haliyle sınar (conftest bypass'ını atlar)",
+]

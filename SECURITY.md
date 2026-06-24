@@ -18,6 +18,12 @@ kullanılmalıdır:
   (scope) doğrulaması ile çalışır.
 - Bulgular gizli bilgi içerebilir; raporları yalnızca yetkili paydaşlarla paylaşın.
 
+Uygulama bunu **teknik olarak da zorlar**: her operatör ilk girişte uygulama-içi bir onay
+ekranında (yalnız yetkili sistemleri taradığını + Sorumluluk Reddi'ni) **kabul etmeden tarama
+başlatamaz**; kabul, kullanıcı-bazlı ve **zaman-damgalı denetim kaydı** olarak saklanır
+(`disclaimer_accepted`). Bu yalnızca tarayıcı oturumu içindir; API token (Bearer) istemcileri
+ayrı yetkilendirilir.
+
 Bu kuralların ihlalinden kaynaklanan hiçbir zarardan Lineup-NOAH ve katkıda
 bulunanlar sorumlu tutulamaz. Tam **sorumluluk reddi ve kullanım koşulları**:
 [DISCLAIMER.md](DISCLAIMER.md).

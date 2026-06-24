@@ -319,6 +319,12 @@ AUDIT_EVENTS: dict[str, AuditEventMeta] = {
         "Kendi parolasını değiştirdi: {target}",
         "Changed own password: {target}",
     ),
+    "disclaimer_accepted": AuditEventMeta(
+        4011,
+        "user",
+        "Sorumluluk reddini kabul etti: {target}",
+        "Accepted disclaimer/terms: {target}",
+    ),
     # 409x — kimlik doğrulama olayları (auth; güvenlik açısından kritik)
     "login_failed": AuditEventMeta(
         4090, "auth", "Başarısız giriş denemesi: {target}", "Failed login attempt: {target}"

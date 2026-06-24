@@ -62,6 +62,8 @@ async def login(data: LoginIn, request: Request, session: SessionDep) -> User:
         )
     await clear_login_failures(data.username)
     request.session["user_id"] = user.id
+    # Sorumluluk reddi kapısı bu bayrağı okur (gate middleware — DB sorgusu yok).
+    request.session["disclaimer_ok"] = user.disclaimer_accepted_at is not None
     start_session_timeout(request.session, settings_row.session_timeout_min)
     return user
 

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% from "_icons.html" import logo %}
+{% block title %}{{ t('disclaimer_title') }} · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="kg-card" style="max-width:660px; width:100%; padding:28px;">
+  <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+    {{ logo(28) }}
+    <h1 style="font-size:18px; font-weight:700; margin:0; color:var(--fg);">{{ t('disclaimer_title') }}</h1>
+  </div>
+
+  <p style="color:var(--fg2); font-size:13px; margin-bottom:14px;">{{ t('disclaimer_intro') }}</p>
+
+  <ul style="color:var(--fg); font-size:13px; line-height:1.65; padding-left:18px; margin:0 0 16px 0;">
+    <li>{{ t('disclaimer_p1') }}</li>
+    <li>{{ t('disclaimer_p2') }}</li>
+    <li>{{ t('disclaimer_p3') }}</li>
+    <li>{{ t('disclaimer_p4') }}</li>
+  </ul>
+
+  <p style="color:var(--fg2); font-size:12px; margin:0 0 18px 0;">{{ t('disclaimer_full') }}</p>
+
+  {% if error %}
+  <div style="border:1px solid var(--crit); color:var(--crit); padding:8px 12px; border-radius:8px; font-size:13px; margin-bottom:14px;">
+    {{ error }}
+  </div>
+  {% endif %}
+
+  <form method="post" action="/disclaimer/accept">
+    <label style="display:flex; gap:10px; align-items:flex-start; cursor:pointer; margin-bottom:18px;">
+      <input type="checkbox" name="acknowledge" value="on" style="margin-top:3px;" required />
+      <span style="font-size:13px; color:var(--fg);">{{ t('disclaimer_ack_label') }}</span>
+    </label>
+    <button type="submit" class="kg-btn kg-btn-primary">{{ t('disclaimer_accept_btn') }}</button>
+  </form>
+
+  <form method="post" action="/logout" style="margin-top:16px;">
+    <button type="submit" class="kg-btn kg-btn-subtle kg-btn-sm">{{ t('disclaimer_logout') }}</button>
+  </form>
+</div>
+{% endblock %}

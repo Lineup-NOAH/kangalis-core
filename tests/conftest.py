@@ -28,6 +28,21 @@ def _allow_aggressive_by_default() -> Iterator[None]:
     settings.allow_aggressive_scans = original
 
 
+@pytest.fixture(autouse=True)
+def _bypass_disclaimer_gate(
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Sorumluluk reddi kapısı kesişen (cross-cutting) bir kısıttır; onu sınamayan testlerde
+    kapatılır → mevcut/gelecek tarama testleri kabul akışını tekrar etmek zorunda kalmaz.
+
+    Kapının kendisi (giriş yönlendirmesi + /scans* engeli) ``@pytest.mark.disclaimer_gate``
+    işaretli özel testte gerçek haliyle doğrulanır; o test bu bypass'ı atlar.
+    """
+    if request.node.get_closest_marker("disclaimer_gate"):
+        return
+    monkeypatch.setattr("cybersectool.core.disclaimer.disclaimer_enforced", lambda: False)
+
+
 @pytest_asyncio.fixture
 async def session_factory() -> AsyncIterator[async_sessionmaker[AsyncSession]]:
     engine = create_async_engine(

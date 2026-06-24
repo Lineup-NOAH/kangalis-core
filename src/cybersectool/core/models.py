@@ -61,6 +61,11 @@ class User(Base):
     mfa_secret_encrypted: Mapped[str | None] = mapped_column(Text, default=None)
     mfa_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    # Sorumluluk reddi (DISCLAIMER.md) kabul zamanı; NULL = henüz kabul etmedi → tarama kapalı
+    # (uygulama-içi onay ekranı bunu doldurur; her operatörün kabulü zaman-damgalı kayıt olur).
+    disclaimer_accepted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), default=None
+    )
 
 
 class ApiToken(Base):

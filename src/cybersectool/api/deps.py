@@ -8,6 +8,7 @@ from typing import Annotated
 from fastapi import Depends, Header, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from cybersectool.core import disclaimer
 from cybersectool.core.db import get_session
 from cybersectool.core.models import Role, User
 from cybersectool.core.session_guard import session_idle_expired, touch_session
@@ -56,3 +57,19 @@ def require_role(*roles: Role) -> Callable[[User], User]:
         return user
 
     return checker
+
+
+def require_disclaimer_accepted(user: CurrentUser) -> User:
+    """Sorumluluk reddi (DISCLAIMER.md) kabul edilmemişse tarama/denetim uçlarını reddeder.
+
+    ``/scans*`` middleware kapısının kapsamadığı uçlara da (örn. /sca, /hardening, zone scan,
+    schedule, demo-scan) eklenir → oturum VE Bearer için yol-önekinden bağımsız asıl kontrol
+    budur (middleware yalnız tarayıcı UX'i için yönlendirme yapar). Test dikişi:
+    ``disclaimer.disclaimer_enforced()`` (conftest ilgisiz testlerde kapatır).
+    """
+    if disclaimer.disclaimer_enforced() and user.disclaimer_accepted_at is None:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Tarama için önce Sorumluluk Reddi'ni kabul edin (/disclaimer).",
+        )
+    return user

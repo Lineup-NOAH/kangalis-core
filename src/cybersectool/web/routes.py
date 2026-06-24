@@ -28,6 +28,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from cybersectool.api.deps import SessionDep
 from cybersectool.config import APP_NAME, VERSION, settings
+from cybersectool.core import disclaimer
 from cybersectool.core.ai import AIConfig, ai_available, detect_ai_paths
 from cybersectool.core.ai import cache as ai_cache
 from cybersectool.core.ai import prompts as ai_prompts
@@ -421,6 +422,10 @@ def _redirect_login() -> RedirectResponse:
     return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
 
 
+def _redirect_disclaimer() -> RedirectResponse:
+    return RedirectResponse("/disclaimer", status_code=status.HTTP_303_SEE_OTHER)
+
+
 def _resolve_assignment(
     user: User,
     assigned_user_id: int | None,
@@ -555,7 +560,11 @@ async def login_submit(
     # MFA yok: girişi tamamla (sayaç + kilidi temizle).
     await clear_login_failures(username)
     request.session["user_id"] = user.id
+    # Sorumluluk reddi kabul bayrağı (gate middleware bunu okur — DB sorgusu yok).
+    request.session["disclaimer_ok"] = user.disclaimer_accepted_at is not None
     start_session_timeout(request.session, settings_row.session_timeout_min)
+    if disclaimer.disclaimer_enforced() and user.disclaimer_accepted_at is None:
+        return _redirect_disclaimer()
     return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -650,7 +659,10 @@ async def login_mfa_submit(
     await clear_login_failures(user.username)
     request.session.pop("mfa_user_id", None)
     request.session["user_id"] = user.id
+    request.session["disclaimer_ok"] = user.disclaimer_accepted_at is not None
     start_session_timeout(request.session, settings_row.session_timeout_min)
+    if disclaimer.disclaimer_enforced() and user.disclaimer_accepted_at is None:
+        return _redirect_disclaimer()
     return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -672,6 +684,40 @@ async def logout(request: Request) -> Response:
     # (zararsız ama can sıkıcı zorla-çıkış) açık bırakırdı. Nav'daki bağlantı artık POST formu.
     request.session.clear()
     return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.get("/disclaimer", response_class=HTMLResponse)
+async def disclaimer_page(request: Request, session: SessionDep) -> Response:
+    """Sorumluluk reddi (DISCLAIMER.md) onay ekranı. Kabul edildiyse → panele yönlendirir."""
+    user = await _current_user(request, session)
+    if user is None:
+        return _redirect_login()
+    if user.disclaimer_accepted_at is not None:
+        request.session["disclaimer_ok"] = True  # bayrağı tazele (eski oturum/yeni sürüm)
+        return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
+    ctx = _i18n_context(request)
+    ctx["app_name"] = APP_NAME
+    return templates.TemplateResponse(request, "disclaimer.html", ctx)
+
+
+@router.post("/disclaimer/accept")
+async def disclaimer_accept(
+    request: Request,
+    session: SessionDep,
+    acknowledge: Annotated[str, Form()] = "",
+) -> Response:
+    """Sorumluluk reddini kabul kaydeder: zaman damgası (DB) + denetim kaydı + oturum bayrağı."""
+    user = await _current_user(request, session)
+    if user is None:
+        return _redirect_login()
+    if acknowledge != "on":
+        return _redirect_disclaimer()  # onay kutusu işaretlenmedi (tarayıcı zaten 'required')
+    if user.disclaimer_accepted_at is None:
+        user.disclaimer_accepted_at = datetime.now(UTC)
+        await session.commit()
+        await log_action(session, "disclaimer_accepted", user_id=user.id, target=user.username)
+    request.session["disclaimer_ok"] = True
+    return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.get("/lang/{code}")

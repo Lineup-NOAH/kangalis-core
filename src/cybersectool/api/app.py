@@ -10,17 +10,24 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 import asyncssh
-from fastapi import Depends, FastAPI, HTTPException, Request, Response
-from fastapi.responses import JSONResponse
+from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy import text
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
 from cybersectool.api.auth import router as auth_router
-from cybersectool.api.deps import CurrentUser, SessionDep, require_role
+from cybersectool.api.deps import (
+    CurrentUser,
+    SessionDep,
+    require_disclaimer_accepted,
+    require_role,
+)
 from cybersectool.api.tokens import router as tokens_router
 from cybersectool.config import APP_NAME, VERSION, settings
+from cybersectool.core import disclaimer
 from cybersectool.core.app_settings import get_settings
 from cybersectool.core.audit import log_action
 from cybersectool.core.credentials import (
@@ -79,7 +86,51 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
     yield
 
 
+# Sorumluluk reddi (DISCLAIMER.md) kapısı: kabul edilmeden tarama (/scans*) erişilemez.
+_DISCLAIMER_SCAN_PREFIX = "/scans"
+
+
+def _scan_path_requires_disclaimer(request: Request) -> bool:
+    """İstek /scans* + cookie-oturumlu + sorumluluk reddi henüz kabul edilmemiş mi?
+
+    Ayrı fonksiyon: kapı kesişen (cross-cutting) bir kısıttır; ilgisiz testler bunu tek
+    noktadan devre-dışı bırakabilsin (conftest) — kapının kendisi kendi özel testinde
+    (``@pytest.mark.disclaimer_gate``) gerçek haliyle sınanır.
+    """
+    if not disclaimer.disclaimer_enforced():
+        return False
+    path = request.url.path
+    # Yol sınırına dikkat: "/scans" ya da "/scans/..." — "/scans-foo" gibi kardeşleri yakalamaz.
+    if path != _DISCLAIMER_SCAN_PREFIX and not path.startswith(_DISCLAIMER_SCAN_PREFIX + "/"):
+        return False
+    sess = request.session
+    return sess.get("user_id") is not None and not sess.get("disclaimer_ok")
+
+
+async def _disclaimer_scan_gate(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    """Sorumluluk reddi kabul edilmeden /scans* (tarama başlat/görüntüle) engellenir.
+
+    Yalnız cookie-oturumlu (tarayıcı) kullanıcıyı etkiler; API/Bearer istemcileri oturum
+    taşımadığından dokunulmaz. Kabul durumu girişte ``session['disclaimer_ok']`` bayrağına
+    yazılır → her istekte DB sorgusu yapılmaz.
+    """
+    if _scan_path_requires_disclaimer(request):
+        if request.method in ("GET", "HEAD"):
+            return RedirectResponse("/disclaimer", status_code=status.HTTP_303_SEE_OTHER)
+        return JSONResponse(
+            {"detail": "Tarama için önce Sorumluluk Reddi'ni kabul edin (/disclaimer)."},
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+    return await call_next(request)
+
+
 app = FastAPI(title=APP_NAME, version=VERSION, lifespan=_lifespan)
+# DİKKAT — sıralama kritik: kapı, SessionMiddleware'den ÖNCE eklenir ki middleware yığınında
+# onun İÇİNDE çalışsın (``request.session`` ancak SessionMiddleware'den sonra hazırdır).
+# Decorator middleware'ler (CSRF/güvenlik başlıkları) daha sonra eklenir → daha dışta kalır.
+app.add_middleware(BaseHTTPMiddleware, dispatch=_disclaimer_scan_gate)
 # Oturum çerezi: HTTP-only (Starlette varsayılanı) + lax samesite (CSRF azaltma) +
 # üretimde yalnızca HTTPS (https_only) — düz HTTP üzerinden sızmayı önler.
 app.add_middleware(
@@ -192,7 +243,10 @@ async def admin_ping() -> dict[str, str]:
     return {"status": "admin-ok"}
 
 
-@app.post("/admin/demo-scan", dependencies=[Depends(require_role(Role.admin))])
+@app.post(
+    "/admin/demo-scan",
+    dependencies=[Depends(require_role(Role.admin)), Depends(require_disclaimer_accepted)],
+)
 async def demo_scan(session: SessionDep) -> dict[str, str | int]:
     """Örnek: bir scan oluşturup Celery'ye gönderir (arka plan akışı testi)."""
     scan = await create_scan(session, ScanType.network, "demo-target")
@@ -216,7 +270,13 @@ class ScanIn(BaseModel):
     mode: ScanMode = ScanMode.safe
 
 
-@app.post("/scans", dependencies=[Depends(require_role(Role.admin, Role.analyst))])
+@app.post(
+    "/scans",
+    dependencies=[
+        Depends(require_role(Role.admin, Role.analyst)),
+        Depends(require_disclaimer_accepted),
+    ],
+)
 async def start_scan(data: ScanIn, user: CurrentUser, session: SessionDep) -> dict[str, object]:
     """Yeni tarama başlatır: scope kontrolünden geçer ve Celery'ye gönderilir."""
     if data.scan_type == ScanType.network:
@@ -254,7 +314,13 @@ class ScaIn(BaseModel):
     content: str
 
 
-@app.post("/sca", dependencies=[Depends(require_role(Role.admin, Role.analyst))])
+@app.post(
+    "/sca",
+    dependencies=[
+        Depends(require_role(Role.admin, Role.analyst)),
+        Depends(require_disclaimer_accepted),
+    ],
+)
 async def start_sca(data: ScaIn, user: CurrentUser, session: SessionDep) -> dict[str, object]:
     """Bağımlılık manifesti (requirements.txt / package.json) zafiyet taraması başlatır."""
     scan = await create_scan(
@@ -272,7 +338,10 @@ class HardeningIn(BaseModel):
     password: str
 
 
-@app.post("/hardening", dependencies=[Depends(require_role(Role.admin))])
+@app.post(
+    "/hardening",
+    dependencies=[Depends(require_role(Role.admin)), Depends(require_disclaimer_accepted)],
+)
 async def start_hardening(
     data: HardeningIn, user: CurrentUser, session: SessionDep
 ) -> dict[str, object]:
@@ -306,7 +375,10 @@ class CredentialedIn(BaseModel):
     password: str
 
 
-@app.post("/scans/credentialed", dependencies=[Depends(require_role(Role.admin))])
+@app.post(
+    "/scans/credentialed",
+    dependencies=[Depends(require_role(Role.admin)), Depends(require_disclaimer_accepted)],
+)
 async def start_credentialed(
     data: CredentialedIn, user: CurrentUser, session: SessionDep
 ) -> dict[str, object]:
@@ -372,7 +444,11 @@ async def list_zones_ep(session: SessionDep) -> list[dict[str, object]]:
 
 
 @app.post(
-    "/api/zones/{zone_id}/scan", dependencies=[Depends(require_role(Role.admin, Role.analyst))]
+    "/api/zones/{zone_id}/scan",
+    dependencies=[
+        Depends(require_role(Role.admin, Role.analyst)),
+        Depends(require_disclaimer_accepted),
+    ],
 )
 async def scan_zone_ep(
     zone_id: int, data: ZoneScanIn, user: CurrentUser, session: SessionDep
@@ -581,7 +657,10 @@ class ScheduleIn(BaseModel):
     start_at: datetime | None = None
 
 
-@app.post("/schedules", dependencies=[Depends(require_role(Role.admin))])
+@app.post(
+    "/schedules",
+    dependencies=[Depends(require_role(Role.admin)), Depends(require_disclaimer_accepted)],
+)
 async def create_schedule_ep(
     data: ScheduleIn, user: CurrentUser, session: SessionDep
 ) -> dict[str, object]:

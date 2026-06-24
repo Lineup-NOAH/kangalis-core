@@ -30,6 +30,51 @@ DICT: dict[str, dict[str, str]] = {
     "nav_cve": {"tr": "Zafiyet Veritabanı", "en": "Vulnerability DB"},
     # Help / Docs (#A)
     "nav_help": {"tr": "Yardım", "en": "Help"},
+    # — Sorumluluk reddi onay ekranı (/disclaimer) —
+    "disclaimer_title": {
+        "tr": "Sorumluluk Reddi ve Kullanım Koşulları",
+        "en": "Disclaimer & Terms of Use",
+    },
+    "disclaimer_intro": {
+        "tr": "Devam etmeden önce lütfen aşağıdaki koşulları okuyup kabul edin. "
+        "Kabul edilmeden tarama başlatılamaz.",
+        "en": "Before continuing, please read and accept the terms below. "
+        "Scanning cannot start until you accept.",
+    },
+    "disclaimer_p1": {
+        "tr": "Bu aracı yalnızca taramaya açıkça yetkili olduğum (sahibi olduğum ya da "
+        "yazılı izin aldığım) sistemlerde kullanacağım.",
+        "en": "I will use this tool only on systems I am explicitly authorized to scan "
+        "(owned by me or with written permission).",
+    },
+    "disclaimer_p2": {
+        "tr": "Aktif tarama, kimlik denemesi ve sömürü işlemleri hedef sistemlerde kesinti, "
+        "çökme veya veri kaybına yol açabilir; bu riski kabul ediyorum.",
+        "en": "Active scanning, credential testing and exploitation may cause downtime, "
+        "crashes or data loss on target systems; I accept this risk.",
+    },
+    "disclaimer_p3": {
+        "tr": "Araç 'olduğu gibi', garantisiz sunulur; doğabilecek zararlardan Lineup-NOAH "
+        "ve katkıda bulunanlar sorumlu tutulamaz.",
+        "en": "The tool is provided 'as is', without warranty; Lineup-NOAH and contributors "
+        "are not liable for any resulting damage.",
+    },
+    "disclaimer_p4": {
+        "tr": "İzinsiz kullanımın tüm yasal sorumluluğu bana aittir.",
+        "en": "I am solely responsible for the legal consequences of any unauthorized use.",
+    },
+    "disclaimer_full": {
+        "tr": "Tam metin: depodaki DISCLAIMER.md dosyası.",
+        "en": "Full text: see DISCLAIMER.md in the repository.",
+    },
+    "disclaimer_ack_label": {
+        "tr": "Yalnızca yetkili olduğum sistemleri taradığımı ve yukarıdaki Sorumluluk "
+        "Reddi'ni kabul ettiğimi onaylıyorum.",
+        "en": "I confirm that I only scan systems I am authorized to, and I accept the "
+        "Disclaimer above.",
+    },
+    "disclaimer_accept_btn": {"tr": "Kabul et ve devam et", "en": "Accept and continue"},
+    "disclaimer_logout": {"tr": "Reddet ve çıkış yap", "en": "Decline and log out"},
     "help_title": {"tr": "Yardım & Dokümanlar", "en": "Help & Documentation"},
     "help_sub": {
         "tr": "Kurulum, temel kullanım, tarama kapsamı ve eklentiler için kısa rehber.",
