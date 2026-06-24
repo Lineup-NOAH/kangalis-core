@@ -85,6 +85,27 @@ Ardından panel: **http://localhost:8000/login**
 > ⚠️ Tarama yetkili **kapsam** (CIDR) tanımlanmadan çalışmaz. Yalnızca taramaya **yetkili
 > olduğunuz** ağları girin.
 
+### Sıfırlama / temiz yeniden kurulum
+
+Kurulum bozulduysa ya da DB kullanıcı/parolasını değiştirmek istiyorsanız, **eski veritabanı
+volume'ü yeni `.env` ile çakışır** (`migrate` → `password authentication failed for user ...`).
+PostgreSQL kullanıcı/parolayı yalnız ilk açılışta gömer; klasörü/Docker'ı silmek **volume'ü
+silmez**. Temiz sıfırlama tek komut:
+
+```bash
+# Windows
+powershell -ExecutionPolicy Bypass -File reset.ps1
+
+# Linux / macOS
+bash reset.sh
+```
+
+> ⚠️ Tüm tarama verisini **siler** (`docker compose down -v` + tüm `kangalis*` volume'leri).
+> Ardından `setup.ps1`/`setup.sh` ya da `docker compose up -d --build` ile yeniden kurun.
+> `.env`'i (gizli anahtarlar) korur; sıfırdan istiyorsanız `-IncludeEnv` / `--include-env` ekleyin.
+> Elle: `docker compose down -v` → `docker volume ls | grep kangalis` boşalana kadar
+> `docker volume rm <ad>`.
+
 ### Yerel AI (opsiyonel, on-prem, sıfır egress)
 
 AI tamamen yereldir (CPU'da çalışır); yalnız öneri/taslak hazırlar, eylemi her zaman insan
