@@ -743,8 +743,11 @@ class AppSettings(Base):
     # --- Ağ / DNS (VI-6; nmap hostname çözümü) ---
     # Özel DNS sunucu(ları), virgülle (nmap --dns-servers). Boş = sistem çözücü.
     dns_servers: Mapped[str] = mapped_column(String(255), default="", server_default="")
-    # Reverse-DNS (PTR): açık = hostname çöz; kapalı = nmap -n (çözme, daha hızlı/sessiz).
-    reverse_dns_enabled: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    # Reverse-DNS (PTR): açık = hostname çöz; kapalı = nmap -n (çözme; daha hızlı/sessiz —
+    # VARSAYILAN kapalı: PTR'siz/yavaş çözücü ortamlarda taramayı bekletmez).
+    reverse_dns_enabled: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false"
+    )
     # Tarama hızı (nmap paralellik): normal | fast | insane. nmap ağ-bound olduğundan hız
     # RAM/CPU değil PARALELLİK ile artar; bu ayar --min-hostgroup/--min-parallelism/--min-rate
     # bayraklarını belirler (boştaki kaynağı çok-hostlu taramalarda kullanır). Varsayılan fast

@@ -72,7 +72,7 @@ async def test_save_network_settings(
         assert s.dns_servers == "10.0.0.1,10.0.0.2"
         assert s.reverse_dns_enabled is False
         assert s.scan_speed == "insane"
-        # Varsayılan reverse_dns açık olmalı (yeni satır).
+        # Kaydedilen değer korunur (yeni satır varsayılanı da artık KAPALI).
         fresh = await get_settings(session)
         assert fresh.reverse_dns_enabled is False  # az önce kaydedildi
 
