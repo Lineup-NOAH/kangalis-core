@@ -12,6 +12,10 @@ network, matches them against known vulnerabilities (CVEs), and enriches them wi
 **exploitability signals** (Exploit-DB, CISA KEV, EPSS) to deliver **risk prioritization**.
 It can also talk to Claude over **MCP**.
 
+<p align="center">
+  <img src="docs/architecture.svg" alt="Kangalis architecture — detect, match, prioritize; runs 100% on-prem; exploitation is a separate optional plugin" width="900">
+</p>
+
 > ⚠️ **Legal notice:** This tool must be used only within an **authorized scope** (networks you
 > own or are permitted to test). Unauthorized scanning is illegal. The software is provided
 > **"as is", without warranty**; using it means you accept the [Disclaimer](DISCLAIMER.md).
@@ -30,7 +34,7 @@ execution, credential brute-force) is kept in a separate, optional **exploitatio
 > `docker compose up --build` (`ARG INSTALL_NMAP=true`, on by default). nmap is distributed under
 > the **NPSL** (Nmap Public Source License); Kangalis does not redistribute the binary — your build
 > pulls it from the Debian repository.
-> Details: [`docs/KURULUM.md`](docs/KURULUM.md) and [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md).
+> Details: [`docs/INSTALL.md`](docs/INSTALL.md) and [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md).
 
 ## Features
 
@@ -43,7 +47,65 @@ execution, credential brute-force) is kept in a separate, optional **exploitatio
 - 🧠 **Local (on-prem) defensive AI** — finding summaries and compliance narratives
 - 📊 **Web dashboard** — HTMX + Tailwind
 
-Architecture/design: [`docs/PROJE_PLANI.md`](docs/PROJE_PLANI.md)
+Architecture/design: [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md)
+
+## How it works
+
+Most scanners hand you a wall of ten-thousand CVEs and walk away. Kangalis is built around one
+question: **what here can actually hurt me — and what do I fix first?** It runs a tight
+**detect → match → prioritize** pipeline, end to end, **on your own infrastructure** (see the
+diagram above).
+
+**Why each step matters**
+
+- **1 · Discovery (nmap).** Battle-tested fingerprinting maps every live host, open port, and
+  service version on your internal network — the ground truth everything else builds on.
+- **2 · CVE matching — offline, on your box.** nmap tells us *what's running*; Kangalis matches that
+  version against its **own local CVE/CPE database** (mirrored from NVD by a background sync).
+  **No per-scan internet call — nothing about your network ever leaves your machine.** It runs fully
+  **air-gapped**, a hard requirement for banks, OT/ICS, and other regulated environments that cloud
+  scanners structurally can't meet.
+- **3 · Risk prioritization, not a CVE dump.** Every match is enriched with real-world
+  **exploitability signals** — Exploit-DB (a public exploit exists), **CISA KEV** (actively exploited
+  in the wild), and **EPSS** (statistical exploit probability). The ~2% attackers actually use float
+  to the top; the theoretical noise sinks.
+
+**What makes Kangalis different**
+
+- 🔒 **100% on-prem · zero egress.** Scanning, data, the vulnerability database, and the AI all stay
+  on your hardware. Air-gap ready by design.
+- 🎯 **Exploit-aware prioritization.** KEV + EPSS + Exploit-DB turn *"10,000 CVEs"* into *"these 12,
+  today."*
+- ✅ **Honest confidence.** Findings are labeled **NSE-confirmed** (actively verified) vs
+  **version-inferred** (probable) — no false-positive theater.
+- 🛡️ **Safe by default.** The default mode is non-intrusive; aggressive probing is **opt-in and
+  gated**, so a scan won't knock over production.
+- 🧠 **On-prem defensive AI.** A local model (Ollama) explains findings and drafts remediation — a
+  human always pulls the trigger, and no data leaves the box.
+- 🤖 **Claude-native (MCP).** Launch scans and query results straight from Claude.
+- 📋 **Compliance built in.** CIS · KVKK · ISO 27001 · PCI-DSS controls and audit-ready reports.
+
+**Scan modes**
+
+| Mode | What it does |
+|---|---|
+| **Ping** | fast host discovery |
+| **Network** | ports · services · versions (+ version-inferred CVEs) |
+| **Safe CVE** | local CVE-DB matching, non-intrusive — **default** |
+| **Aggressive CVE** | + live NVD + active NSE confirmation — *still never exploits*; opt-in / gated |
+| **Web CVE** | web-stack CVEs (security headers · TLS · app) |
+| **Credentialed** | authenticated audits (SSH/Windows/DB/SNMP/SMB/LDAP) + compliance |
+
+(plus **SCA** for dependency manifests)
+
+### 🧩 Exploitation — a separate, premium plugin (not in this repo)
+
+The open-source core **finds and flags** exploitable CVEs but **never runs an exploit** — a clean,
+defensive tool you can deploy anywhere with zero liability. To go from *"probably exploitable"* to
+*proof*, the optional, license-gated **exploitation plugin** plugs in (Metasploit orchestration,
+sandboxed Exploit-DB/searchsploit PoC runner, credential brute-force). The core ships only the
+Exploit-DB **metadata signal** (*an exploit exists* — id ↔ CVE ↔ URL, informational); fetching and
+**running** PoCs is the plugin's job.
 
 ## Installation (quick start)
 
@@ -78,7 +140,7 @@ docker compose up -d             # starts; migrate sets up the schema automatica
 # Admin user + authorized scan scope (REQUIRED):
 docker compose exec app python -m cybersectool.scripts.create_user \
     --username <name> --password <password> --role admin
-# Define the scope from the panel (Settings → Authorized Scope) or via docs/KURULUM.md §3.3.
+# Define the scope from the panel (Settings → Authorized Scope) or via docs/INSTALL.md §3.3.
 ```
 
 > To pin a version, set `KANGALIS_IMAGE=ghcr.io/lineup-noah/kangalis-core:vX.Y.Z` in `.env`.
@@ -127,10 +189,10 @@ click "Test connection" → green.
 > model **baked in** (`-f docker-compose.ai-baked.yml`). To pull the published image, the ghcr
 > package must be **public** — otherwise you'll get `unauthorized`. Alternative: build it locally on
 > an internet-connected machine (`bash build-ai-image.sh` / `powershell -File build-ai-image.ps1`).
-> Details: [`docs/EKLENTILER.md`](docs/EKLENTILER.md).
+> Details: [`docs/PLUGINS.md`](docs/PLUGINS.md).
 
-- 📘 Detailed install / manual steps / production deployment: [`docs/KURULUM.md`](docs/KURULUM.md)
-- 🧩 Optional features (local AI, MCP, plugins): [`docs/EKLENTILER.md`](docs/EKLENTILER.md)
+- 📘 Detailed install / manual steps / production deployment: [`docs/INSTALL.md`](docs/INSTALL.md)
+- 🧩 Optional features (local AI, MCP, plugins): [`docs/PLUGINS.md`](docs/PLUGINS.md)
 
 ## Tech stack
 

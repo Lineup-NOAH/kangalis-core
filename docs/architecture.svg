@@ -1,0 +1,99 @@
+<svg viewBox="0 0 1100 750" xmlns="http://www.w3.org/2000/svg" role="img" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif">
+  <title>Kangalis architecture and scan pipeline</title>
+  <desc>An open-source core that runs 100% on-prem: scan engine, offline CVE matching against a local NVD-synced database, risk prioritization with Exploit-DB / CISA KEV / EPSS signals, and outputs. A separate optional exploitation plugin attaches below.</desc>
+
+  <rect x="0" y="0" width="1100" height="750" fill="#ffffff"/>
+
+  <!-- Title -->
+  <text x="550" y="38" text-anchor="middle" font-size="25" font-weight="700" fill="#0f172a">Kangalis — how it works</text>
+  <text x="550" y="62" text-anchor="middle" font-size="14" fill="#475569">detect &#8594; match &#8594; prioritize, 100% on your own infrastructure</text>
+
+  <!-- On-prem boundary -->
+  <rect x="40" y="84" width="1020" height="510" rx="18" fill="#f0fdf4" stroke="#10b981" stroke-width="2"/>
+  <rect x="60" y="72" width="430" height="26" rx="13" fill="#10b981"/>
+  <text x="75" y="89" font-size="12" font-weight="700" fill="#ffffff">ON-PREM &#183; ZERO EGRESS &#8212; nothing leaves your network</text>
+
+  <!-- arrowheads -->
+  <defs>
+    <marker id="ah" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path d="M0,0 L6.5,3 L0,6 Z" fill="#64748b"/></marker>
+    <marker id="ahA" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path d="M0,0 L6.5,3 L0,6 Z" fill="#d97706"/></marker>
+  </defs>
+
+  <!-- Targets -->
+  <rect x="350" y="116" width="400" height="34" rx="17" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="550" y="138" text-anchor="middle" font-size="13" fill="#0f172a">Targets &#183; authorized scope (CIDR / IP / URL)</text>
+  <line x1="550" y1="152" x2="550" y2="174" stroke="#64748b" stroke-width="1.5" marker-end="url(#ah)"/>
+
+  <!-- SCAN ENGINE band -->
+  <rect x="70" y="176" width="960" height="94" rx="12" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="88" y="198" font-size="11" font-weight="700" letter-spacing="0.8" fill="#059669">SCAN ENGINE</text>
+  <g font-size="12.5" fill="#065f46" text-anchor="middle">
+    <rect x="116" y="214" width="200" height="40" rx="8" fill="#ecfdf5" stroke="#a7f3d0"/><text x="216" y="239">Network &#183; nmap</text>
+    <rect x="328" y="214" width="120" height="40" rx="8" fill="#ecfdf5" stroke="#a7f3d0"/><text x="388" y="239">Web</text>
+    <rect x="460" y="214" width="120" height="40" rx="8" fill="#ecfdf5" stroke="#a7f3d0"/><text x="520" y="239">SCA</text>
+    <rect x="592" y="214" width="180" height="40" rx="8" fill="#ecfdf5" stroke="#a7f3d0"/><text x="682" y="239">Compliance</text>
+    <rect x="784" y="214" width="200" height="40" rx="8" fill="#ecfdf5" stroke="#a7f3d0"/><text x="884" y="239">Credentialed</text>
+  </g>
+
+  <line x1="550" y1="270" x2="550" y2="300" stroke="#64748b" stroke-width="1.5" marker-end="url(#ah)"/>
+  <rect x="372" y="277" width="356" height="18" rx="9" fill="#f0fdf4"/>
+  <text x="550" y="290" text-anchor="middle" font-size="11" fill="#475569">hosts &#183; open ports &#183; service + version &#183; findings</text>
+
+  <!-- VULN INTELLIGENCE band -->
+  <rect x="70" y="302" width="960" height="150" rx="12" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="88" y="324" font-size="11" font-weight="700" letter-spacing="0.8" fill="#059669">VULNERABILITY INTELLIGENCE</text>
+
+  <!-- row 1: matching <- local DB <- NVD -->
+  <rect x="92" y="336" width="232" height="44" rx="8" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="208" y="358" text-anchor="middle" font-size="13" font-weight="600" fill="#0f172a">CVE matching</text>
+  <text x="208" y="372" text-anchor="middle" font-size="10.5" fill="#475569">offline &#183; on your box</text>
+
+  <rect x="440" y="336" width="232" height="44" rx="8" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="556" y="358" text-anchor="middle" font-size="13" fill="#0f172a">Local CVE / CPE DB</text>
+  <text x="556" y="372" text-anchor="middle" font-size="10.5" fill="#475569">no live call</text>
+
+  <rect x="788" y="336" width="200" height="44" rx="8" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="888" y="362" text-anchor="middle" font-size="13" fill="#0f172a">NVD background sync</text>
+
+  <line x1="440" y1="358" x2="328" y2="358" stroke="#64748b" stroke-width="1.5" marker-end="url(#ah)"/>
+  <text x="384" y="352" text-anchor="middle" font-size="10" fill="#475569">match by version</text>
+  <line x1="788" y1="358" x2="676" y2="358" stroke="#64748b" stroke-width="1.5" marker-end="url(#ah)"/>
+  <text x="732" y="352" text-anchor="middle" font-size="10" fill="#475569">scheduled</text>
+
+  <!-- row 2: risk <- signals -->
+  <rect x="92" y="396" width="232" height="44" rx="8" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="208" y="418" text-anchor="middle" font-size="13" font-weight="600" fill="#0f172a">Risk prioritization</text>
+  <text x="208" y="432" text-anchor="middle" font-size="10.5" fill="#475569">rank what is exploitable</text>
+
+  <rect x="440" y="396" width="548" height="44" rx="8" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="714" y="423" text-anchor="middle" font-size="13" fill="#0f172a">Exploitability signals &#183; Exploit-DB &#183; CISA KEV &#183; EPSS</text>
+  <line x1="440" y1="418" x2="328" y2="418" stroke="#64748b" stroke-width="1.5" marker-end="url(#ah)"/>
+
+  <line x1="550" y1="452" x2="550" y2="484" stroke="#64748b" stroke-width="1.5" marker-end="url(#ah)"/>
+  <rect x="406" y="461" width="288" height="18" rx="9" fill="#f0fdf4"/>
+  <text x="550" y="474" text-anchor="middle" font-size="11" fill="#475569">ranked &#183; exploit-aware (the 2% that matters)</text>
+
+  <!-- OUTPUTS band -->
+  <rect x="70" y="486" width="960" height="80" rx="12" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="88" y="508" font-size="11" font-weight="700" letter-spacing="0.8" fill="#059669">OUTPUTS</text>
+  <g font-size="12.5" fill="#065f46" text-anchor="middle">
+    <rect x="122" y="520" width="200" height="34" rx="8" fill="#ecfdf5" stroke="#a7f3d0"/><text x="222" y="542">Ranked report</text>
+    <rect x="334" y="520" width="180" height="34" rx="8" fill="#ecfdf5" stroke="#a7f3d0"/><text x="424" y="542">Dashboard</text>
+    <rect x="526" y="520" width="262" height="34" rx="8" fill="#ecfdf5" stroke="#a7f3d0"/><text x="657" y="542">On-prem AI &#183; Ollama</text>
+    <rect x="800" y="520" width="182" height="34" rx="8" fill="#ecfdf5" stroke="#a7f3d0"/><text x="891" y="542">MCP / Claude</text>
+  </g>
+
+  <!-- handoff to plugin -->
+  <line x1="550" y1="594" x2="550" y2="636" stroke="#d97706" stroke-width="1.8" stroke-dasharray="6 4" marker-end="url(#ahA)"/>
+  <rect x="332" y="606" width="436" height="18" rx="9" fill="#ffffff"/>
+  <text x="550" y="619" text-anchor="middle" font-size="11" font-weight="600" fill="#92400e">core only FLAGS exploitable CVEs &#8212; never runs them</text>
+
+  <!-- EXPLOITATION PLUGIN -->
+  <rect x="230" y="638" width="640" height="96" rx="12" fill="#fffbeb" stroke="#f59e0b" stroke-width="2" stroke-dasharray="7 4"/>
+  <text x="250" y="662" font-size="13" font-weight="700" fill="#92400e">EXPLOITATION PLUGIN &#8212; separate &#183; optional &#183; licensed</text>
+  <g font-size="12" fill="#92400e" text-anchor="middle">
+    <rect x="250" y="678" width="150" height="40" rx="8" fill="#fef3c7" stroke="#fcd34d"/><text x="325" y="703">Metasploit</text>
+    <rect x="412" y="678" width="244" height="40" rx="8" fill="#fef3c7" stroke="#fcd34d"/><text x="534" y="703">searchsploit PoC runner</text>
+    <rect x="668" y="678" width="190" height="40" rx="8" fill="#fef3c7" stroke="#fcd34d"/><text x="763" y="703">credential brute-force</text>
+  </g>
+</svg>

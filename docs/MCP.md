@@ -1,35 +1,35 @@
-# Kangalis MCP Sunucusu
+# Kangalis MCP Server
 
-Claude'un (Desktop / Code) Kangalis'i doğrudan kullanabilmesi için MCP sunucusu.
-Araçlar, web arayüzüyle **aynı core/service katmanını** çağırır.
+An MCP server that lets Claude (Desktop / Code) use Kangalis directly.
+The tools call the **same core/service layer** as the web UI.
 
-## Araçlar
+## Tools
 
-| Araç | Açıklama |
+| Tool | Description |
 |---|---|
-| `list_assets()` | Keşfedilen host ve servisleri (envanter) listeler |
-| `list_vulnerabilities(severity?, limit?)` | Bulguları risk sırasına göre listeler (severity: critical/high/medium/low/info) |
-| `lookup_cve(cve_id)` | CVE detayı: CVSS, severity, EPSS olasılığı, KEV (aktif sömürü) |
-| `scan_status(scan_id)` | Tarama durumu (pending/running/completed/failed) |
-| `start_scan(target)` | Yetkili kapsamda ağ taraması başlatır (scope guard'dan geçer) |
-| `search_exploits(query?, category?, severity?, limit?)` | Yerel exploit/CVE deposunda arar (kategori: windows/web/database/...; severity) |
-| `exploits_for_cve(cve_id)` | Bir CVE için exploit sayısı + Metasploit modülü var mı |
-| `exploit_db_stats()` | Exploit DB sayıları (kaynak/kritiklik/kategori dağılımı) |
-| `list_ip_zones()` | Tanımlı IP zone'ları ve CIDR blokları |
+| `list_assets()` | Lists discovered hosts and services (inventory) |
+| `list_vulnerabilities(severity?, limit?)` | Lists findings by risk order (severity: critical/high/medium/low/info) |
+| `lookup_cve(cve_id)` | CVE detail: CVSS, severity, EPSS probability, KEV (known exploited) |
+| `scan_status(scan_id)` | Scan status (pending/running/completed/failed) |
+| `start_scan(target)` | Starts a network scan within the authorized scope (passes through the scope guard) |
+| `search_exploits(query?, category?, severity?, limit?)` | Searches the local Exploit-DB/CVE metadata repository (category: windows/web/database/...; severity) |
+| `exploits_for_cve(cve_id)` | Number of Exploit-DB entries for a CVE + whether a Metasploit module exists |
+| `exploit_db_stats()` | Exploit-DB counts (distribution by source/severity/category) |
+| `list_ip_zones()` | Defined IP zones and CIDR blocks |
 
-## Çalıştırma
+## Running
 
 ```bash
 # stdio transport
 cybersectool-mcp
-# veya
+# or
 python -m cybersectool.mcp.server
 ```
 
-Sunucu veritabanına `DATABASE_URL` ile bağlanır (varsayılan `localhost:5432`).
-`start_scan` ayrıca Celery worker'a iş gönderir (Redis gerekir).
+The server connects to the database via `DATABASE_URL` (default `localhost:5432`).
+`start_scan` also dispatches a job to the Celery worker (Redis required).
 
-## Claude Desktop yapılandırması
+## Claude Desktop configuration
 
 `claude_desktop_config.json`:
 
@@ -38,7 +38,7 @@ Sunucu veritabanına `DATABASE_URL` ile bağlanır (varsayılan `localhost:5432`
   "mcpServers": {
     "cybersectool": {
       "command": "uv",
-      "args": ["run", "--directory", "<repo-dizini>", "cybersectool-mcp"],
+      "args": ["run", "--directory", "<repo-dir>", "cybersectool-mcp"],
       "env": {
         "DATABASE_URL": "postgresql+asyncpg://cyber:cyber@localhost:5432/cybersectool",
         "REDIS_URL": "redis://localhost:6379/0"
@@ -48,55 +48,58 @@ Sunucu veritabanına `DATABASE_URL` ile bağlanır (varsayılan `localhost:5432`
 }
 ```
 
-> Docker stack'i ayakta olmalı (`docker compose up -d`) ki DB/Redis erişilebilsin.
+> The Docker stack must be running (`docker compose up -d`) so that the DB/Redis are reachable.
 
-## Örnek kullanım (Claude'a)
+## Example usage (to Claude)
 
-> "Şu subnet'i tara: 10.0.0.0/24, bittiğinde kritik zafiyetleri özetle."
+> "Scan this subnet: 10.0.0.0/24, and when it's done summarize the critical vulnerabilities."
 
-Claude sırayla `start_scan` → `scan_status` → `list_vulnerabilities(severity="critical")`
-araçlarını çağırır.
+Claude calls `start_scan` → `scan_status` → `list_vulnerabilities(severity="critical")`
+in sequence.
 
-## Uzaktan erişim (HTTP)
+## Remote access (HTTP)
 
-stdio yerine **HTTP transport** ile merkezi bir MCP sunucusu çalıştırılabilir; ağdaki
-herkes kendi kimliğiyle bağlanır. **İki kimlik yöntemi** desteklenir:
+Instead of stdio, you can run a central MCP server over **HTTP transport**; everyone on the
+network connects with their own identity. **Two authentication methods** are supported:
 
-1. **API token** — `Authorization: Bearer cst_...` (programatik/otomasyon için)
-2. **Kullanıcı adı + parola** — `Authorization: Basic base64(kullanıcı:parola)`
-   (HTTP Basic). Hem **yerel** kullanıcılar hem de **LDAP/AD** kullanıcıları geçerlidir
-   (LDAP kullanıcısı ilk bağlantıda otomatik oluşturulur). Çoğu MCP/HTTP istemcisi
-   "Basic auth: kullanıcı/parola" alanlarıyla bunu doğrudan destekler.
+1. **API token** — `Authorization: Bearer cst_...` (for programmatic/automated use)
+2. **Username + password** — `Authorization: Basic base64(user:password)`
+   (HTTP Basic). Both **local** users and **LDAP/AD** users are valid
+   (an LDAP user is created automatically on first connection). Most MCP/HTTP clients
+   support this directly via their "Basic auth: user/password" fields.
 
-Sunucuyu HTTP modunda çalıştır (docker-compose'daki `mcp` servisi bunu yapar):
+Run the server in HTTP mode (the `mcp` service in docker-compose does this):
 
 ```bash
 MCP_TRANSPORT=http python -m cybersectool.mcp.server   # http://0.0.0.0:8001/mcp
 ```
 
-Geçersiz/eksik kimlik → 401. API token üretimi (Bearer için):
+Invalid/missing credentials → 401. Generating an API token (for Bearer):
 
 ```bash
-docker compose exec app python -m cybersectool.scripts.create_token --username <kullanıcı-adı> --name claude-uzak
+docker compose exec app python -m cybersectool.scripts.create_token --username <username> --name claude-remote
 ```
 
-İstemci (streamable-http destekleyen) bağlantısı:
+Client connection (one that supports streamable-http):
 
 ```
 URL:    http://<sunucu-ip>:8001/mcp
-Header: Authorization: Bearer cst_...           # token ile
-   ya da Authorization: Basic <base64(user:pass)>  # kullanıcı/parola (yerel veya LDAP)
+Header: Authorization: Bearer cst_...           # with a token
+   or   Authorization: Basic <base64(user:pass)>  # username/password (local or LDAP)
 ```
 
-> Aynı LAN'daki kullanıcılar tek merkezi MCP'ye bağlanır; her erişim kullanıcıya
-> (dolayısıyla denetim günlüğüne ve **role** — bkz. aşağıdaki RBAC) bağlanır.
+> Users on the same LAN connect to a single central MCP; every access is tied to the user
+> (and therefore to the audit log and to the **role** — see RBAC below).
 
-## Güvenlik
+## Security
 
-- `start_scan` **scope guard**'dan geçer; yetkili kapsam dışı hedef reddedilir.
-- **stdio**: yerel/güvenilir süreç (Claude Desktop başlatır).
-- **HTTP**: kimlik zorunlu (`TokenAuthASGIMiddleware`) — Bearer token ya da Basic
-  (kullanıcı/parola, yerel+LDAP); eksik/geçersiz reddedilir. Basic auth parolayı
-  yalnızca base64 ile taşır → **üretimde TLS (reverse proxy / ldaps) önerilir**.
-- **RBAC**: araçlar role göre yetkilendirilir (viewer < analyst < admin). Salt-okunur
-  araçlar viewer'a açık; `start_scan` analyst+ ister. Yetkisiz çağrı → 403 + audit.
+- `start_scan` passes through the **scope guard**; targets outside the authorized scope are rejected.
+- MCP scans run in **safe mode** only: `start_scan` performs non-intrusive discovery/assessment and never
+  runs an exploit. Exploitation (Metasploit orchestration, PoC runners, credential brute-force) is not part
+  of the open-source core; it ships in a separate, optional, license-gated exploitation plugin.
+- **stdio**: local/trusted process (launched by Claude Desktop).
+- **HTTP**: authentication is mandatory (`TokenAuthASGIMiddleware`) — a Bearer token or Basic
+  (user/password, local + LDAP); missing/invalid is rejected. Basic auth only base64-encodes the
+  password in transit → **TLS is recommended in production (reverse proxy / ldaps)**.
+- **RBAC**: tools are authorized by role (viewer < analyst < admin). Read-only
+  tools are open to viewer; `start_scan` requires analyst+. Unauthorized call → 403 + audit.

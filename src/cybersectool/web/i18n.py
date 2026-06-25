@@ -82,9 +82,9 @@ DICT: dict[str, dict[str, str]] = {
     },
     "help_docs_note": {
         "tr": "Daha ayrıntılı kurulum ve kullanım için depo içindeki docs/ klasörüne bakın "
-        "(KURULUM.md, EKLENTILER.md, KILAVUZ.md).",
+        "(INSTALL.md, PLUGINS.md, GUIDE.md).",
         "en": "For more detailed setup and usage, see the docs/ folder in the repository "
-        "(KURULUM.md, EKLENTILER.md, KILAVUZ.md).",
+        "(INSTALL.md, PLUGINS.md, GUIDE.md).",
     },
     # AI Q&A (#B) — Yardım sayfasındaki "AI'ya sor" + Eklentiler kurulum adımları
     "ai_qa_title": {"tr": "AI'ya sor", "en": "Ask the AI"},
