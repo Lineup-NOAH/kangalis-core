@@ -10,6 +10,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+import cybersectool
 import cybersectool.core.update_check as uc
 import cybersectool.core.versions as ver
 from cybersectool.core.app_settings import get_settings
@@ -52,7 +53,7 @@ async def test_update_page_admin_renders(
     assert resp.status_code == 200
     body = resp.text
     assert "Güncelleme" in body  # başlık + nav
-    assert "v1.0.0" in body  # yüklü sürüm
+    assert f"v{cybersectool.__version__}" in body  # yüklü sürüm
     assert "Sürüm Bilgisi" in body  # versiyon kartı
     assert "docker compose pull" in body  # uygulama komutu (host'ta)
     assert "7.94" in body  # nmap sürüm satırı

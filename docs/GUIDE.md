@@ -279,7 +279,7 @@ docker compose down            # stop
 - **Scope is mandatory:** No target you haven't defined will be scanned (default-deny, a legal safeguard).
 - **Windows + internal network:** Docker Desktop is limited at scanning the real office LAN; for production, prefer a Linux server.
 - **Data persists:** `docker compose down` preserves data (the pgdata volume). Add `-v` to delete it.
-- **Token = authentication on MCP over HTTP**; per-user, in-tool RBAC does not exist yet (anyone with a valid token can use every tool).
+- **MCP over HTTP requires a token (or Basic auth)**; tools are RBAC-gated by the token owner's role (viewer/analyst/admin) — e.g. starting a scan requires analyst+, and an unauthorized call returns 403.
 - **Aggressive scanning is dangerous:** it can disrupt the target service / leave traces. Off by default; **back up the target** before enabling it. Use with care on production/fragile systems.
 
 ---

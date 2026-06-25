@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import re
 
 import cybersectool
 
@@ -10,7 +11,8 @@ SUBPACKAGES = ("core", "scanners", "intel", "api", "web", "tasks", "mcp")
 
 
 def test_version() -> None:
-    assert cybersectool.__version__ == "0.1.0"
+    # Semver string; the exact value bumps each release, so assert the shape, not a literal.
+    assert re.fullmatch(r"\d+\.\d+\.\d+", cybersectool.__version__)
 
 
 def test_subpackages_importable() -> None:

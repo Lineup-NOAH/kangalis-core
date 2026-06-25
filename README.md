@@ -130,6 +130,10 @@ powershell -ExecutionPolicy Bypass -File setup.ps1
 
 Pull the prebuilt images straight from the registry (ghcr.io) and run — no local build required:
 
+> **Note:** the prebuilt image must be published and public for this to work. If `docker compose pull`
+> reports `unauthorized` or `not found`, the image isn't available yet — use **Option 1** (build from
+> source), which always works.
+
 ```bash
 git clone https://github.com/Lineup-NOAH/kangalis-core.git && cd kangalis-core
 cp .env.example .env              # fill in the secret keys (or run the Option 1 wizard)

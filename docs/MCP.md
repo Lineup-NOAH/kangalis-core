@@ -83,7 +83,7 @@ docker compose exec app python -m cybersectool.scripts.create_token --username <
 Client connection (one that supports streamable-http):
 
 ```
-URL:    http://<sunucu-ip>:8001/mcp
+URL:    http://<server-ip>:8001/mcp
 Header: Authorization: Bearer cst_...           # with a token
    or   Authorization: Basic <base64(user:pass)>  # username/password (local or LDAP)
 ```

@@ -63,7 +63,7 @@ docker compose exec -T app python -c "
 import asyncio
 from cybersectool.core.ai.service import AIConfig, generate
 c = AIConfig(True,'http://ollama:11434/v1','qwen3:8b',180.0)
-asyncio.run(generate(c,'Apache CVE-2021-41773 nedir?',system='Sen analistsin.'))" &
+asyncio.run(generate(c,'What is Apache CVE-2021-41773?',system='You are an analyst.'))" &
 
 # While the generation is running, resolve the AI container's ESTABLISHED connections:
 docker exec kangalis-ai cat /proc/net/tcp /proc/net/tcp6 | awk '$4=="01"{print $3}'
