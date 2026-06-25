@@ -1,3 +1,84 @@
+> **English** · [Türkçe](#turkce)
+
+# Contributing Guide
+
+Thanks for your interest in contributing to Kangalis. This document outlines the
+contribution process and quality expectations. Please review it before opening a PR.
+
+> The [Code of Conduct](CODE_OF_CONDUCT.md) applies to all contributions.
+
+## Security vulnerabilities
+
+**Please do not report security vulnerabilities as public issues or PRs.** Instead,
+follow the responsible-disclosure process in [SECURITY.md](SECURITY.md) (private
+report: `security@lineup-noah.com`). Details are kept confidential until fixed.
+
+## Contribution workflow
+
+1. **Fork** the repository.
+2. Create a descriptive branch on your fork (e.g. `feature/web-tls-check`).
+3. Make your change and pass the **quality gate** below locally.
+4. Open a **Pull Request** against the **`main`** branch of `Lineup-NOAH/kangalis-core`.
+5. CI must be **green** on your PR; otherwise it cannot be merged.
+
+## Development setup
+
+The only requirement is [uv](https://docs.astral.sh/uv/) (uv downloads Python itself):
+
+```bash
+# Install dependencies (including Python 3.12)
+uv sync
+
+# (Optional) install the pre-commit hooks
+uv run pre-commit install
+```
+
+> **Note:** the scan engine invokes the `nmap` binary; it must be installed on the
+> system (`apt install nmap` / `brew install nmap` / `choco install nmap`).
+
+## Quality gate
+
+Before opening a PR, make sure all of the following **pass locally**. They also run
+in CI:
+
+```bash
+uv run ruff format        # code formatting
+uv run ruff check .       # lint
+uv run mypy src           # type checks (strict)
+uv run pytest             # tests
+```
+
+- If you add new behavior, add **tests**.
+- If you make a user-visible change, update the relevant **documentation**.
+
+## Commit messages
+
+Use [Conventional Commits](https://www.conventionalcommits.org/). Examples:
+
+```
+feat(scanners): add TLS version check
+fix(api): fix 500 error on empty scope
+docs: update the contributing guide
+```
+
+Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `ci`, `perf`.
+
+## Pull Request expectations
+
+- Fill in the PR template; explain what, why, and how it was tested.
+- Keep a single PR as **focused** as possible.
+- CI green; `ruff` + `mypy` + `pytest` must pass.
+- Be open to review feedback; keep the discussion constructive.
+
+For questions, open an issue or start a discussion. Thanks in advance for your
+contribution.
+
+---
+
+<a id="turkce"></a>
+
+> [English](#) · **Türkçe**
+
 # Katkı Rehberi
 
 Kangalis'e katkıda bulunmak istediğiniz için teşekkürler. Bu belge, katkı sürecini

@@ -1,3 +1,144 @@
+> **English** · [Türkçe](#turkce)
+
+# Third-Party Notices
+
+Kangalis (MIT-licensed open-source core) uses the following third-party runtime
+dependencies. Each dependency is distributed under its own license; the relevant
+license texts and copyrights are included in the packages' own distributions. This
+list is for information only and covers runtime dependencies; development/test tooling
+is not included. (Exception: the optional **prebuilt AI image** redistributes the
+Ollama binary and the Qwen3 weights, so their license texts are **additionally
+embedded** in the image — see the "Prebuilt AI image" section below.)
+
+## Web and Server
+
+- **fastapi** — MIT — web application framework (routing/schema/dependency injection).
+- **starlette** — BSD-3-Clause — the ASGI framework underneath FastAPI (request/response, middleware).
+- **uvicorn** — BSD-3-Clause — ASGI server (runs the application).
+- **jinja2** — BSD-3-Clause — HTML template engine (UI pages).
+- **itsdangerous** — BSD-3-Clause — signed session/cookie tokens.
+- **python-multipart** — Apache-2.0 — multipart form (file/upload) parsing.
+- **httpx** — BSD-3-Clause — async HTTP client (web scanning + AI engine calls).
+
+## Database and Migration
+
+- **sqlalchemy** — MIT — ORM and async database access layer.
+- **alembic** — MIT — database schema migrations.
+- **asyncpg** — Apache-2.0 — async PostgreSQL driver.
+- **aiomysql** — MIT — async MySQL/MariaDB driver (database auditing).
+- **oracledb** — Apache-2.0 / UPL-1.0 — Oracle database driver (database auditing).
+- **python-tds** — MIT — Microsoft SQL Server driver (database auditing).
+
+## Task Queue and Cache
+
+- **celery** — BSD-3-Clause — distributed background task queue (scan workers).
+- **redis** (redis-py) — MIT — Redis client (broker/result backend).
+
+## Network, Identity, and Protocol Auditing
+
+- **python-libnmap** — Apache-2.0 — parses/wraps nmap XML output (the external **nmap**
+  binary is under **GPL-2.0** and is NOT DISTRIBUTED with the application; the customer
+  installs it in their own environment).
+- **asyncssh** — EPL-2.0 — async SSH client (SSH access/auditing; the EPL-2.0 arm is chosen).
+- **impacket** — Apache-2.0 (modified, SecureAuth) — SMB/MSRPC/Kerberos protocol tools.
+- **ldap3** — LGPL-3.0 — LDAP/Active Directory client (directory sync + auditing).
+- **pysnmp** — BSD-2-Clause — SNMP client (network device auditing).
+- **pywinrm** — MIT — Windows Remote Management (WinRM) client.
+
+## Cryptography and Authentication
+
+- **cryptography** — Apache-2.0 / BSD-3-Clause — cryptographic primitives (protection of secret data).
+- **argon2-cffi** — MIT — Argon2 password hashing (user authentication).
+- **pyotp** — MIT — TOTP one-time passwords (multi-factor authentication).
+- **qrcode** — BSD-3-Clause — MFA enrollment QR code generation.
+
+## Reporting
+
+- **weasyprint** — BSD-3-Clause — PDF report generation from HTML (the transitive
+  **pyphen** dependency comes with an **LGPL-2.1+ / MPL-2.0** dual-license arm).
+
+## Configuration and Utilities
+
+- **pydantic-settings** — MIT — typed configuration loading from environment variables.
+- **tzdata** — Apache-2.0 / public domain (IANA) — time zone database.
+- **mcp** — MIT — Model Context Protocol server/client (integration surface).
+
+## Scanning / Vulnerability Data Sources (synced at runtime — NOT DISTRIBUTED)
+
+Kangalis pulls the following **public** data sources **at runtime** (via the operator's
+"Update" command) **into the user's own installation**. This repository does **not**
+package/redistribute this data — it contains only the sync *code*; the data is
+downloaded from the upstream source in each user's own deployment (**use ≠
+distribution**). Only **metadata/facts** (CVE-ID, title, references, version) are used;
+exploit/PoC **code** is not fetched or executed.
+
+- **NVD** (NIST National Vulnerability Database) — **public domain** (US government) — CVE/CPE matching.
+- **CISA KEV** (Known Exploited Vulnerabilities) — **public domain** — known-exploited flag.
+- **EPSS** (FIRST.org) — exploit-probability score (FIRST terms of use; free to use).
+- **Exploit-DB** (OffSec) — content is **GPL-2.0** — only the **index metadata**
+  (`files_exploits.csv`: EDB-ID, CVE, title) is fetched; exploit code is not
+  fetched/distributed → use of data/facts does not affect the MIT core's license (not a
+  derivative work).
+- **Metasploit Framework** (Rapid7) — **BSD-3-Clause** — only module **metadata**
+  (`db/modules_metadata_base.json`: module name, CVE references, platform, rank) is
+  fetched; module code is not fetched. *"Metasploit" is a registered trademark of
+  Rapid7; it is used here only to **identify** the data source (nominative) — it does
+  not imply endorsement or affiliation.*
+
+> Dual-use note: this public exploit metadata is used only for **defensive
+> detection/prioritization** (the Nessus/OpenVAS/Nuclei pattern). Actual exploit
+> execution is not present in this core.
+
+## Optional — Local AI (disabled by default)
+
+- **Ollama** — MIT — local LLM inference engine. This open-source core repository does
+  NOT distribute the Ollama binary; the default `ollama` service pulls the official
+  `ollama/ollama` image. (See also the prebuilt image below.)
+- **Qwen3** (model weights) — Apache-2.0 — optional local AI model. In the default flow
+  the weights are pulled **once** from the Ollama model library (`ollama pull qwen3:8b`,
+  onto the operator's machine); this core repository does not contain/distribute the
+  weights.
+
+### Prebuilt AI image (`kangalis-ai` — optional, SEPARATE artifact)
+
+For air-gap/easy-install, an **optional** prebuilt image can be provided
+(`Dockerfile.ai`; published at `ghcr.io/lineup-noah/kangalis-ai`). This image is a
+distribution artifact **separate** from the MIT-licensed core application, and carries
+the following **embedded** in it:
+
+- **Ollama** — **MIT** — permits redistribution; MIT requires the license text +
+  copyright notice to be preserved "in all copies." The MIT text is embedded in the
+  image → `/licenses/ollama-LICENSE.txt` (copyright: `Copyright (c) Ollama`).
+- **Qwen3-8B** model weights (from the Ollama library, `qwen3:8b`) — **Apache-2.0** —
+  permits redistribution and modification; Apache-2.0 §4(a) requires the license text
+  to be preserved **unconditionally**. The Apache-2.0 text (from the upstream model repo
+  `Qwen/Qwen3-8B`) is embedded in the image → `/licenses/Qwen3-8B-LICENSE.txt`
+  (copyright: `Copyright 2024 Alibaba Cloud`). As there is no **NOTICE** file upstream,
+  Apache-2.0 §4(d) is not triggered.
+
+So this prebuilt image **redistributes** these two components; the license of each (MIT,
+Apache-2.0) explicitly permits this, and the required license texts are **embedded** in
+the image under `/licenses/` (vendored in the repo under the `licenses/` folder —
+air-gap/reproducible; see [`licenses/README.md`](licenses/README.md)). The image is
+distributed under the licenses of its own components; it does not change the license of
+the MIT-licensed Kangalis core.
+
+> **Note (base layers + model source):** since this image is derived from the official
+> `ollama/ollama` image, it also **inherits** the base operating-system layers (Ubuntu
+> 24.04 + system packages; NVIDIA CUDA libraries in GPU variants). These layers are
+> **not** re-vendored by Kangalis under `licenses/`; each is carried in its respective
+> image layer under its own upstream license. `licenses/` covers only the two
+> components Kangalis adds/pins (Ollama, Qwen3-8B). The embedded model comes from the
+> Ollama library via `ollama pull qwen3:8b` (Apache-2.0 today); the tag is not immutable,
+> so for each release the embedded version's license must be verified with
+> `ollama show qwen3:8b --license`.
+
+---
+
+<a id="turkce"></a>
+
+> [English](#) · **Türkçe**
+
 # Üçüncü Taraf Bildirimleri
 
 Kangalis (MIT lisanslı, açık-kaynak çekirdek), aşağıdaki üçüncü taraf çalışma-zamanı

@@ -1,3 +1,97 @@
+> **English** · [Türkçe](#turkce)
+
+# Security Policy
+
+Kangalis is an internal-network vulnerability scanning platform developed by
+Lineup-NOAH. It performs active scanning, authentication auditing, and network
+discovery; it is therefore subject to both **responsible disclosure** and
+**authorized use** rules.
+
+## Acceptable Use
+
+This tool must be used ONLY on systems you are explicitly authorized to scan:
+
+- Scanning must be directed only at assets (IPs, network blocks, domain names,
+  services) you **own** or have **written permission** for.
+- Unauthorized scanning, credential testing, or vulnerability verification of
+  third-party systems is **illegal** in many countries; responsibility lies
+  entirely with the operator.
+- Aggressive modes (credential testing/brute-force and similar high-impact
+  operations) are **disabled by default** and run only with explicit operator
+  confirmation + authorized-scope verification.
+- Findings may contain confidential information; share reports only with
+  authorized stakeholders.
+
+The application also **enforces this technically**: on first login, every operator
+must **accept** — in an in-app screen — that they only scan authorized systems and
+that they accept the Disclaimer, before any scan can start; acceptance is stored
+per-user as a **time-stamped audit record** (`disclaimer_accepted`). This applies to
+the browser session; API token (Bearer) clients are authorized separately.
+
+Lineup-NOAH and contributors cannot be held liable for any damage resulting from a
+violation of these rules. Full **disclaimer and terms of use**:
+[DISCLAIMER.md](DISCLAIMER.md).
+
+## Reporting a Vulnerability (Responsible Disclosure)
+
+If you find a security vulnerability **in Kangalis itself**, please follow
+responsible disclosure:
+
+- **Do not publish** the issue as a **public** GitHub issue/PR.
+- Report it privately to the Lineup-NOAH security team:
+  **security@lineup-noah.com** (you may request PGP).
+- Include in your report: affected version/commit, reproduction steps, impact
+  assessment, and a proof-of-concept (PoC) if available.
+- We ask that you keep the details confidential until we have verified and fixed
+  the issue.
+
+### Response Process
+
+- Acknowledgement of receipt within **3 business days**.
+- Initial assessment and severity within **10 business days**.
+- After a fix is released, your contribution is credited in the release notes,
+  with your permission.
+
+## Application Security / Hardening
+
+The main measures applied for the panel's own security (including behaviors
+operators should be aware of):
+
+- **Identity & session:** passwords are stored with argon2; the session cookie is
+  `HttpOnly` + `SameSite=lax` (+ `Secure` in production); optional MFA (TOTP/email)
+  and login lockout.
+- **CSRF:** state-changing requests (`POST/PUT/PATCH/DELETE`) are checked for
+  **same-origin** `Origin`/`Referer`; a mismatch returns `403`. `Bearer` API-token
+  requests are exempt (no cookie = no CSRF). The primary layer is the `SameSite=lax`
+  cookie; this check is defense-in-depth. **Note:** if you place the panel behind a
+  reverse proxy that rewrites the `Host`/`Origin` header, you may see unexpected
+  `403`s — configure the proxy to preserve the real `Host`.
+- **Security headers:** `Content-Security-Policy` (framing/injection hardening),
+  `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, and
+  HSTS in production.
+- **SSRF/scope:** web scanning is pinned to the validated IP and **does not follow
+  redirects**; nmap XML is parsed with `defusedxml` (XXE-safe).
+- **Egress:** the panel is fully local. The only admin-configurable endpoints that
+  reach the internet are the **update check** (`update_check_url`, default GitHub
+  Releases) and the **local AI engine** (`ai_endpoint_url`, e.g.
+  `http://ollama:11434/v1`). Other data sources (NVD/OSV/CISA KEV/EPSS/Exploit-DB)
+  are fixed, well-known public addresses. These two admin-configurable endpoints are
+  filtered against reaching link-local/cloud-metadata (e.g. `169.254.169.254`)
+  addresses — in any numeric encoding; an in-house mirror/engine (private
+  network/hostname) keeps working. In an air-gapped install, the update check can be
+  disabled with `update_check_enabled`.
+
+## Supported Versions
+
+Security fixes are applied to the `main` branch and the latest released version. For
+older versions, please upgrade to the current release.
+
+---
+
+<a id="turkce"></a>
+
+> [English](#) · **Türkçe**
+
 # Güvenlik Politikası
 
 Kangalis, Lineup-NOAH tarafından geliştirilen bir iç-ağ zafiyet tarama

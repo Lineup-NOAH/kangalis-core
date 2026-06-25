@@ -1,3 +1,113 @@
+> **English** · [Türkçe](#turkce)
+
+# Disclaimer and Terms of Use
+
+> **IMPORTANT — NOT LEGAL ADVICE.** This document is a **draft** for general
+> information only; it is not binding legal opinion or legal counsel. For commercial
+> distribution, and for a specific country/jurisdiction and enforceability, **always
+> consult a lawyer**. You use this document at your own risk and should have it
+> finalized by a qualified legal professional if needed.
+
+**Software:** Kangalis (this open-source core repository). **Provider:** Lineup-NOAH
+and contributors ("Provider"). **User:** the person/organization that installs, runs,
+or uses the software.
+
+By **downloading, installing, or using** the software, you are deemed to accept the
+terms below. If you do not accept them, **do not use** the software.
+
+---
+
+## 1. No Warranty ("AS IS")
+
+The software is provided **"AS IS" and "AS AVAILABLE"**, **WITHOUT ANY WARRANTY** of
+any kind, express or implied. This includes, but is not limited to, warranties of
+merchantability, fitness for a particular purpose, non-infringement,
+uninterrupted/error-free operation, accuracy, or production of complete/up-to-date
+results. Scan results, risk scores, CVE/exploit matches, and compliance assessments
+are **for informational purposes**; they are not guaranteed to be correct, complete,
+or current, and **do not replace a professional security audit**.
+
+## 2. Limitation of Liability
+
+To the maximum extent permitted by applicable law, the Provider cannot be held liable
+for any **direct, indirect, incidental, special, punitive, or consequential damages**
+arising from the use of, or inability to use, the software. Such damages include, but
+are not limited to:
+
+- **Downtime, slowdown, freezing, crashes, denial of service, configuration
+  corruption**, or **data loss/corruption** that may occur on scanned/audited systems;
+- Loss of business, revenue, reputation, or profit;
+- Decisions made in reliance on false-positive/false-negative findings or incorrect
+  risk scores;
+- Damage to third-party systems, services, or data.
+
+This limitation applies even if the Provider has been advised of the possibility of
+such damage.
+
+## 3. Authorized Use — the User's Responsibility
+
+The software performs **active** operations such as network/system discovery,
+port/service scanning, vulnerability matching, and authentication auditing. The User:
+
+- Is **solely responsible** for scanning only systems, networks, IPs, domain names,
+  and services they **own** or have **written and explicit permission** for;
+- Acknowledges that unauthorized scanning, access, or auditing is **illegal in many
+  countries**, and that **all related legal/criminal/administrative responsibility
+  belongs to them**;
+- Is obligated to comply with all applicable laws, contracts, and organizational
+  policies.
+
+The Provider is not responsible for any consequences arising from the User's
+**unauthorized or illegal** use of the software.
+
+## 4. Scanning-Related Risks
+
+Active scanning may cause **unpredictable behavior** on target systems (increased
+load, temporary outage, service restart, alarm triggering, etc.). The User assumes
+this risk **knowingly and voluntarily**. Responsibility for use on **production
+systems** — an appropriate maintenance window, permission, and redundancy — lies
+entirely with the User. Aggressive/intrusive modes are **disabled by default** and run
+only with explicit operator confirmation.
+
+## 5. Third-Party Data and Licenses
+
+The software uses third-party **public** data sources (NVD, CISA KEV, EPSS, Exploit-DB
+metadata, etc.) and open-source components. Their attributions and licenses are in
+[`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md). The accuracy, continuity, and
+compliance with the terms of use of these sources are the User's responsibility; the
+Provider is not responsible for the content of these sources.
+
+## 6. Indemnification
+
+The User agrees to **indemnify and hold harmless** the Provider and contributors
+against any and all claims, demands, damages, costs, and attorney's fees arising from
+their use of the software, their breach of these terms, or unauthorized/illegal use.
+
+## 7. Relationship to the License
+
+This document **complements** the warranty disclaimer and liability provisions in the
+repository's [`LICENSE`](LICENSE) (MIT); in case of conflict, the provision that
+provides **broader protection** — to the extent permitted by applicable law — is
+deemed to prevail. The rights and freedoms granted by the MIT license are reserved.
+
+## 8. Acceptance
+
+Downloading, installing, or running the software means you have read, understood, and
+accepted this Disclaimer.
+
+---
+
+> **Again:** this text is **not legal advice** and was not prepared by a lawyer.
+> Whether liability is actually limited, and which clauses are valid/enforceable,
+> varies by country and situation. To truly protect yourself, **consult a qualified
+> legal professional.** © 2026 Lineup-NOAH.
+
+---
+
+<a id="turkce"></a>
+
+> [English](#) · **Türkçe**
+
 # Sorumluluk Reddi ve Kullanım Koşulları (Disclaimer)
 
 > **ÖNEMLİ — HUKUKİ TAVSİYE DEĞİLDİR.** Bu belge bir **taslaktır** ve genel bilgilendirme
