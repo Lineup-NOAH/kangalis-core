@@ -34,7 +34,11 @@ services:
     # Dağıtım B (çek-çalıştır): `docker compose pull` bu yayınlanmış imajı çeker (DERLEME yok).
     # Yayınlama TEK yol: GitHub Actions → 'Core imajı' (core-image.yml) workflow'u. 5 servis AYNI imaj.
     image: ${KANGALIS_IMAGE:-ghcr.io/lineup-noah/kangalis-core:latest}
-    command: alembic upgrade head
+    # Migrasyon + (DB BOŞSA) gömülü CVE tohumunu otomatik yükle → müşteri NVD'den indirmesin,
+    # kurulumda saniyeler içinde ~yüz binlerce CVE hazır gelir. Import idempotent (dolu DB'de /
+    # tohum yoksa atlar) ve NON-FATAL (hata olsa bile app başlar; günlük senkron yine tazeler).
+    command:
+      ["sh", "-c", "alembic upgrade head && { python -m cybersectool.scripts.import_cve_seed || echo 'CVE tohum import atlandi'; }"]
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-cyber}:${POSTGRES_PASSWORD:-cyber}@db:5432/${POSTGRES_DB:-cybersectool}
     depends_on:
