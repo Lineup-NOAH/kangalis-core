@@ -214,6 +214,7 @@ async def build_cve_seed(
                         pending += 1
                         if pending >= batch:
                             await session.commit()  # toplu commit (per-CVE değil)
+                            session.expunge_all()  # kimlik haritası boşalt (bellek sınırı)
                             pending = 0
                     await session.commit()
             if on_window is not None:

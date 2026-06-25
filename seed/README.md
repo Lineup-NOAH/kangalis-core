@@ -21,5 +21,5 @@ indirme beklemesin diye uygulama imajına gömülür ve ilk açılışta otomati
 ## Elle yükleme / yeniden yükleme
 ```
 python -m cybersectool.scripts.import_cve_seed seed/            # boşsa yükle
-python -m cybersectool.scripts.import_cve_seed seed/ --force    # mevcudu boşaltıp yeniden yükle
+python -m cybersectool.scripts.import_cve_seed seed/ --force    # mevcudu boşaltıp yeniden yükle (uygulama DURMUŞKEN; TRUNCATE eder)
 ```

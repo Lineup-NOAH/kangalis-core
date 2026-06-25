@@ -1,4 +1,4 @@
-"""Maintainer: ``cves`` + ``cpe_matches`` tablolarını sıkıştırılmış tohum (seed) dosyalarına aktarır.
+"""Maintainer: ``cves`` + ``cpe_matches`` tablolarını sıkıştırılmış tohum dosyalarına aktarır.
 
 Müşteri NVD'den indirmesin diye: biz ``build_cve_seed`` ile tüm CVE/CPE'yi çekeriz, sonra bunu
 çalıştırıp tohumu üretiriz; müşteri kurarken ``import_cve_seed`` ile saniyeler içinde yükler.
@@ -20,9 +20,12 @@ from pathlib import Path
 import asyncpg
 
 from cybersectool.config import settings
+from cybersectool.core.models import CVE, CpeMatch
 
-# Offline eşleştirme için gereken iki tablo (tüm sütunlar; cpe_matches.id serial dahil).
-_TABLES = ("cves", "cpe_matches")
+# Offline eşleştirme için gereken iki tablo + ORM modeli. Sütun listesini MODELDEN türetiriz →
+# COPY her zaman AÇIK sütun listesiyle çalışır: import ad-bazlı eşler, şema sütun-sırası ileride
+# değişse bile ya doğru yükler ya da GÜRÜLTÜLÜ hata verir (sessiz çapraz-sütun bozulması olmaz).
+_TABLES = (("cves", CVE), ("cpe_matches", CpeMatch))
 
 
 def _dsn() -> str:
@@ -34,11 +37,14 @@ async def export_seed(outdir: Path) -> str:
     outdir.mkdir(parents=True, exist_ok=True)
     conn = await asyncpg.connect(_dsn())
     try:
-        for table in _TABLES:
+        for table, model in _TABLES:
+            cols = list(model.__table__.columns.keys())
             count = await conn.fetchval(f"SELECT count(*) FROM {table}")  # noqa: S608 — sabit tablo adı
             path = outdir / f"{table}.csv.gz"
             with gzip.open(path, "wb") as fh:
-                await conn.copy_from_table(table, output=fh, format="csv", header=True)
+                await conn.copy_from_table(
+                    table, columns=cols, output=fh, format="csv", header=True
+                )
             size_mb = path.stat().st_size / 1048576
             print(f"  {table}: {count} satir -> {path} ({size_mb:.1f} MB)", flush=True)
     finally:

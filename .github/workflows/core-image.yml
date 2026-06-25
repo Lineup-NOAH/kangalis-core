@@ -22,6 +22,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # CVE tohumunu (önceden indirilmiş NVD veritabanı) 'cve-seed' release'inden çekip imaja göm
+      # → müşteri pull'ladığında kurulumda saniyede yüklenir (NVD'den indirme yok). .gz'ler git'te
+      # değil (gitignore), bu yüzden CI burada materyalize eder. Release YOKSA imaj tohumsuz derlenir
+      # (sorun değil: günlük senkron + UI "Geçmişi yükle" tazeler).
+      - name: CVE tohumunu çek (opsiyonel; imaja gömülür)
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p seed
+          if gh release download cve-seed --repo "$GITHUB_REPOSITORY" --pattern '*.csv.gz' --dir seed --clobber; then
+            echo "CVE tohumu cekildi -> imaja gomulecek"; ls -la seed/
+          else
+            echo "cve-seed release'i yok -> imaj TOHUMSUZ derlenecek (gunluk senkron tazeler)"
+          fi
+
       # ghcr imaj referansları küçük-harf olmalı; owner'ı (ör. Lineup-NOAH) küçült.
       - name: Sahip adını küçük harfe çevir
         id: owner
