@@ -2271,6 +2271,21 @@ DICT: dict[str, dict[str, str]] = {
         "en": "Runs in the background; counts grow over time (refresh the page). Without an API "
         "key it can take tens of minutes and a deep (5-year) pull may hit rate limits.",
     },
+    # Geçmiş yükleme (backfill) canlı durum + iptal (BACKFILL-PROGRESS)
+    "bf_running": {"tr": "Geçmiş yükleniyor", "en": "Backfilling history"},
+    "bf_queued": {"tr": "Başlatılıyor…", "en": "Starting…"},
+    "bf_done": {"tr": "Tamamlandı", "en": "Completed"},
+    "bf_cancelled": {"tr": "İptal edildi", "en": "Cancelled"},
+    "bf_cancelling": {
+        "tr": "İptal ediliyor (mevcut pencere bitince durur)…",
+        "en": "Cancelling (stops after current window)…",
+    },
+    "bf_error": {"tr": "Hata", "en": "Error"},
+    "bf_windows": {"tr": "Pencere", "en": "Windows"},
+    "bf_cves_added": {"tr": "Eklenen CVE", "en": "CVEs added"},
+    "bf_cpe": {"tr": "CPE eşleşme", "en": "CPE matches"},
+    "bf_current": {"tr": "Aralık", "en": "Range"},
+    "bf_cancel_btn": {"tr": "İptal et", "en": "Cancel"},
     # Yerel AI asistanı (OpenAI-uyumlu motor, on-prem; #182)
     "set_ai_section": {"tr": "Yerel AI asistanı", "en": "Local AI assistant"},
     "set_ai_sub": {

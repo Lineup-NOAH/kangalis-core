@@ -8,6 +8,7 @@ NVD'ye gidilmeden bu yerel indeksten eşleştirme yapılabilir.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 from datetime import UTC, datetime
 
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
@@ -81,8 +82,86 @@ def cpe_sync_task() -> str:
 def nvd_backfill_task(days: int) -> str:
     """Tek seferlik GEÇMİŞ CVE/CPE yükleme (admin tetikler).
 
-    Verilen ``days`` penceresi 120-günlük parçalara bölünüp NVD'den çekilir; CVE'ler ve
-    CPE eşleşmeleri yerel indekse upsert edilir. Günlük ``cpe_sync`` penceresinden
+    Verilen ``days`` penceresi 120-günlük parçalara bölünür ve **pencere-pencere** çekilir; her
+    pencere bitince CVE/CPE yerel indekse upsert edilir, ilerleme Redis'e yazılır (Ayarlar sayfası
+    canlı gösterir) ve **iptal bayrağı** yoklanır. Günlük ``cpe_sync`` penceresinden
     (``nvd_sync_days``) BAĞIMSIZDIR — onu değiştirmez; yalnız bir kez geniş çekim yapar.
     """
-    return asyncio.run(_run(days=days, refresh_modified=False))
+    return asyncio.run(_run_backfill(days))
+
+
+async def _run_backfill(days: int) -> str:
+    """Geçmiş CVE/CPE'yi pencere-pencere yükler; her pencerede ilerleme yazar + iptal yoklar.
+
+    En yeni pencereden başlar (kullanıcı taze CVE'leri erken görür). Tek bir pencerenin ağ hatası
+    tüm yüklemeyi düşürmez (o pencere atlanır). İptal istenirse o ana dek yazılan veri KORUNUR.
+    """
+    from cybersectool.core import cve_backfill as bf
+    from cybersectool.intel.nvd import (
+        NVD_PAGES_PER_WINDOW,
+        backfill_windows,
+        fetch_nvd_cve_window,
+    )
+
+    bf.reset_client()  # worker yeni event loop'ta → taze Redis istemcisi bu loop'ta kurulsun
+    if not await bf.acquire():
+        # Çift-dispatch yarışı: başka bir backfill zaten koşuyor → bu görev sessizce çekilir
+        # (route'taki is_active guard'ının kaçırabileceği milisaniyelik yarışa atomik emniyet).
+        await bf.aclose()
+        return "skipped: already running"
+    engine = create_async_engine(settings.database_url, poolclass=NullPool)
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    windows = backfill_windows(days)
+    years = max(1, round(days / 365))
+    total_cves = 0
+    cpe_total = 0
+    final_status = "done"
+    try:
+        async with factory() as session:
+            row = await get_settings(session)
+            nvd_key = get_nvd_api_key(row) or None
+        await bf.begin(windows_total=len(windows), years=years)
+        for i, (win_start, win_end) in enumerate(windows):
+            if await bf.is_cancelled():
+                final_status = "cancelled"
+                break
+            try:
+                cves = await fetch_nvd_cve_window(
+                    win_start,
+                    win_end,
+                    max_pages=NVD_PAGES_PER_WINDOW,
+                    api_key=nvd_key,
+                    throttle_first=i > 0,  # ilk pencere hariç pencereler arası rate-limit boşluğu
+                )
+            except Exception:  # noqa: BLE001 — tek pencere hatası tüm backfill'i düşürmesin
+                cves = []
+            if cves:
+                async with factory() as session:
+                    for data in cves:
+                        await upsert_cve(session, data)  # CVE + CPE ölçütleri (kendi içinde commit)
+                        total_cves += 1
+                    cpe_total = await count_cpe_matches(session)
+            label = f"{win_start:%Y-%m-%d} – {win_end:%Y-%m-%d}"
+            await bf.update(windows_done=i + 1, cves=total_cves, cpe_total=cpe_total, current=label)
+        async with factory() as session:
+            cpe_total = await count_cpe_matches(session)
+            await record_cve_sync(session, datetime.now(UTC))
+            await log_action(
+                session,
+                "nvd_backfill",
+                target=f"durum={final_status} cve={total_cves} cpe={cpe_total} "
+                f"pencere={len(windows)}",
+            )
+        await bf.finish(status=final_status, cves=total_cves, cpe_total=cpe_total)
+        return f"status={final_status} cves={total_cves} cpe_total={cpe_total}"
+    except Exception as exc:  # noqa: BLE001
+        with contextlib.suppress(Exception):
+            await bf.finish(
+                status="error", cves=total_cves, cpe_total=cpe_total, error=str(exc)[:200]
+            )
+        raise
+    finally:
+        await bf.release()
+        with contextlib.suppress(Exception):
+            await engine.dispose()
+        await bf.aclose()

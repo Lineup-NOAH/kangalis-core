@@ -414,6 +414,18 @@ AUDIT_EVENTS: dict[str, AuditEventMeta] = {
         "Geçmiş CVE/CPE yükleme (backfill) başlatıldı: {target}",
         "Historical CVE/CPE backfill started: {target}",
     ),
+    "nvd_backfill": AuditEventMeta(
+        8008,
+        "system",
+        "Geçmiş CVE/CPE yükleme (backfill) bitti: {target}",
+        "Historical CVE/CPE backfill finished: {target}",
+    ),
+    "nvd_backfill_cancel": AuditEventMeta(
+        8009,
+        "system",
+        "Geçmiş CVE/CPE yükleme iptali istendi",
+        "Historical CVE/CPE backfill cancel requested",
+    ),
     "ai_explain": AuditEventMeta(
         8010, "system", "AI bulgu açıklaması üretildi: {target}", "AI finding explanation: {target}"
     ),

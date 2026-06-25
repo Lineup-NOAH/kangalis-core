@@ -303,6 +303,10 @@
   <p class="k-sm" style="margin-top:10px; color:var(--fg2);">{{ t('set_nvd_backfill_hint') }}</p>
 </form>
 
+<!-- Backfill canlı ilerleme + iptal (BACKFILL-PROGRESS): sayfa açılışında bir kez yüklenir;
+     çalışan yükleme varsa parça kendini 3 sn'de bir yeniler, yoksa boş döner ve durur. -->
+<div id="nvd-backfill-status" hx-get="/settings/nvd/backfill/status" hx-trigger="load" hx-swap="outerHTML"></div>
+
 <!-- Saat dilimi (IX-1) -->
 <h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 4px;">{{ icon('clock', 18) }} {{ t('set_tz_section') }}</h2>
 <p class="k-sm" style="margin:0 0 12px; color:var(--fg2); max-width:760px;">{{ t('set_tz_sub') }}</p>

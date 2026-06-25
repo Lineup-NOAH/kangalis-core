@@ -28,7 +28,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from cybersectool.api.deps import SessionDep
 from cybersectool.config import APP_NAME, VERSION, settings
-from cybersectool.core import disclaimer
+from cybersectool.core import cve_backfill, disclaimer
 from cybersectool.core.ai import AIConfig, ai_available, detect_ai_paths
 from cybersectool.core.ai import cache as ai_cache
 from cybersectool.core.ai import prompts as ai_prompts
@@ -6384,8 +6384,12 @@ async def settings_nvd_backfill_web(
         return _redirect_login()
     if user.role != Role.admin:
         return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
+    if await cve_backfill.is_active():
+        busy = quote("Zaten bir geçmiş yükleme çalışıyor — bitmesini bekleyin ya da iptal edin.")
+        return RedirectResponse(f"/settings?msg={busy}", status_code=status.HTTP_303_SEE_OTHER)
     years = max(1, min(5, backfill_years))  # 1..5 yıl güvenli sınır
     days = years * 365
+    await cve_backfill.mark_queued(years=years)  # UI hemen "başlatılıyor" göstersin
     nvd_backfill_task.delay(days=days)
     await log_action(session, "nvd_backfill_start", user_id=user.id, target=f"days={days}")
     msg = quote(
@@ -6393,6 +6397,28 @@ async def settings_nvd_backfill_web(
         "sayılar zamanla artacak (anahtarsız onlarca dakika sürebilir)."
     )
     return RedirectResponse(f"/settings?msg={msg}", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.get("/settings/nvd/backfill/status", response_class=HTMLResponse)
+async def settings_nvd_backfill_status(request: Request, session: SessionDep) -> Response:
+    """Geçmiş yükleme canlı durumu (HTMX hx-get; çalışırken parça kendini 3 sn'de bir yeniler)."""
+    user = await _current_user(request, session)
+    if user is None or user.role != Role.admin:
+        return PlainTextResponse("", status_code=status.HTTP_401_UNAUTHORIZED)
+    st = await cve_backfill.state()
+    return templates.TemplateResponse(request, "_nvd_backfill_status.html", {"bf": st})
+
+
+@router.post("/settings/nvd/backfill/cancel", response_class=HTMLResponse)
+async def settings_nvd_backfill_cancel(request: Request, session: SessionDep) -> Response:
+    """Çalışan geçmiş yüklemeyi iptal eder (kooperatif: mevcut pencere bitince temiz durur)."""
+    user = await _current_user(request, session)
+    if user is None or user.role != Role.admin:
+        return PlainTextResponse("", status_code=status.HTTP_401_UNAUTHORIZED)
+    if await cve_backfill.request_cancel():
+        await log_action(session, "nvd_backfill_cancel", user_id=user.id)
+    st = await cve_backfill.state()
+    return templates.TemplateResponse(request, "_nvd_backfill_status.html", {"bf": st})
 
 
 @router.post("/settings/timezone")

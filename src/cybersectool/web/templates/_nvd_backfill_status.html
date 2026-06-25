@@ -1,0 +1,54 @@
+{% from "_icons.html" import icon %}
+{#- NVD geçmiş-yükleme (backfill) canlı durum parçası. HTMX hx-get ile gelir; çalışırken
+    (running/queued) kök div kendini 3 sn'de bir yeniler, terminal durumda tetik düşer → durur.
+    bf: cve_backfill.state() sözlüğü ya da None. -#}
+<div id="nvd-backfill-status"
+     {% if bf and bf.status in ['running', 'queued'] %}hx-get="/settings/nvd/backfill/status" hx-trigger="every 3s" hx-swap="outerHTML"{% endif %}>
+{% if bf and bf.status %}
+  {% set active = bf.status in ['running', 'queued'] %}
+  {% set cancelling = bf.cancel == '1' and active %}
+  <div class="kg-card" style="padding:16px; margin:0 0 14px;
+       border-left:3px solid {% if bf.status == 'done' %}var(--ok){% elif bf.status == 'error' %}var(--sev-critical){% elif bf.status == 'cancelled' %}var(--fg2){% else %}var(--accent){% endif %};">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        {% if active and not cancelling %}<span style="color:var(--accent);">●</span>{% endif %}
+        <strong>
+          {%- if bf.status == 'queued' %}{{ t('bf_queued') }}
+          {%- elif cancelling %}{{ t('bf_cancelling') }}
+          {%- elif bf.status == 'running' %}{{ t('bf_running') }}
+          {%- elif bf.status == 'done' %}✓ {{ t('bf_done') }}
+          {%- elif bf.status == 'cancelled' %}{{ t('bf_cancelled') }}
+          {%- elif bf.status == 'error' %}{{ t('bf_error') }}{% endif -%}
+        </strong>
+        {% if bf.years %}<span class="k-sm" style="color:var(--fg2);">· {{ bf.years }} {{ t('set_nvd_backfill_year') }}</span>{% endif %}
+      </div>
+      {% if active %}
+      <button type="button" class="kg-btn kg-btn-sm kg-btn-danger"
+              hx-post="/settings/nvd/backfill/cancel" hx-target="#nvd-backfill-status" hx-swap="outerHTML"
+              {% if cancelling %}disabled{% endif %}>
+        {{ icon('x', 14) }} {{ t('bf_cancel_btn') }}
+      </button>
+      {% endif %}
+    </div>
+
+    {% if bf.windows_total and bf.windows_total|int > 0 %}
+    <div style="margin-top:12px;">
+      <div style="height:8px; border-radius:4px; background:var(--bg2); overflow:hidden;">
+        <div style="height:100%; width:{{ bf.percent }}%;
+             background:{% if bf.status == 'done' %}var(--ok){% elif bf.status == 'cancelled' %}var(--fg2){% else %}var(--accent){% endif %}; transition:width .4s;"></div>
+      </div>
+      <div class="k-sm" style="margin-top:8px; color:var(--fg2); display:flex; gap:16px; flex-wrap:wrap;">
+        <span>{{ t('bf_windows') }}: <strong style="color:var(--fg);">{{ bf.windows_done }}/{{ bf.windows_total }}</strong> · %{{ bf.percent }}</span>
+        <span>{{ t('bf_cves_added') }}: <strong style="color:var(--fg);">{{ '{:,}'.format(bf.cves|int(0)) }}</strong></span>
+        <span>{{ t('bf_cpe') }}: <strong style="color:var(--fg);">{{ '{:,}'.format(bf.cpe_total|int(0)) }}</strong></span>
+        {% if bf.current %}<span>{{ t('bf_current') }}: <strong style="color:var(--fg);">{{ bf.current }}</strong></span>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if bf.status == 'error' and bf.error %}
+    <p class="k-sm" style="margin:8px 0 0; color:var(--sev-critical);">{{ bf.error }}</p>
+    {% endif %}
+  </div>
+{% endif %}
+</div>

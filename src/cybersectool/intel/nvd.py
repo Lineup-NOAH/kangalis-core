@@ -238,6 +238,94 @@ async def _fetch_nvd_pages(
     return pages
 
 
+async def _fetch_window_pages(
+    win_start: datetime,
+    win_end: datetime,
+    max_pages: int,
+    *,
+    api_key: str | None = None,
+    last_mod: bool = False,
+    throttle_first: bool = False,
+) -> list[dict[str, Any]]:
+    """TEK bir ``[win_start, win_end]`` penceresinin (≤120 gün) NVD CVE sayfalarını çeker.
+
+    ``throttle_first=True`` ise İLK isteğin de öncesinde rate-limit beklemesi yapılır — backfill
+    pencereleri arka arkaya çekerken pencereler arası boşluğun kaybolmasını (anahtarsız 429) önler.
+
+    ``_fetch_nvd_pages`` çoklu-pencereyi TOPLAM bütçeyle gezer; bu ise backfill'in pencere-pencere
+    ilerlemesi için tek pencereyi kendi sayfa bütçesiyle (``max_pages``) startIndex'le sayfalar.
+    """
+    fmt = "%Y-%m-%dT%H:%M:%S.000"
+    start_key, end_key = (
+        ("lastModStartDate", "lastModEndDate") if last_mod else ("pubStartDate", "pubEndDate")
+    )
+    delay = _request_delay(api_key)
+    headers = _headers(api_key)
+    pages: list[dict[str, Any]] = []
+    requests_made = 0
+    start_index = 0
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            while requests_made < max_pages:
+                if throttle_first or requests_made > 0:
+                    await asyncio.sleep(delay)  # rate-limit'e saygı (pencere-öncesi dahil)
+                params = {
+                    start_key: win_start.strftime(fmt),
+                    end_key: win_end.strftime(fmt),
+                    "resultsPerPage": "2000",
+                    "startIndex": str(start_index),
+                }
+                resp = await client.get(NVD_URL, params=params, headers=headers)
+                resp.raise_for_status()
+                data = resp.json()
+                pages.append(data)
+                requests_made += 1
+                vulns = data.get("vulnerabilities", [])
+                total = int(data.get("totalResults", 0))
+                start_index += len(vulns)
+                if not vulns or start_index >= total:
+                    break  # bu pencere bitti
+    except (httpx.HTTPError, ValueError):
+        return pages
+    return pages
+
+
+async def fetch_nvd_cve_window(
+    win_start: datetime,
+    win_end: datetime,
+    *,
+    max_pages: int | None = None,
+    api_key: str | None = None,
+    throttle_first: bool = False,
+) -> list[CveData]:
+    """Tek bir yayım penceresini CVE+CPE verisi olarak çeker (backfill ilerlemesi için).
+
+    ``throttle_first``: pencereler arası rate-limit boşluğu için ilk istekten önce de bekle.
+    """
+    pages = await _fetch_window_pages(
+        win_start,
+        win_end,
+        max_pages or NVD_PAGES_PER_WINDOW,
+        api_key=api_key,
+        throttle_first=throttle_first,
+    )
+    cves: list[CveData] = []
+    for page in pages:
+        cves.extend(parse_nvd_response(page))
+    return cves
+
+
+def backfill_windows(days: int) -> list[tuple[datetime, datetime]]:
+    """Son ``days`` günü 120-günlük yayım pencerelerine böler — **en yeni pencere önce**.
+
+    En yeniden başlamak backfill ilerlemesini hemen görünür kılar (taze/ilgili CVE'ler erken iner)
+    ve kullanıcı isterse erken iptal edebilir.
+    """
+    end = datetime.now(UTC)
+    start = end - timedelta(days=max(days, 1))
+    return list(reversed(_date_windows(start, end)))
+
+
 async def fetch_nvd_recent(
     days: int | None = None, max_pages: int | None = None, *, api_key: str | None = None
 ) -> list[ExploitRecord]:
