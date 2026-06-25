@@ -2284,7 +2284,7 @@ DICT: dict[str, dict[str, str]] = {
     "bf_windows": {"tr": "Pencere", "en": "Windows"},
     "bf_cves_added": {"tr": "Eklenen CVE", "en": "CVEs added"},
     "bf_cpe": {"tr": "CPE eşleşme", "en": "CPE matches"},
-    "bf_current": {"tr": "Aralık", "en": "Range"},
+    "bf_current": {"tr": "İşlenen aralık", "en": "Range"},
     "bf_cancel_btn": {"tr": "İptal et", "en": "Cancel"},
     # Yerel AI asistanı (OpenAI-uyumlu motor, on-prem; #182)
     "set_ai_section": {"tr": "Yerel AI asistanı", "en": "Local AI assistant"},
