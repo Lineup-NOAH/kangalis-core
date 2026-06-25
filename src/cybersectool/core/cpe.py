@@ -27,11 +27,14 @@ def _clip(value: str | None, limit: int) -> str | None:
     return value[:limit]
 
 
-async def store_cpe_matches(session: AsyncSession, cve_id: str, matches: list[CpeMatchData]) -> int:
+async def store_cpe_matches(
+    session: AsyncSession, cve_id: str, matches: list[CpeMatchData], *, commit: bool = True
+) -> int:
     """Bir CVE'nin CPE ölçütlerini (yalnızca zafiyetli olanlar) idempotent yazar.
 
-    Önce o CVE'ye ait eski satırları siler, sonra yenilerini ekler. Yazılan
-    satır sayısını döndürür.
+    Önce o CVE'ye ait eski satırları siler, sonra yenilerini ekler. Yazılan satır sayısını
+    döndürür. ``commit=False`` ise commit yapılmaz — toplu yüklemede (backfill/seed) çağıran
+    her N kayıtta bir tek commit atar (yüz binlerce tekil commit'in maliyetini önler).
     """
     await session.execute(delete(CpeMatch).where(CpeMatch.cve_id == cve_id))
     written = 0
@@ -54,7 +57,8 @@ async def store_cpe_matches(session: AsyncSession, cve_id: str, matches: list[Cp
             )
         )
         written += 1
-    await session.commit()
+    if commit:
+        await session.commit()
     return written
 
 

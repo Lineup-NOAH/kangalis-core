@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+from collections.abc import Callable
 from datetime import UTC, datetime
 
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
@@ -165,3 +166,64 @@ async def _run_backfill(days: int) -> str:
         with contextlib.suppress(Exception):
             await engine.dispose()
         await bf.aclose()
+
+
+async def build_cve_seed(
+    *,
+    start_year: int = 2000,
+    batch: int = 1000,
+    max_pages_per_window: int = 1000,
+    on_window: Callable[[str], None] | None = None,
+) -> str:
+    """Maintainer: NVD'den GENİŞ tarihsel CVE/CPE çekimi (tohum/seed üretimi).
+
+    ``start_year``-01-01'den bugüne 120-günlük pencerelere bölünür; her pencere TAM sayfalanır
+    (tavan ``max_pages_per_window``), commit'ler ``batch`` kayıtta bir atılır (per-CVE commit
+    yerine → ~yüz binlerce commit yerine birkaç bin → çok daha hızlı). NVD anahtarı DB ayarından
+    çözülür (50 istek/30sn). UI backfill'inden AYRIDIR (Redis ilerleme/kilit YOK) — yalnızca tohum
+    üretmek için; sonra ``export_cve_seed`` ile pg_dump alınır ve müşteriye import edilir.
+    """
+    from cybersectool.intel.nvd import backfill_windows, fetch_nvd_cve_window
+
+    engine = create_async_engine(settings.database_url, poolclass=NullPool)
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    try:
+        async with factory() as session:
+            row = await get_settings(session)
+            nvd_key = get_nvd_api_key(row) or None
+        days = (datetime.now(UTC) - datetime(start_year, 1, 1, tzinfo=UTC)).days
+        windows = backfill_windows(days)
+        total = 0
+        for wi, (win_start, win_end) in enumerate(windows, start=1):
+            try:
+                cves = await fetch_nvd_cve_window(
+                    win_start,
+                    win_end,
+                    max_pages=max_pages_per_window,
+                    api_key=nvd_key,
+                    throttle_first=wi > 1,  # pencereler arası rate-limit boşluğu
+                )
+            except Exception:  # noqa: BLE001 — tek pencere hatası tüm çekimi düşürmesin
+                cves = []
+            if cves:
+                async with factory() as session:
+                    pending = 0
+                    for data in cves:
+                        await upsert_cve(session, data, commit=False)
+                        total += 1
+                        pending += 1
+                        if pending >= batch:
+                            await session.commit()  # toplu commit (per-CVE değil)
+                            pending = 0
+                    await session.commit()
+            if on_window is not None:
+                on_window(
+                    f"[{wi}/{len(windows)}] {win_start:%Y-%m-%d}..{win_end:%Y-%m-%d} "
+                    f"+{len(cves)} (toplam {total})"
+                )
+        async with factory() as session:
+            cpe_total = await count_cpe_matches(session)
+            await record_cve_sync(session, datetime.now(UTC))
+        return f"done cves~={total} cpe_total={cpe_total} windows={len(windows)}"
+    finally:
+        await engine.dispose()

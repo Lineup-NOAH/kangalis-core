@@ -25,7 +25,13 @@ async def count_cves(session: AsyncSession) -> int:
     return int(result.scalar_one())
 
 
-async def upsert_cve(session: AsyncSession, data: CveData) -> CVE:
+async def upsert_cve(session: AsyncSession, data: CveData, *, commit: bool = True) -> CVE:
+    """Bir CVE'yi (ve CPE ölçütlerini) yerel depoya yazar.
+
+    ``commit=False`` ise commit YAPILMAZ — toplu yükleme (backfill/seed üretimi) çağıranı
+    her N kayıtta bir tek commit atarak ~yüz binlerce tekil commit'in maliyetinden kurtulur.
+    Varsayılan ``True`` günlük senkronun davranışını korur (her CVE kendi işleminde).
+    """
     cve = await session.get(CVE, data.cve_id)
     if cve is None:
         cve = CVE(cve_id=data.cve_id)
@@ -35,9 +41,10 @@ async def upsert_cve(session: AsyncSession, data: CveData) -> CVE:
     cve.severity = data.severity
     cve.references = data.references
     cve.category = primary_category(data.description)  # Zafiyet DB kategori çipleri için
-    await session.commit()
+    if commit:
+        await session.commit()
     if data.cpe_matches:
-        await store_cpe_matches(session, data.cve_id, data.cpe_matches)
+        await store_cpe_matches(session, data.cve_id, data.cpe_matches, commit=commit)
     return cve
 
 
