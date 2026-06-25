@@ -1,7 +1,7 @@
 /* =====================================================================
    Kangalis — Color & Type Tokens + Component Helpers
    Single source of truth. Two themes via [data-theme="dark|light"].
-   Tokens'lar ui-plan/colors_and_type.css'ten; component sınıfları eklendi.
+   Color/type design tokens plus component helper classes.
    ===================================================================== */
 
 :root {

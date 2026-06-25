@@ -1,8 +1,7 @@
 """Kangalis arayüzü için i18n sözlüğü (TR/EN).
 
-Sözlük ui-plan/ui_kits/console/i18n.jsx'ten port edildi; uygulamaya özel
-sayfalar (Zamanlama, Kullanıcılar, Token'lar) için anahtarlar eklendi. Teknik
-token'lar (IP, CVE, CVSS, port) çevrilmez.
+Uygulamaya özel sayfalar (Zamanlama, Kullanıcılar, Token'lar) için anahtarlar
+içerir. Teknik token'lar (IP, CVE, CVSS, port) çevrilmez.
 """
 
 from __future__ import annotations
