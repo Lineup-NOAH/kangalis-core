@@ -1,97 +1,99 @@
 # Kangalis
 
-> **İç ağınızın bekçisi** — Kangalis ekibinin Python tabanlı, web panelli, ağırlıklı **iç ağ/sistem taramasına** odaklı zafiyet yönetim platformu.
+> **The guardian of your internal network** — a Python-based vulnerability management platform with a web dashboard, focused primarily on **internal network/system scanning**.
 
 [![CI](https://github.com/Lineup-NOAH/kangalis-core/actions/workflows/ci.yml/badge.svg)](https://github.com/Lineup-NOAH/kangalis-core/actions/workflows/ci.yml)
-[![sürüm](https://img.shields.io/badge/sürüm-1.0.0-blue)]()
+[![version](https://img.shields.io/badge/version-1.0.1-blue)]()
 [![python](https://img.shields.io/badge/python-3.12%2B-blue)]()
-[![lisans](https://img.shields.io/badge/lisans-MIT-green)]()
+[![license](https://img.shields.io/badge/license-MIT-green)]()
 
-Hafif bir OpenVAS/Nessus alternatifi; iç ağdaki host ve servisleri keşfeder, bilinen
-zafiyetlerle (CVE) eşleştirir ve bunları **sömürülebilirlik sinyalleriyle** (Exploit-DB,
-CISA KEV, EPSS) zenginleştirerek **risk önceliklendirmesi** yapar. Ayrıca **MCP** üzerinden
-Claude ile konuşabilir.
+A lightweight OpenVAS/Nessus alternative: it discovers hosts and services on your internal
+network, matches them against known vulnerabilities (CVEs), and enriches them with
+**exploitability signals** (Exploit-DB, CISA KEV, EPSS) to deliver **risk prioritization**.
+It can also talk to Claude over **MCP**.
 
-> ⚠️ **Yasal uyarı:** Bu araç yalnızca **yetkili kapsam** içinde (sahip olduğunuz ya da
-> izin verilen ağlar) kullanılmalıdır. İzinsiz tarama yasa dışıdır. Yazılım **"olduğu gibi",
-> garantisiz** sunulur; kullanmak [Sorumluluk Reddi](DISCLAIMER.md)'ni kabul etmek demektir.
+> ⚠️ **Legal notice:** This tool must be used only within an **authorized scope** (networks you
+> own or are permitted to test). Unauthorized scanning is illegal. The software is provided
+> **"as is", without warranty**; using it means you accept the [Disclaimer](DISCLAIMER.md).
 
-## 📦 Açık-kaynak çekirdek
+## 📦 Open-source core
 
-Bu depo **açık-kaynak çekirdektir** (MIT): ağ/host keşfi, port & servis/sürüm tespiti, CVE
-eşleştirme, sömürülebilirlik **sinyalleri** (Exploit-DB/CISA KEV/EPSS — yalnız *bilgi*), uyum
-denetimleri (CIS/KVKK/ISO/PCI), raporlama ve yerel (on-prem) savunmacı AI. **Exploit
-*çalıştırmaz*.** Gerçek sömürü/sızma (Metasploit orkestrasyonu, izole PoC çalıştırma,
-kimlik brute-force) ayrı, opsiyonel bir **sömürü eklentisinde** tutulur ve bu depoya dahil
-**değildir**. Çekirdek, eklenti olmadan tam çalışır.
+This repository is the **open-source core** (MIT): network/host discovery, port & service/version
+detection, CVE matching, exploitability **signals** (Exploit-DB/CISA KEV/EPSS — *informational
+only*), compliance checks (CIS/KVKK/ISO/PCI), reporting, and local (on-prem) defensive AI. It
+**does *not* run exploits.** Real exploitation/intrusion (Metasploit orchestration, sandboxed PoC
+execution, credential brute-force) is kept in a separate, optional **exploitation plugin** and is
+**not** part of this repository. The core is fully functional without the plugin.
 
-> **nmap gerekir:** Tarama motoru `nmap` ikilisini çağırır; tarama bunsuz **çalışmaz**.
-> Elle kurmanız gerekmez — `docker compose up --build` sırasında imaja **otomatik** gelir
-> (`ARG INSTALL_NMAP=true`, varsayılan açık). nmap **NPSL** (Nmap Public Source License) ile
-> dağıtılır; Kangalis ikiliyi yeniden dağıtmaz, sizin build'iniz Debian deposundan çeker.
-> Ayrıntı: [`docs/KURULUM.md`](docs/KURULUM.md) ve [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md).
+> **nmap required:** The scan engine invokes the `nmap` binary; scanning **does not work** without
+> it. You don't need to install it manually — it is added to the image **automatically** during
+> `docker compose up --build` (`ARG INSTALL_NMAP=true`, on by default). nmap is distributed under
+> the **NPSL** (Nmap Public Source License); Kangalis does not redistribute the binary — your build
+> pulls it from the Debian repository.
+> Details: [`docs/KURULUM.md`](docs/KURULUM.md) and [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md).
 
-## Özellikler
+## Features
 
-- 🔍 **Ağ & Host tarama** — host keşfi, port tarama, servis/versiyon tespiti (nmap)
-- 🛡️ **CVE eşleştirme + risk skoru** — NVD/OSV + Exploit-DB + CISA KEV + EPSS
-- 🌐 **Web tarama** — güvenlik başlıkları, TLS/SSL denetimi, dizin keşfi
-- 📦 **SCA** — bağımlılık (requirements.txt, package.json) zafiyet taraması
-- ✅ **Uyum denetimleri** — CIS/KVKK/ISO/PCI kontrolleri ve raporlama
-- 🤖 **MCP sunucusu** — Claude tarama başlatıp sonuçları sorgular
-- 🧠 **Yerel (on-prem) savunmacı AI** — bulgu özetleme ve uyum anlatısı
+- 🔍 **Network & host scanning** — host discovery, port scanning, service/version detection (nmap)
+- 🛡️ **CVE matching + risk score** — NVD/OSV + Exploit-DB + CISA KEV + EPSS
+- 🌐 **Web scanning** — security headers, TLS/SSL checks, directory discovery
+- 📦 **SCA** — dependency (requirements.txt, package.json) vulnerability scanning
+- ✅ **Compliance checks** — CIS/KVKK/ISO/PCI controls and reporting
+- 🤖 **MCP server** — Claude starts scans and queries results
+- 🧠 **Local (on-prem) defensive AI** — finding summaries and compliance narratives
 - 📊 **Web dashboard** — HTMX + Tailwind
 
-Mimari/tasarım: [`docs/PROJE_PLANI.md`](docs/PROJE_PLANI.md)
+Architecture/design: [`docs/PROJE_PLANI.md`](docs/PROJE_PLANI.md)
 
-## Kurulum (hızlı başlangıç)
+## Installation (quick start)
 
-**Tek önkoşul: Docker + Docker Compose.** Tamamen **on-prem** çalışır: tarama, veri ve AI
-hepsi kendi makinenizde kalır — hiçbir veri dışarı çıkmaz.
+**Only prerequisite: Docker + Docker Compose.** Runs entirely **on-prem**: scanning, data, and AI
+all stay on your own machine — no data ever leaves it.
 
-### Seçenek 1 — Kurulum sihirbazı (en kolay; kaynaktan derler)
+### Option 1 — Setup wizard (easiest; builds from source)
 
-Tek komut: derle + başlat → migrate **otomatik** → admin kullanıcı sor → yetkili tarama
-kapsamı/CIDR sor. `nmap` dahil her şey imaja otomatik gelir (elle kurulum yok).
+One command: build + start → migrate runs **automatically** → prompts for an admin user → prompts
+for the authorized scan scope/CIDR. Everything including `nmap` lands in the image automatically
+(no manual install).
 
 ```bash
 # Linux / macOS
-bash setup.sh          # veya:  make setup
+bash setup.sh          # or:  make setup
 
 # Windows (PowerShell)
 powershell -ExecutionPolicy Bypass -File setup.ps1
 ```
 
-### Seçenek 2 — Yayınlanmış imajla (derleme yok; daha hızlı)
+### Option 2 — With the published image (no build; faster)
 
-Hazır imajları doğrudan kayıt defterinden (ghcr.io) çekip çalıştırın — yerel derleme gerekmez:
+Pull the prebuilt images straight from the registry (ghcr.io) and run — no local build required:
 
 ```bash
 git clone https://github.com/Lineup-NOAH/kangalis-core.git && cd kangalis-core
-cp .env.example .env              # gizli anahtarları doldurun (ya da Seçenek 1 sihirbazını çalıştırın)
+cp .env.example .env              # fill in the secret keys (or run the Option 1 wizard)
 
-docker compose pull              # yayınlanmış çekirdek imajını çeker (derleme YOK)
-docker compose up -d             # başlatır; migrate şemayı otomatik kurar
+docker compose pull              # pulls the published core image (NO build)
+docker compose up -d             # starts; migrate sets up the schema automatically
 
-# Yönetici kullanıcı + yetkili tarama kapsamı (ZORUNLU):
+# Admin user + authorized scan scope (REQUIRED):
 docker compose exec app python -m cybersectool.scripts.create_user \
-    --username <ad> --password <parola> --role admin
-# Kapsamı panelden (Ayarlar → Yetkili Kapsam) ya da docs/KURULUM.md §3.3 ile tanımlayın.
+    --username <name> --password <password> --role admin
+# Define the scope from the panel (Settings → Authorized Scope) or via docs/KURULUM.md §3.3.
 ```
 
-> Sürüm sabitlemek için `.env`'de `KANGALIS_IMAGE=ghcr.io/lineup-noah/kangalis-core:vX.Y.Z`.
+> To pin a version, set `KANGALIS_IMAGE=ghcr.io/lineup-noah/kangalis-core:vX.Y.Z` in `.env`.
 
-Ardından panel: **http://localhost:8000/login**
+Then open the panel: **http://localhost:8000/login**
 
-> ⚠️ Tarama yetkili **kapsam** (CIDR) tanımlanmadan çalışmaz. Yalnızca taramaya **yetkili
-> olduğunuz** ağları girin.
+> ⚠️ Scanning will not run until an authorized **scope** (CIDR) is defined. Enter only networks
+> you are **authorized** to scan.
 
-### Sıfırlama / temiz yeniden kurulum
+### Reset / clean reinstall
 
-Kurulum bozulduysa ya da DB kullanıcı/parolasını değiştirmek istiyorsanız, **eski veritabanı
-volume'ü yeni `.env` ile çakışır** (`migrate` → `password authentication failed for user ...`).
-PostgreSQL kullanıcı/parolayı yalnız ilk açılışta gömer; klasörü/Docker'ı silmek **volume'ü
-silmez**. Temiz sıfırlama tek komut:
+If the install breaks or you want to change the DB user/password, the **old database volume
+conflicts with the new `.env`** (`migrate` → `password authentication failed for user ...`).
+PostgreSQL bakes the user/password only on first launch; deleting the folder/Docker **does not
+remove the volume**. One command for a clean reset:
 
 ```bash
 # Windows
@@ -101,87 +103,88 @@ powershell -ExecutionPolicy Bypass -File reset.ps1
 bash reset.sh
 ```
 
-> ⚠️ Tüm tarama verisini **siler** (`docker compose down -v` + tüm `kangalis*` volume'leri).
-> Ardından `setup.ps1`/`setup.sh` ya da `docker compose up -d --build` ile yeniden kurun.
-> `.env`'i (gizli anahtarlar) korur; sıfırdan istiyorsanız `-IncludeEnv` / `--include-env` ekleyin.
-> Elle: `docker compose down -v` → `docker volume ls | grep kangalis` boşalana kadar
-> `docker volume rm <ad>`.
+> ⚠️ This **deletes** all scan data (`docker compose down -v` + every `kangalis*` volume).
+> Then reinstall with `setup.ps1`/`setup.sh` or `docker compose up -d --build`.
+> It keeps your `.env` (secret keys); for a from-scratch wipe add `-IncludeEnv` / `--include-env`.
+> Manually: `docker compose down -v` → run `docker volume rm <name>` until
+> `docker volume ls | grep kangalis` is empty.
 
-### Yerel AI (opsiyonel, on-prem, sıfır egress)
+### Local AI (optional, on-prem, zero egress)
 
-AI tamamen yereldir (CPU'da çalışır); yalnız öneri/taslak hazırlar, eylemi her zaman insan
-tetikler. **Önerilen yol — Ollama** (resmi `ollama/ollama` imajı; model çalışma anında iner):
+The AI is fully local (runs on CPU); it only produces suggestions/drafts, and a human always
+triggers the action. **Recommended path — Ollama** (official `ollama/ollama` image; the model is
+pulled at runtime):
 
 ```bash
-docker compose --profile ai up -d ollama          # Ollama motoru (Docker Hub, public)
-docker compose exec ollama ollama pull qwen3:8b   # modeli indir (~5 GB, tek seferlik)
+docker compose --profile ai up -d ollama          # Ollama engine (Docker Hub, public)
+docker compose exec ollama ollama pull qwen3:8b   # download the model (~5 GB, one-time)
 ```
 
-Sonra panelde **Eklentiler → AI**: endpoint `http://ollama:11434/v1`, model `qwen3:8b`,
-"Bağlantıyı test et" → yeşil.
+Then in the panel under **Plugins → AI**: endpoint `http://ollama:11434/v1`, model `qwen3:8b`,
+click "Test connection" → green.
 
-> **Air-gap / sıfır çalışma-anı indirme (opsiyonel):** modeli **gömülü** taşıyan `kangalis-ai`
-> imajını kullanabilirsiniz (`-f docker-compose.ai-baked.yml`). Yayınlanmış imajı çekmek için ghcr
-> paketinin **public** olması gerekir — aksi halde `unauthorized` alırsınız. Alternatif: internetli
-> bir makinede yerelde derleyin (`bash build-ai-image.sh` / `powershell -File build-ai-image.ps1`).
-> Ayrıntı: [`docs/EKLENTILER.md`](docs/EKLENTILER.md).
+> **Air-gap / zero runtime download (optional):** you can use the `kangalis-ai` image that ships the
+> model **baked in** (`-f docker-compose.ai-baked.yml`). To pull the published image, the ghcr
+> package must be **public** — otherwise you'll get `unauthorized`. Alternative: build it locally on
+> an internet-connected machine (`bash build-ai-image.sh` / `powershell -File build-ai-image.ps1`).
+> Details: [`docs/EKLENTILER.md`](docs/EKLENTILER.md).
 
-- 📘 Ayrıntılı kurulum / manuel adımlar / üretime geçiş: [`docs/KURULUM.md`](docs/KURULUM.md)
-- 🧩 Opsiyonel özellikler (yerel AI, MCP, eklentiler): [`docs/EKLENTILER.md`](docs/EKLENTILER.md)
+- 📘 Detailed install / manual steps / production deployment: [`docs/KURULUM.md`](docs/KURULUM.md)
+- 🧩 Optional features (local AI, MCP, plugins): [`docs/EKLENTILER.md`](docs/EKLENTILER.md)
 
-## Teknoloji yığını
+## Tech stack
 
-| Katman | Seçim |
+| Layer | Choice |
 |---|---|
-| Dil / paket | Python 3.12+ · uv |
+| Language / packaging | Python 3.12+ · uv |
 | Backend | FastAPI |
-| Veritabanı | PostgreSQL + SQLAlchemy + Alembic |
-| Görev kuyruğu | Celery + Redis |
+| Database | PostgreSQL + SQLAlchemy + Alembic |
+| Task queue | Celery + Redis |
 | Frontend | Jinja2 + HTMX + Tailwind |
-| Tarama | nmap, httpx |
-| Dağıtım | Docker + docker-compose |
+| Scanning | nmap, httpx |
+| Deployment | Docker + docker-compose |
 
-## Geliştirme ortamı
+## Development environment
 
-Gereksinim: [uv](https://docs.astral.sh/uv/) (Python'ı uv kendisi indirir).
+Requirement: [uv](https://docs.astral.sh/uv/) (uv downloads Python itself).
 
 ```bash
-# Bağımlılıkları kur (Python 3.12 dahil)
+# Install dependencies (including Python 3.12)
 uv sync
 
-# Testleri çalıştır
+# Run the tests
 uv run pytest
 
-# Lint & tip kontrolü
+# Lint & type checks
 uv run ruff check .
 uv run mypy
 
-# (Opsiyonel) pre-commit kancalarını kur
+# (Optional) install the pre-commit hooks
 uv run pre-commit install
 ```
 
-## Proje yapısı
+## Project structure
 
 ```
 src/cybersectool/
-├── core/        # ortak iş mantığı (service katmanı) + scope guard
-├── scanners/    # tarama modülleri (ağ, web, sca, hardening)
-├── intel/       # zafiyet/exploit veri kaynakları (NVD, OSV, EDB, KEV, EPSS)
-├── api/         # FastAPI router'ları
+├── core/        # shared business logic (service layer) + scope guard
+├── scanners/    # scan modules (network, web, sca, hardening)
+├── intel/       # vulnerability/exploit data sources (NVD, OSV, EDB, KEV, EPSS)
+├── api/         # FastAPI routers
 ├── web/         # dashboard (Jinja2 + HTMX)
-├── tasks/       # Celery görevleri
-└── mcp/         # MCP sunucusu
+├── tasks/       # Celery tasks
+└── mcp/         # MCP server
 ```
 
-## Katkı / iş akışı
+## Contributing / workflow
 
-Fork + **main**'e PR. Conventional Commits. Her PR'da `ruff` + `mypy` + `pytest` geçmeli.
-Ayrıntılar için: [CONTRIBUTING.md](CONTRIBUTING.md)
+Fork + PR to **main**. Conventional Commits. Every PR must pass `ruff` + `mypy` + `pytest`.
+Details: [CONTRIBUTING.md](CONTRIBUTING.md)
 
-## Lisans
+## License
 
 [MIT](LICENSE) © 2026 Lineup-NOAH
 
-- Üçüncü taraf bağımlılık lisansları: [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)
-- Güvenlik & sorumlu/yetkili kullanım: [SECURITY.md](SECURITY.md)
-- **Sorumluluk reddi & kullanım koşulları:** [DISCLAIMER.md](DISCLAIMER.md)
+- Third-party dependency licenses: [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)
+- Security & responsible/authorized use: [SECURITY.md](SECURITY.md)
+- **Disclaimer & terms of use:** [DISCLAIMER.md](DISCLAIMER.md)
