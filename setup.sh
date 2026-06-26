@@ -81,6 +81,29 @@ EOF
   echo "    [OK] .env güncellendi (chmod 600)."
 fi
 
+# --- CVE tohumu (önceden indirilmiş NVD DB): yoksa 'cve-seed' release'inden indir -> build'de
+#     imaja gömülür -> kurulumda otomatik yüklenir (NVD'den indirme YOK). Yoksa/internet yoksa
+#     atlanır (sorun değil: günlük senkron + UI "Geçmişi yükle" tazeler). KANGALIS_SEED=0 kapatır.
+if [ "${KANGALIS_SEED:-1}" = "1" ]; then
+  SEED_REPO="${KANGALIS_SEED_REPO:-Lineup-NOAH/kangalis-core}"
+  SEED_TAG="${KANGALIS_SEED_TAG:-cve-seed}"
+  mkdir -p seed
+  if [ -s seed/cves.csv.gz ] && [ -s seed/cpe_matches.csv.gz ]; then
+    echo "    [OK] CVE tohumu zaten var (seed/) - indirme atlandi."
+  else
+    echo ""
+    echo "==> CVE tohumu indiriliyor ($SEED_TAG release, ~42MB; kurulum hizlanir)..."
+    base="https://github.com/$SEED_REPO/releases/download/$SEED_TAG"
+    if curl -fsSL "$base/cves.csv.gz" -o seed/cves.csv.gz \
+       && curl -fsSL "$base/cpe_matches.csv.gz" -o seed/cpe_matches.csv.gz; then
+      echo "    [OK] CVE tohumu indirildi - imaja gomulecek (kurulumda otomatik yuklenir)."
+    else
+      rm -f seed/cves.csv.gz seed/cpe_matches.csv.gz
+      echo "    [i] CVE tohumu indirilemedi (release yok/internet yok) - tohumsuz devam (gunluk senkron tazeler)."
+    fi
+  fi
+fi
+
 # --- 2/5 Derle + başlat --------------------------------------------------------
 echo ""
 echo "==> 2/5 Kangalis derleniyor + başlatılıyor (nmap dahil; ilk derleme birkaç dk sürebilir)..."

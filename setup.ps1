@@ -89,6 +89,29 @@ NOTIFY_WEBHOOK_URL=$webhook
     Write-Host "    [OK] .env güncellendi (erişim bu kullanıcıya kısıtlandı)."
 }
 
+# --- CVE tohumu (önceden indirilmiş NVD DB): yoksa 'cve-seed' release'inden indir -> build'de
+#     imaja gömülür -> kurulumda otomatik yüklenir (NVD'den indirme YOK). Yoksa/internet yoksa
+#     atlanır (sorun değil: günlük senkron + UI "Geçmişi yükle" tazeler). $env:KANGALIS_SEED='0' kapatır.
+if ($env:KANGALIS_SEED -ne '0') {
+    $seedRepo = if ($env:KANGALIS_SEED_REPO) { $env:KANGALIS_SEED_REPO } else { 'Lineup-NOAH/kangalis-core' }
+    $seedTag  = if ($env:KANGALIS_SEED_TAG)  { $env:KANGALIS_SEED_TAG }  else { 'cve-seed' }
+    New-Item -ItemType Directory -Force -Path seed | Out-Null
+    if ((Test-Path seed/cves.csv.gz) -and (Test-Path seed/cpe_matches.csv.gz)) {
+        Write-Host "    [OK] CVE tohumu zaten var (seed/) - indirme atlandi."
+    } else {
+        Write-Host "`n==> CVE tohumu indiriliyor ($seedTag release, ~42MB; kurulum hizlanir)..."
+        $base = "https://github.com/$seedRepo/releases/download/$seedTag"
+        try {
+            Invoke-WebRequest -Uri "$base/cves.csv.gz" -OutFile seed/cves.csv.gz -UseBasicParsing
+            Invoke-WebRequest -Uri "$base/cpe_matches.csv.gz" -OutFile seed/cpe_matches.csv.gz -UseBasicParsing
+            Write-Host "    [OK] CVE tohumu indirildi - imaja gomulecek (kurulumda otomatik yuklenir)."
+        } catch {
+            Remove-Item -Force -ErrorAction SilentlyContinue seed/cves.csv.gz, seed/cpe_matches.csv.gz
+            Write-Host "    [i] CVE tohumu indirilemedi (release yok/internet yok) - tohumsuz devam (gunluk senkron tazeler)."
+        }
+    }
+}
+
 # --- 2/5 Derle + başlat --------------------------------------------------------
 Write-Host "`n==> 2/5 Kangalis derleniyor + başlatılıyor (nmap dahil; ilk derleme birkaç dk sürebilir)..."
 docker compose up -d --build
