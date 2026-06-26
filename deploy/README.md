@@ -9,7 +9,7 @@ tarama). Tek bir büyük taramayı pod'lara dağıtan **fan-out** ayrı bir adı
 1. **İç servisler** (db/redis/app/worker-kontrol) — küme ağında.
 2. **Tarama-hedef erişimi** — worker'ın hedef VLAN'a ulaşması gerekir. NAT arkasından büyük süpürme
    güvenilmez (bkz. memory/araç notları). Çözüm: worker'ı hedef ağa **sensör** olarak bağla
-   (`worker.hostNetwork=true` veya Multus ile ikincil NIC). Bu, Nessus/OpenVAS sensör modelidir.
+   (`worker.hostNetwork=true` veya Multus ile ikincil NIC). Bu, dağıtık tarayıcı/sensör modelidir.
 
 ## Hızlı başlangıç (yerel — kind)
 ```bash

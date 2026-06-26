@@ -86,8 +86,7 @@ exploit/PoC **code** is not fetched or executed.
   not imply endorsement or affiliation.*
 
 > Dual-use note: this public exploit metadata is used only for **defensive
-> detection/prioritization** (the Nessus/OpenVAS/Nuclei pattern). Actual exploit
-> execution is not present in this core.
+> detection/prioritization**. Actual exploit execution is not present in this core.
 
 ## Optional — Local AI (disabled by default)
 
@@ -221,7 +220,7 @@ kullanılır; exploit/PoC **kodu** çekilmez/çalıştırılmaz.
   **belirtmek** (nominatif) için kullanılır — onay/iş birliği ima etmez.*
 
 > Çift-kullanım notu: bu public exploit-metadata'sı yalnızca **savunmacı tespit/önceliklendirme**
-> için kullanılır (Nessus/OpenVAS/Nuclei deseni). Gerçek sömürü-çalıştırma bu çekirdekte yoktur.
+> için kullanılır. Gerçek sömürü-çalıştırma bu çekirdekte yoktur.
 
 ## Opsiyonel — Yerel AI (varsayılan kapalı)
 

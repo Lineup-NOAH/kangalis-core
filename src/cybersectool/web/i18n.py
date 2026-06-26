@@ -760,10 +760,10 @@ DICT: dict[str, dict[str, str]] = {
         "en": "Inside, credentialed audit (SSH/WinRM). Pick at least one credential.",
     },
     "wmode_cred_hint": {
-        "tr": "Kimlik OPSİYONELDİR (Nessus modeli): 'Kimlikler' adımından kimlik seçersen "
+        "tr": "Kimlik OPSİYONELDİR: 'Kimlikler' adımından kimlik seçersen "
         "tarama dışarıdan tekniğin yanı sıra İÇERİDEN de denetler (CIS + yetki yükseltme). "
         "Agresif CVE + kimlik + onay = exploitation + priv-esc denemesi.",
-        "en": "Credentials are OPTIONAL (Nessus model): pick credentials in the 'Credentials' "
+        "en": "Credentials are OPTIONAL: pick credentials in the 'Credentials' "
         "step and the scan also audits from INSIDE (CIS + privilege escalation) in addition to "
         "the outside technique. Aggressive CVE + credentials + consent = exploitation + priv-esc.",
     },

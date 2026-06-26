@@ -72,7 +72,7 @@ app:
 worker:
   replicas: 2
   # hostNetwork=true: pod, node'un ağ yığınını paylaşır → tarayıcı hedef LAN/VLAN'a NAT'sız erişir
-  # (Nessus/OpenVAS sensör modeli). Tek-tarama fan-out (Faz 2b) ile birlikte asıl hız buradan gelir.
+  # (dağıtık tarayıcı/sensör modeli). Tek-tarama fan-out (Faz 2b) ile birlikte asıl hız buradan gelir.
   # NOT: hostNetwork açıkken pod, node'un IP'sini kullanır; iç servis DNS'i yine çalışır.
   hostNetwork: false
   # nmap raw soket (-sS SYN / -sn host keşfi) için CAP_NET_RAW. Varsayılan açık.

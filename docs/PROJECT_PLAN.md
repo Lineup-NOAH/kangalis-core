@@ -4,7 +4,7 @@
 
 ## 1. Overview / Vision
 
-**Kangalis** is a **Python-based vulnerability management platform with a web panel, focused primarily on internal-network/system scanning**. Think of it as a lightweight OpenVAS/Nessus alternative; the difference is its own dashboard and the ability to **talk to Claude over MCP**.
+**Kangalis** is a **Python-based vulnerability management platform with a web panel, focused primarily on internal-network/system scanning**. Think of it as a lightweight, self-hosted internal-network vulnerability scanner with its own dashboard and the ability to **talk to Claude over MCP**.
 
 The platform discovers hosts and services on the internal network, matches them against known vulnerabilities (CVE), and enriches them with **exploitability signals** (is there a public exploit, is it being exploited in the wild, what is the probability of exploitation) to perform **risk prioritization**; it also covers web application and dependency scanning.
 

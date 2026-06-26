@@ -157,7 +157,7 @@ Network scans run at two intensities (the "Intensity" selector in the panel):
 | 🛡️ **Safe** (default) | Detection — port/service/version → CVE inference + nmap **default** (information-gathering) NSE scripts (`-sC`: banner/header/TLS/SMB OS discovery). Does **not** run intrusive scripts. | `-sV -sC -T4` |
 | ⚠️ **Aggressive** | NSE `vuln`/`exploit`/`discovery` scripts + OS fingerprinting — **actively verifies** vulnerabilities by attempting them. **Excludes** DoS and brute-force. Risk of service disruption / leaving traces. | `-sV -T4 -A --script "(vuln or exploit or discovery) and not dos and not brute"` |
 
-**Aggressive mode is double-locked** (to prevent OpenVAS-style accidents):
+**Aggressive mode is double-locked** (to prevent accidental service disruption):
 1. The **global setting** `ALLOW_AGGRESSIVE_SCANS=true` must be enabled (default is **off** → the option is disabled in the UI).
 2. Only the **`admin`** role can start it.
 

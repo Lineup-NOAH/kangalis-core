@@ -7,8 +7,9 @@
 [![python](https://img.shields.io/badge/python-3.12%2B-blue)]()
 [![license](https://img.shields.io/badge/license-MIT-green)]()
 
-A lightweight OpenVAS/Nessus alternative: it discovers hosts and services on your internal
-network, matches them against known vulnerabilities (CVEs), and enriches them with
+A lightweight, fully self-hosted internal-network vulnerability scanner: it discovers hosts and
+services on your internal network, matches them against known vulnerabilities (CVEs), and enriches
+them with
 **exploitability signals** (Exploit-DB, CISA KEV, EPSS) to deliver **risk prioritization**.
 It can also talk to Claude over **MCP**.
 

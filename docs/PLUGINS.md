@@ -217,7 +217,7 @@ start the `mcp` service), the web panel, the API, and all scanning capabilities 
 **actively** validates vulnerabilities using the nmap NSE `vuln`/`exploit`/`discovery` scripts + OS
 fingerprinting. DoS and brute-force are **excluded**.
 
-**How to enable it.** For safety there is a **double lock** (to prevent OpenVAS-style accidents) and
+**How to enable it.** For safety there is a **double lock** (to prevent accidental service disruption) and
 a confirmation gate:
 1. The **global setting** `ALLOW_AGGRESSIVE_SCANS=true` must be set (`.env` or Compose env). The code
    default is `false` (production-safe). When off, the option is disabled in the UI.
