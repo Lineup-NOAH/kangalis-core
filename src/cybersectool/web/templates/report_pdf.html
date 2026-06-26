@@ -6,164 +6,129 @@
   <style>
     @page {
       size: A4;
-      margin: 2cm 1.5cm 2cm 1.5cm;
-      @bottom-center {
-        content: "Sayfa " counter(page) " / " counter(pages);
-        font-size: 8pt;
-        color: #94a3b8;
-      }
-      @bottom-right {
-        content: "{{ app_name }}";
-        font-size: 8pt;
-        color: #cbd5e1;
-      }
+      margin: 1.7cm 1.4cm 1.7cm 1.4cm;
+      @bottom-center { content: "Sayfa " counter(page) " / " counter(pages); font-size: 8pt; color: #94a3b8; }
+      @bottom-right { content: "{{ app_name }} · gizli"; font-size: 8pt; color: #cbd5e1; }
     }
     * { box-sizing: border-box; }
-    body {
-      font-family: "DejaVu Sans", "Liberation Sans", sans-serif;
-      color: #1e293b;
-      font-size: 10pt;
-      line-height: 1.4;
-      margin: 0;
-    }
-    .header {
-      border-bottom: 2px solid #0f172a;
-      padding-bottom: 12px;
-      margin-bottom: 18px;
-    }
-    .header h1 { font-size: 18pt; margin: 0 0 4px 0; color: #0f172a; }
-    .header .meta { font-size: 9pt; color: #64748b; }
-    h2 { font-size: 13pt; color: #0f172a; margin: 22px 0 10px 0; }
-    .summary { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
-    .summary td {
-      width: 25%;
-      border: 1px solid #e2e8f0;
-      border-radius: 6px;
-      padding: 10px;
-      text-align: center;
-      vertical-align: middle;
-    }
-    .summary .num { font-size: 20pt; font-weight: bold; }
-    .summary .lbl { font-size: 8pt; color: #64748b; text-transform: uppercase; }
-    .num-critical { color: #dc2626; }
-    .num-high { color: #ea580c; }
+    body { font-family: "DejaVu Sans", "Liberation Sans", sans-serif; color: #1e293b; font-size: 10pt; line-height: 1.45; margin: 0; }
+
+    .cover { background: #0f172a; color: #fff; border-radius: 10px; padding: 20px 22px; margin-bottom: 18px; }
+    .cover .brand { font-size: 11pt; letter-spacing: 3px; color: #93c5fd; font-weight: bold; }
+    .cover .title { font-size: 22pt; font-weight: bold; margin: 4px 0 8px; }
+    .cover .meta { font-size: 9pt; color: #cbd5e1; }
+    .cover .meta b { color: #f1f5f9; }
+
+    h2 { font-size: 13pt; color: #0f172a; margin: 20px 0 9px; padding-bottom: 4px; border-bottom: 2px solid #e2e8f0; }
+    h3.host { margin: 15px 0 7px; padding: 5px 10px; background: #f1f5f9; border-left: 3px solid #475569; border-radius: 0 4px 4px 0; font-size: 11pt; color: #0f172a; }
+
+    table.kpi { width: 100%; border-collapse: separate; border-spacing: 7px 0; margin: 2px 0 16px; table-layout: fixed; }
+    table.kpi td { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 9px 6px; text-align: center; vertical-align: middle; }
+    table.kpi .num { font-size: 19pt; font-weight: bold; line-height: 1; }
+    table.kpi .lbl { font-size: 7.5pt; color: #64748b; text-transform: uppercase; letter-spacing: .03em; margin-top: 4px; }
+    .c-crit { color: #dc2626; } .c-high { color: #ea580c; } .c-accent { color: #4f46e5; }
+
+    .sevbar-legend { font-size: 8pt; color: #64748b; margin: 0 0 5px; }
+    .sevbar-legend span { margin-right: 12px; }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; vertical-align: middle; margin-right: 3px; }
+    .sevbar { height: 12px; border-radius: 6px; overflow: hidden; background: #e2e8f0; font-size: 0; margin-bottom: 18px; }
+    .sevbar span { display: inline-block; height: 12px; }
+
+    .ai { background: #f5f3ff; border: 1px solid #ddd6fe; border-left: 3px solid #6d5ce6; border-radius: 0 7px 7px 0; padding: 9px 13px; margin: 8px 0; page-break-inside: avoid; }
+    .ai .lbl { font-size: 8pt; font-weight: bold; text-transform: uppercase; letter-spacing: .04em; color: #5b4bc4; }
+    .ai .body { white-space: pre-wrap; font-size: 9.5pt; line-height: 1.5; margin-top: 4px; color: #1e293b; }
+    .ai pre { white-space: pre-wrap; word-break: break-word; font-family: "DejaVu Sans Mono", monospace; font-size: 8.5pt; line-height: 1.45; background: #ede9fe; border-radius: 5px; padding: 7px 9px; margin: 4px 0 0; color: #312e81; }
+    .ai .note { font-size: 7.5pt; color: #94a3b8; font-style: italic; margin-top: 6px; }
+    .hint { font-size: 9pt; color: #94a3b8; font-style: italic; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 9px 12px; }
+
     table.findings { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
-    table.findings th {
-      background: #f1f5f9;
-      text-align: left;
-      padding: 6px 5px;
-      border: 1px solid #e2e8f0;
-      color: #334155;
-      font-size: 8pt;
-      text-transform: uppercase;
-    }
-    table.findings td {
-      padding: 5px;
-      border: 1px solid #e2e8f0;
-      vertical-align: top;
-    }
+    table.findings th { background: #f1f5f9; text-align: left; padding: 6px 5px; border: 1px solid #e2e8f0; color: #334155; font-size: 8pt; text-transform: uppercase; }
+    table.findings td { padding: 5px; border: 1px solid #e2e8f0; vertical-align: top; }
     table.findings tr { page-break-inside: avoid; }
     .mono { font-family: "DejaVu Sans Mono", monospace; font-size: 8pt; }
-    .sev {
-      display: inline-block;
-      padding: 1px 6px;
-      border-radius: 4px;
-      font-size: 7.5pt;
-      font-weight: bold;
-      color: #fff;
-      text-transform: uppercase;
-    }
-    .sev-critical { background: #dc2626; }
-    .sev-high { background: #ea580c; }
-    .sev-medium { background: #d97706; }
-    .sev-low { background: #16a34a; }
-    .sev-info, .sev-none { background: #64748b; }
+    .sev { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 7.5pt; font-weight: bold; color: #fff; text-transform: uppercase; }
+    .sev-critical { background: #dc2626; } .sev-high { background: #ea580c; } .sev-medium { background: #d97706; } .sev-low { background: #2563eb; } .sev-info, .sev-none { background: #64748b; }
     .risk { font-weight: bold; }
-    .footer {
-      margin-top: 28px;
-      border-top: 1px solid #e2e8f0;
-      padding-top: 10px;
-      font-size: 7.5pt;
-      color: #94a3b8;
-    }
     .empty { color: #94a3b8; font-style: italic; }
-    .detail {
-      border: 1px solid #e2e8f0;
-      border-left: 3px solid #94a3b8;
-      border-radius: 6px;
-      padding: 10px 12px;
-      margin-bottom: 10px;
-      page-break-inside: avoid;
-    }
-    .detail.s-critical { border-left-color: #dc2626; }
-    .detail.s-high { border-left-color: #ea580c; }
-    .detail.s-medium { border-left-color: #d97706; }
-    .detail.s-low { border-left-color: #2563eb; }
+    .detail { border: 1px solid #e2e8f0; border-left: 3px solid #94a3b8; border-radius: 0 6px 6px 0; padding: 10px 12px; margin-bottom: 10px; page-break-inside: avoid; }
+    .detail.s-critical { border-left-color: #dc2626; } .detail.s-high { border-left-color: #ea580c; } .detail.s-medium { border-left-color: #d97706; } .detail.s-low { border-left-color: #2563eb; }
     .detail .dt { font-weight: bold; font-size: 10pt; color: #0f172a; }
     .detail .tags { font-size: 8pt; color: #475569; margin: 3px 0 6px; }
-    .detail .lbl {
-      font-size: 7.5pt; text-transform: uppercase; letter-spacing: .03em;
-      color: #64748b; font-weight: bold; margin-top: 6px;
-    }
+    .detail .lbl { font-size: 7.5pt; text-transform: uppercase; letter-spacing: .03em; color: #64748b; font-weight: bold; margin-top: 6px; }
     .detail p { margin: 2px 0 0; font-size: 9pt; }
-    .detail .rem {
-      background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 5px;
-      padding: 7px 9px; margin-top: 6px;
-    }
+    .detail .rem { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 5px; padding: 7px 9px; margin-top: 6px; }
     .detail .rem .lbl { color: #15803d; }
     .detail .refs { font-size: 7.5pt; color: #2563eb; word-break: break-all; margin-top: 4px; }
     .kev { color: #b91c1c; font-weight: bold; }
+    .footer { margin-top: 26px; border-top: 1px solid #e2e8f0; padding-top: 10px; font-size: 7.5pt; color: #94a3b8; }
   </style>
 </head>
 <body>
-  <div class="header">
-    <h1>{{ app_name }} — Güvenlik Raporu</h1>
-    {% if batch %}<div class="meta">Tarama işi: {{ batch.name }} · {{ batch_targets|length }} hedef · {{ batch.mode.value }}</div>
-    {% elif scan %}<div class="meta">Tarama #{{ scan.id }} · {{ scan.target }} · {{ scan.scan_type.value }}</div>{% endif %}
+  <div class="cover">
+    <div class="brand">KANGALIS</div>
+    <div class="title">Güvenlik Raporu</div>
+    {% if batch %}<div class="meta">Tarama işi: <b>{{ batch.name }}</b> · {{ batch_targets|length }} hedef · {{ batch.mode.value }}</div>
+    {% elif scan %}<div class="meta">Tarama <b>#{{ scan.id }}</b> · {{ scan.target }} · {{ scan.scan_type.value }}</div>
+    {% else %}<div class="meta">Birleşik rapor — tüm taramalar</div>{% endif %}
     <div class="meta">Oluşturulma: {{ generated_at }}</div>
   </div>
 
-  <h2>Özet</h2>
-  <table class="summary">
+  <h2>Risk özeti</h2>
+  <table class="kpi">
     <tr>
-      <td>
-        <div class="num">{{ asset_count }}</div>
-        <div class="lbl">Varlık</div>
-      </td>
-      <td>
-        <div class="num num-critical">{{ severity_counts.get('critical', 0) }}</div>
-        <div class="lbl">Kritik</div>
-      </td>
-      <td>
-        <div class="num num-high">{{ severity_counts.get('high', 0) }}</div>
-        <div class="lbl">Yüksek</div>
-      </td>
-      <td>
-        <div class="num">{{ findings|length }}</div>
-        <div class="lbl">Toplam Bulgu</div>
-      </td>
+      <td><div class="num">{{ asset_count }}</div><div class="lbl">Varlık</div></td>
+      <td><div class="num c-crit">{{ severity_counts.get('critical', 0) }}</div><div class="lbl">Kritik</div></td>
+      <td><div class="num c-high">{{ severity_counts.get('high', 0) }}</div><div class="lbl">Yüksek</div></td>
+      <td><div class="num c-accent">{{ kev_count }}</div><div class="lbl">KEV</div></td>
+      <td><div class="num c-accent">{{ exploit_count }}</div><div class="lbl">Sömürülebilir</div></td>
+      <td><div class="num">{{ findings|length }}</div><div class="lbl">Toplam</div></td>
     </tr>
   </table>
 
-  {# Yerel AI yönetici özeti (#184) — yalnız üretilmişse statik gömülür (PDF'te buton yok).
-     report_pdf.html doğrudan render edilir (t() context processor yok) → sabit Türkçe. #}
+  {% set sev_total = severity_counts.get('critical',0) + severity_counts.get('high',0) + severity_counts.get('medium',0) + severity_counts.get('low',0) + severity_counts.get('info',0) %}
+  {% if sev_total %}
+  <div class="sevbar-legend">
+    <span><span class="dot" style="background:#dc2626;"></span>kritik {{ severity_counts.get('critical',0) }}</span>
+    <span><span class="dot" style="background:#ea580c;"></span>yüksek {{ severity_counts.get('high',0) }}</span>
+    <span><span class="dot" style="background:#d97706;"></span>orta {{ severity_counts.get('medium',0) }}</span>
+    <span><span class="dot" style="background:#2563eb;"></span>düşük {{ severity_counts.get('low',0) }}</span>
+    {% if severity_counts.get('info',0) %}<span><span class="dot" style="background:#64748b;"></span>bilgi {{ severity_counts.get('info',0) }}</span>{% endif %}
+  </div>
+  <div class="sevbar">
+    {% if severity_counts.get('critical',0) %}<span style="width:{{ (severity_counts.get('critical',0)/sev_total*100)|round(2) }}%; background:#dc2626;"></span>{% endif %}
+    {% if severity_counts.get('high',0) %}<span style="width:{{ (severity_counts.get('high',0)/sev_total*100)|round(2) }}%; background:#ea580c;"></span>{% endif %}
+    {% if severity_counts.get('medium',0) %}<span style="width:{{ (severity_counts.get('medium',0)/sev_total*100)|round(2) }}%; background:#d97706;"></span>{% endif %}
+    {% if severity_counts.get('low',0) %}<span style="width:{{ (severity_counts.get('low',0)/sev_total*100)|round(2) }}%; background:#2563eb;"></span>{% endif %}
+    {% if severity_counts.get('info',0) %}<span style="width:{{ (severity_counts.get('info',0)/sev_total*100)|round(2) }}%; background:#64748b;"></span>{% endif %}
+  </div>
+  {% endif %}
+
+  {% if ai_summary or ai_summary_exec or ai_priorities or ai_exploit_chain or ai_compliance %}
+  <h2>Yapay zekâ analizi</h2>
   {% if ai_summary %}
-  <h2>AI Yönetici Özeti</h2>
-  <div style="white-space:pre-wrap; line-height:1.5; font-size:13px; padding:10px 12px; background:#f5f5f7; border:1px solid #ddd; border-radius:6px;">{{ ai_summary }}</div>
-  <p style="font-size:11px; color:#888; font-style:italic; margin-top:4px;">AI üretti — uygulamadan önce doğrulayın.{% if ai_summary_model %} · {{ ai_summary_model }}{% endif %}</p>
+  <div class="ai"><div class="lbl">AI yönetici özeti</div><div class="body">{{ ai_summary }}</div><div class="note">AI tarafından üretildi — uygulamadan önce doğrulayın{% if ai_summary_model %} · {{ ai_summary_model }}{% endif %}</div></div>
+  {% endif %}
+  {% if ai_summary_exec %}
+  <div class="ai"><div class="lbl">AI müşteri özeti</div><div class="body">{{ ai_summary_exec }}</div><div class="note">AI tarafından üretildi — uygulamadan önce doğrulayın{% if ai_summary_exec_model %} · {{ ai_summary_exec_model }}{% endif %}</div></div>
+  {% endif %}
+  {% if ai_priorities %}
+  <div class="ai"><div class="lbl">AI düzeltme önceliklendirmesi</div><div class="body">{{ ai_priorities }}</div><div class="note">Sıra deterministik (risk); AI yalnız gerekçelendirir — doğrulayın{% if ai_priorities_model %} · {{ ai_priorities_model }}{% endif %}</div></div>
+  {% endif %}
+  {% if ai_exploit_chain %}
+  <div class="ai"><div class="lbl">AI saldırı-zinciri analizi</div><div class="body">{{ ai_exploit_chain }}</div><div class="note">AI tarafından üretildi — doğrulayın{% if ai_exploit_chain_model %} · {{ ai_exploit_chain_model }}{% endif %}</div></div>
+  {% endif %}
+  {% if ai_compliance %}
+  <div class="ai"><div class="lbl">AI uyum değerlendirmesi</div><div class="body">{{ ai_compliance }}</div><div class="note">AI tarafından üretildi — doğrulayın{% if ai_compliance_model %} · {{ ai_compliance_model }}{% endif %}</div></div>
+  {% endif %}
+  {% elif ai_enabled %}
+  <h2>Yapay zekâ analizi</h2>
+  <p class="hint">AI analizleri henüz üretilmemiş. Canlı raporda "AI ..." butonlarıyla özet/önceliklendirme/açıklamaları üretip PDF'i yeniden indirin — üretilen tüm AI içeriği bu rapora gömülür.</p>
   {% endif %}
 
   {% if report_hosts %}
-  <h2>Bulunan Hostlar ({{ report_hosts|length }})</h2>
+  <h2>Bulunan hostlar ({{ report_hosts|length }})</h2>
   <table class="findings">
-    <thead>
-      <tr>
-        <th>IP</th>
-        <th>Cihaz / Hostname</th>
-        <th>İşletim sistemi</th>
-        <th>Açık portlar / servisler</th>
-      </tr>
-    </thead>
+    <thead><tr><th>IP</th><th>Cihaz / Hostname</th><th>İşletim sistemi</th><th>Açık portlar / servisler</th></tr></thead>
     <tbody>
       {% for h in report_hosts %}
       <tr>
@@ -181,17 +146,36 @@
   </table>
   {% endif %}
 
+  {% if compliance_summary %}
+  <h2>Uyum</h2>
+  <div style="margin: 0 0 9px;">
+    {% for fw, b in compliance_summary.items() %}
+    <span style="display:inline-block; font-size:8.5pt; padding:3px 10px; margin:0 6px 5px 0; border-radius:6px; border:1px solid #e2e8f0; background:{{ '#fef2f2' if b['score'] < 60 else ('#fffbeb' if b['score'] < 90 else '#f0fdf4') }};"><b>{{ fw }}</b> — skor {{ b['score'] }}% · {{ b['pass'] }}/{{ b['total'] }} geçti</span>
+    {% endfor %}
+  </div>
+  <table class="findings">
+    <thead><tr><th>Çerçeve</th><th>Kontrol</th><th>Başlık</th><th>Durum</th></tr></thead>
+    <tbody>
+      {% for c in compliance_checks %}
+      <tr>
+        <td>{{ c.framework }}</td>
+        <td class="mono">{{ c.control_id }}</td>
+        <td>{{ c.title }}</td>
+        <td>{% if c.status == 'pass' %}<span class="sev sev-low">geçti</span>{% else %}<span class="sev sev-{{ (c.severity.value if c.severity else 'high') }}">kaldı</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
   {% if dir_findings %}
-  <h2>Bulunan Yollar (dizin taraması)</h2>
+  <h2>Bulunan yollar (dizin taraması)</h2>
   <table class="findings">
     <thead><tr><th>Önem</th><th>Yol</th></tr></thead>
     <tbody>
       {% for f in dir_findings %}
       {% set sev = (f.severity.value if f.severity is not string else f.severity) | lower %}
-      <tr>
-        <td><span class="sev sev-{{ sev }}">{{ sev }}</span></td>
-        <td class="mono">{{ f.title.replace('Bulunan yol: ', '') }}</td>
-      </tr>
+      <tr><td><span class="sev sev-{{ sev }}">{{ sev }}</span></td><td class="mono">{{ f.title.replace('Bulunan yol: ', '') }}</td></tr>
       {% endfor %}
     </tbody>
   </table>
@@ -218,16 +202,7 @@
   <p class="empty">Bulgu yok.</p>
   {% else %}
   <table class="findings">
-    <thead>
-      <tr>
-        <th>Önem</th>
-        <th>CVE</th>
-        <th>CVSS</th>
-        <th>Risk</th>
-        <th>Exploit</th>
-        <th>Başlık</th>
-      </tr>
-    </thead>
+    <thead><tr><th>Önem</th><th>CVE</th><th>CVSS</th><th>Risk</th><th>Exploit</th><th>Başlık</th></tr></thead>
     <tbody>
       {% for grp in findings_main_by_host %}
       <tr>
@@ -254,11 +229,13 @@
     </tbody>
   </table>
 
-  <h2>Bulgu Detayları ve Çözümler</h2>
+  <h2>Bulgu detayları ve çözümler</h2>
   {% for grp in findings_main_by_host %}
-  <h3 style="margin:14px 0 6px; padding-bottom:3px; border-bottom:1.5px solid #c7d2fe; font-size:12px;">
-    {% if grp.asset_id is none %}Sunucu atanmamış (genel){% else %}{{ grp.label }}{% endif %}{% if grp.ip and grp.ip != grp.label %} — {{ grp.ip }}{% endif %}
-  </h3>
+  <h3 class="host">{% if grp.asset_id is none %}Sunucu atanmamış (genel){% else %}{{ grp.label }}{% endif %}{% if grp.ip and grp.ip != grp.label %} — {{ grp.ip }}{% endif %}</h3>
+  {% set story = ai_story_map.get(grp.asset_id) if grp.asset_id is not none and ai_story_map else None %}
+  {% if story %}
+  <div class="ai"><div class="lbl">AI varlık risk hikâyesi</div><div class="body">{{ story.content }}</div><div class="note">AI tarafından üretildi — doğrulayın{% if story.model %} · {{ story.model }}{% endif %}</div></div>
+  {% endif %}
   {% for f in grp['items'] %}
   {% set cve = cve_map.get(f.cve_id) %}
   {% set rem = remediation_map.get(f.id) %}
@@ -279,7 +256,7 @@
     {% if ex and ex.details %}
     <div class="lbl">Exploit kaynağı{% if ex.verified_count %} · {{ ex.verified_count }} doğrulanmış{% endif %}</div>
     {% for d in ex.details %}
-    <p class="mono" style="font-size:10px;">{% if d.source == 'metasploit' %}Metasploit{% else %}Exploit-DB{% endif %}: {{ d.external_id }}{% if d.title %} — {{ d.title }}{% endif %}{% if d.type %} [{{ d.type }}]{% endif %}{% if d.rank %} · {{ d.rank }}{% endif %}{% if d.verified %} · ✓ doğrulanmış{% endif %}</p>
+    <p class="mono" style="font-size:10px;">{% if d.source == 'metasploit' %}Metasploit{% else %}Exploit-DB{% endif %}: {{ d.external_id }}{% if d.title %} — {{ d.title }}{% endif %}{% if d.type %} [{{ d.type }}]{% endif %}{% if d.rank %} · {{ d.rank }}{% endif %}{% if d.verified %} · doğrulanmış{% endif %}</p>
     {% endfor %}
     {% endif %}
     {% if desc %}<div class="lbl">Açıklama</div><p>{{ desc }}</p>{% endif %}
@@ -289,6 +266,14 @@
       <div class="lbl">Çözüm</div><p>{{ rem.summary }}</p>
       {% if rem.references %}<div class="refs">{% for ref in rem.references %}{{ ref }}{% if not loop.last %} · {% endif %}{% endfor %}</div>{% endif %}
     </div>
+    {% endif %}
+    {% set aix = ai_explain_map.get(f.id) if ai_explain_map else None %}
+    {% if aix %}
+    <div class="ai"><div class="lbl">AI açıklaması</div><div class="body">{{ aix.content }}</div><div class="note">AI tarafından üretildi — doğrulayın{% if aix.model %} · {{ aix.model }}{% endif %}</div></div>
+    {% endif %}
+    {% set ascr = ai_script_map.get(f.id) if ai_script_map else None %}
+    {% if ascr %}
+    <div class="ai"><div class="lbl">AI düzeltme script taslağı</div><pre>{{ ascr.content }}</pre><div class="note">İncelemeden çalıştırmayın — taslaktır{% if ascr.model %} · {{ ascr.model }}{% endif %}</div></div>
     {% endif %}
   </div>
   {% endfor %}

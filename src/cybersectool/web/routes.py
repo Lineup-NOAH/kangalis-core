@@ -3919,6 +3919,14 @@ async def _gather_report_context(
     # Düzeltme önceliklendirme anlatısı (Dalga 1b): sıra deterministik, AI yalnız gerekçelendirir.
     ai_priorities_key = f"priorities:{ai_summary_scope}:{ai_summary_id}"
     ai_priorities_row = await ai_cache.get_cached(session, ai_priorities_key)
+    # Sömürü-zinciri + uyum anlatısı (Dalga 3): on-demand üretilir; üretilmişse rapora (HTML+PDF)
+    # statik gömülür. Eskiden yalnız canlı sayfada HTMX ile görünüp yenilemede kayboluyordu.
+    ai_exploit_chain_row = await ai_cache.get_cached(
+        session, f"exploit-chain:{ai_summary_scope}:{ai_summary_id}"
+    )
+    ai_compliance_row = await ai_cache.get_cached(
+        session, f"compliance:{ai_summary_scope}:{ai_summary_id}"
+    )
     if scan is not None or batch is not None:
         asset_count = len({f.asset_id for f in findings if f.asset_id})
     else:
@@ -4045,6 +4053,10 @@ async def _gather_report_context(
         "ai_summary_exec_model": ai_summary_exec_row.model if ai_summary_exec_row else "",
         "ai_priorities": ai_priorities_row.content if ai_priorities_row else None,
         "ai_priorities_model": ai_priorities_row.model if ai_priorities_row else "",
+        "ai_exploit_chain": ai_exploit_chain_row.content if ai_exploit_chain_row else None,
+        "ai_exploit_chain_model": ai_exploit_chain_row.model if ai_exploit_chain_row else "",
+        "ai_compliance": ai_compliance_row.content if ai_compliance_row else None,
+        "ai_compliance_model": ai_compliance_row.model if ai_compliance_row else "",
         "ai_script_map": ai_script_map,
         "ai_story_map": ai_story_map,
     }
