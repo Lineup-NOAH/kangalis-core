@@ -9,7 +9,7 @@
 > **İç ağınızın bekçisi** — birincil odağı **iç ağ/sistem taraması** olan, web panelli, Python tabanlı bir zafiyet yönetim platformu.
 
 [![CI](https://github.com/Lineup-NOAH/kangalis-core/actions/workflows/ci.yml/badge.svg)](https://github.com/Lineup-NOAH/kangalis-core/actions/workflows/ci.yml)
-[![version](https://img.shields.io/badge/version-1.0.1-blue)]()
+[![version](https://img.shields.io/badge/version-1.1.0-blue)]()
 [![python](https://img.shields.io/badge/python-3.12%2B-blue)]()
 [![license](https://img.shields.io/badge/license-MIT-green)]()
 
@@ -93,16 +93,21 @@ uca, **kendi altyapınızda** çalışan sıkı bir **tespit → eşleştir → 
 
 **Tarama modları**
 
-| Mod | Ne yapar |
-|---|---|
-| **Ping** | hızlı host keşfi |
-| **Ağ** | portlar · servisler · sürümler (+ sürümden-çıkarılan CVE'ler) |
-| **Güvenli CVE** | yerel CVE-DB eşleştirmesi, müdahaleci değil — **varsayılan** |
-| **Agresif CVE** | + canlı NVD + aktif NSE doğrulaması — *yine de asla sömürmez*; isteğe bağlı / kapılı |
-| **Web CVE** | web-yığını CVE'leri (güvenlik başlıkları · TLS · uygulama) |
-| **Kimlikli** | kimlik doğrulamalı denetimler (SSH/Windows/DB/SNMP/SMB/LDAP) + uyumluluk |
+Her mod yalnızca **tespit eder** — bulur ve işaretler ama **asla exploit çalıştırmaz** (bu, aşağıdaki ayrı eklentinin işidir). Agresif modlar yalnız admin'e açıktır ve hedefe dokunmadan önce açık bir onay kutusu ister.
 
-(ayrıca bağımlılık manifestoları için **SCA**)
+| Mod | Ne yapar | Müdahaleci? |
+|---|---|---|
+| **Ping** | Yalnız canlı host keşfi (`nmap -sn`) — port/CVE yok | Hayır |
+| **Ağ** | Açık port + servis/sürüm tespiti (port seçici; opsiyonel UDP) | Hafif sonda |
+| **Güvenli CVE** | Yüzeysel tarama — sürümleri **yerel** CVE/Exploit DB ile eşleştirir, açık varsa bildirir. Hedefe dokunmaz. **(varsayılan)** | Hayır |
+| **Agresif CVE** | CVE'leri aktif **doğrular** (nmap NSE vuln scriptleri) ve hangi exploit'lerin **kullanılabilir** olduğunu gösterir — ama **asla sömürmez**. Admin + açık onay. | Evet (aktif sonda) |
+| **Web** | Pasif web denetimi — güvenlik başlıkları, TLS, banner | Hafif |
+| **Web CVE** | Aktif **DAST** (SQLi/XSS/LFI) + web-yığını CVE tespiti (`Server`/`X-Powered-By` banner) + kullanılabilir-exploit ipuçları — **asla sömürmez**. Admin + onay. | Evet |
+| **Kimlikli** | Kimlik doğrulamalı *içeriden* denetim: SSH/WinRM + veritabanları (PostgreSQL/MySQL/MSSQL/Oracle)/SMB/LDAP/SNMP/Cisco IOS, **CIS** uyumu ve salt-okunur yetki-yükseltme enumerasyonu | Giriş |
+
+Ayrıca **SCA** — bağımlılık manifestoları için zafiyet kontrolü (ağ taraması yok).
+
+> Gerçek sömürü, kimlik brute-force ve yetki-yükseltme *denemeleri* çekirdekte **yoktur** — aşağıdaki eklentiye bakın.
 
 ### 🧩 Sömürü — ayrı, premium bir eklenti (bu depoda değil)
 

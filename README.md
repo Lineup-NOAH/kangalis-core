@@ -9,7 +9,7 @@
 > **The guardian of your internal network** — a Python-based vulnerability management platform with a web dashboard, focused primarily on **internal network/system scanning**.
 
 [![CI](https://github.com/Lineup-NOAH/kangalis-core/actions/workflows/ci.yml/badge.svg)](https://github.com/Lineup-NOAH/kangalis-core/actions/workflows/ci.yml)
-[![version](https://img.shields.io/badge/version-1.0.1-blue)]()
+[![version](https://img.shields.io/badge/version-1.1.0-blue)]()
 [![python](https://img.shields.io/badge/python-3.12%2B-blue)]()
 [![license](https://img.shields.io/badge/license-MIT-green)]()
 
@@ -94,16 +94,21 @@ diagram above).
 
 **Scan modes**
 
-| Mode | What it does |
-|---|---|
-| **Ping** | fast host discovery |
-| **Network** | ports · services · versions (+ version-inferred CVEs) |
-| **Safe CVE** | local CVE-DB matching, non-intrusive — **default** |
-| **Aggressive CVE** | + live NVD + active NSE confirmation — *still never exploits*; opt-in / gated |
-| **Web CVE** | web-stack CVEs (security headers · TLS · app) |
-| **Credentialed** | authenticated audits (SSH/Windows/DB/SNMP/SMB/LDAP) + compliance |
+Every mode is **detection-only** — it finds and flags, but **never runs an exploit** (that's the separate plugin below). Aggressive modes are admin-only and require an explicit consent checkbox before they touch a target.
 
-(plus **SCA** for dependency manifests)
+| Mode | What it does | Intrusive? |
+|---|---|---|
+| **Ping** | Live-host discovery only (`nmap -sn`) — no ports, no CVEs | No |
+| **Network** | Open ports + service/version detection (port selector; optional UDP) | Light probe |
+| **Safe CVE** | Surface scan — matches versions against the **local** CVE/Exploit DB and flags what's vulnerable. Never touches the target. **(default)** | No |
+| **Aggressive CVE** | Actively **verifies** CVEs (nmap NSE vuln scripts) and shows which exploits are **usable** — but **never exploits**. Admin + explicit consent. | Yes (active probes) |
+| **Web** | Passive web check — security headers, TLS, banners | Light |
+| **Web CVE** | Active **DAST** (SQLi/XSS/LFI) + web-stack CVE detection (`Server`/`X-Powered-By` banners) + usable-exploit hints — **never exploits**. Admin + consent. | Yes |
+| **Credentialed** | Authenticated *inside* audit: SSH/WinRM + databases (PostgreSQL/MySQL/MSSQL/Oracle)/SMB/LDAP/SNMP/Cisco IOS, **CIS** compliance, and read-only privilege-escalation enumeration | Login |
+
+Plus **SCA** — vulnerability check for dependency manifests (no network scan).
+
+> Real exploitation, credential brute-force and privilege-escalation *attempts* are **not in the core** — see the plugin below.
 
 ### 🧩 Exploitation — a separate, premium plugin (not in this repo)
 
