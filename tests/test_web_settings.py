@@ -164,6 +164,19 @@ async def test_settings_nvd_backfill_enqueues(
         captured.update(kwargs)
 
     monkeypatch.setattr(routes.nvd_backfill_task, "delay", fake_delay)
+
+    # is_active()/mark_queued() Redis'e bağlanır; testi hermetik tut: canlı bir Redis
+    # erişilebilirse (ör. stack ayakta) önceki state sızıp "zaten aktif" guard'ını
+    # tetikleyebilir → görev kuyruğa girmez. Guard'ı "boşta" sabitle, kuyruk işaretini no-op yap.
+    async def _not_active() -> bool:
+        return False
+
+    async def _noop_queued(**kwargs: object) -> None:
+        return None
+
+    monkeypatch.setattr(routes.cve_backfill, "is_active", _not_active)
+    monkeypatch.setattr(routes.cve_backfill, "mark_queued", _noop_queued)
+
     await _login(client, session_factory, "admB", Role.admin)
     resp = await client.post(
         "/settings/nvd/backfill", data={"backfill_years": "2"}, follow_redirects=False

@@ -284,6 +284,12 @@
   <div style="margin-top:16px;"><button type="submit" class="kg-btn kg-btn-primary">{{ t('save') }}</button></div>
 </form>
 
+{# GIZLENDI (cve-seed tohumu): Tek-seferlik gecmis yukleme (backfill) paneli + canli-ilerleme
+   parcasi UI'dan gizlendi. On-derlenmis CVE tohumu kurulumda 2000'den bugune tum gecmisi
+   yukledigi icin derin geriye-cekme gereksiz (ve NVD anahtari yoksa rate-limit'e takilir).
+   Yukaridaki duzenli NVD senkronu (120-gunluk pencere) tazeligi surdurur. Backend route +
+   gorev (/settings/nvd/backfill, .../status, .../cancel) ve _nvd_backfill_status.html parcasi
+   dokunulmadan duruyor; yeniden gostermek icin asagiyi bu Jinja yorum sarmalindan cikarin.
 <!-- Tek seferlik geçmiş yükleme (backfill) -->
 <form method="post" action="/settings/nvd/backfill" class="kg-card" style="padding:20px; margin-bottom:14px; border-style:dashed;">
   <div class="kg-field-label" style="margin-bottom:2px;">{{ t('set_nvd_backfill_title') }}</div>
@@ -306,6 +312,7 @@
 <!-- Backfill canlı ilerleme + iptal (BACKFILL-PROGRESS): sayfa açılışında bir kez yüklenir;
      çalışan yükleme varsa parça kendini 3 sn'de bir yeniler, yoksa boş döner ve durur. -->
 <div id="nvd-backfill-status" hx-get="/settings/nvd/backfill/status" hx-trigger="load" hx-swap="outerHTML"></div>
+#}
 
 <!-- Saat dilimi (IX-1) -->
 <h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0 0 4px;">{{ icon('clock', 18) }} {{ t('set_tz_section') }}</h2>
