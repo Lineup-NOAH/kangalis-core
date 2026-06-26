@@ -6048,6 +6048,8 @@ async def _update_page(
             "update": stored_status(row),
             "s": row,
             "apply_cmds": _UPDATE_APPLY_CMDS,
+            # Eklenti kuruluysa "guncelle" sonrasi re-bake hatirlatmasi (--build eklentiyi siler).
+            "exploitation_available": exploit_plugin_available(),
             "message": message,
         },
     )

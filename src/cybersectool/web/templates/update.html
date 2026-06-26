@@ -71,9 +71,15 @@
 
     {# Durum rozeti / mesajı #}
     {% if update.available %}
-    <div class="kg-card" style="padding:10px 14px; margin-bottom:12px; background:color-mix(in srgb, var(--sev-medium, #d97706) 12%, transparent); border:1px solid var(--sev-medium, #d97706);">
-      <strong>{{ t('update_available_badge') }}</strong>
-      <span class="font-mono k-sm">v{{ update.current }} → v{{ update.latest }}</span>
+    <div class="kg-card" style="padding:12px 14px; margin-bottom:12px; background:color-mix(in srgb, var(--sev-medium, #d97706) 12%, transparent); border:1px solid var(--sev-medium, #d97706);">
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <strong>{{ t('update_available_badge') }}</strong>
+        <span class="font-mono k-sm">v{{ update.current }} → v{{ update.latest }}</span>
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+        <a href="#update-how" class="kg-btn kg-btn-primary kg-btn-sm">{{ icon('download', 15) }} {{ t('update_do_now') }}</a>
+        <a href="https://github.com/Lineup-NOAH/kangalis-core/releases/tag/v{{ update.latest }}" target="_blank" rel="noopener noreferrer" class="kg-btn kg-btn-sm">{{ icon('info', 15) }} {{ t('update_release_notes') }} ↗</a>
+      </div>
     </div>
     {% elif update.status == 'ok' and update.latest %}
     <div class="k-sm" style="margin-bottom:12px; color:var(--sev-ok, #16a34a); font-weight:600;">
@@ -97,11 +103,14 @@
   </div>
 
   {# --- Nasıl güncellerim (host komutları; uygulama host'a dokunmaz) --- #}
-  <div class="kg-card" style="padding:16px 18px;{% if update.available %} border:1px solid var(--accent);{% endif %}">
+  <div id="update-how" class="kg-card" style="padding:16px 18px;{% if update.available %} border:1px solid var(--accent);{% endif %}">
     <div class="k-label" style="display:flex; align-items:center; gap:8px; font-weight:600; margin-bottom:6px;">
       {{ icon('download', 16) }} {{ t('update_how_title') }}
     </div>
     <p class="k-xs" style="color:var(--fg2); margin:0 0 12px;">{{ t('update_how_sub') }}</p>
+    {% if exploitation_available %}
+    <p class="k-xs" style="color:var(--sev-medium, #d97706); font-weight:600; margin:0 0 12px;">{{ icon('alert', 13) }} {{ t('update_plugin_rebake_note') }}</p>
+    {% endif %}
 
     <div class="k-sm" style="font-weight:600; margin-bottom:4px;">{{ t('update_how_image') }}</div>
     <div style="display:flex; gap:8px; align-items:stretch; margin-bottom:12px;">

@@ -4,6 +4,16 @@ All notable changes to Kangalis are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project follows
 [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] - 2026-06-27
+
+### Added
+- **"Update" button + release notes on the Update page.** After "Check now", when a newer
+  version is available, the page shows an **Update** button (jumps to the host update command)
+  and a **Release notes** link to the matching GitHub release — so admins can see what changed
+  and update in one place. The app still never runs the update itself (you run the shown command
+  on the host); the security boundary is preserved. If the exploit plugin is installed, the page
+  reminds you to re-run the plugin installer after updating (so the rebuild doesn't drop it).
+
 ## [1.2.0] - 2026-06-27
 
 ### Added

@@ -60,6 +60,31 @@ async def test_update_page_admin_renders(
     assert 'href="/update"' in body  # sol menü girişi
 
 
+async def test_update_page_available_shows_update_button(
+    client: AsyncClient,
+    session_factory: async_sessionmaker[AsyncSession],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Güncelleme varsa 'Güncelle' butonu + sürüm-notları linki; eklenti kuruluysa re-bake notu."""
+    _fast_versions(monkeypatch)
+    # DB'ye daha yüksek latest_version yaz → stored_status available=True üretir.
+    async with session_factory() as s:
+        row = await get_settings(s)
+        row.latest_version = "99.0.0"
+        row.update_last_status = "ok"
+        await s.commit()
+    # Eklenti kurulu gibi davran → re-bake hatırlatması görünmeli.
+    import cybersectool.web.routes as routes
+
+    monkeypatch.setattr(routes, "exploit_plugin_available", lambda: True)
+
+    await _login(client, session_factory, "adm_avail", Role.admin)
+    body = (await client.get("/update")).text
+    assert 'href="#update-how"' in body  # Güncelle butonu (komut bölümüne kaydırır)
+    assert "/releases/tag/v99.0.0" in body  # Sürüm notları linki (GitHub release)
+    assert "exploit_kurulum" in body  # eklenti kurulu → re-bake notu
+
+
 async def test_update_page_non_admin_redirect(
     client: AsyncClient, session_factory: async_sessionmaker[AsyncSession]
 ) -> None:

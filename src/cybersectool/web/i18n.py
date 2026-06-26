@@ -172,6 +172,14 @@ DICT: dict[str, dict[str, str]] = {
     "update_check_now": {"tr": "Şimdi denetle", "en": "Check now"},
     "update_uptodate": {"tr": "Günceldir", "en": "Up to date"},
     "update_available_badge": {"tr": "Yeni sürüm var!", "en": "Update available!"},
+    "update_do_now": {"tr": "Güncelle", "en": "Update"},
+    "update_release_notes": {"tr": "Sürüm notları", "en": "Release notes"},
+    "update_plugin_rebake_note": {
+        "tr": "Exploit eklentisi kurulu: güncellemeden sonra exploit_kurulum içindeki kur'u "
+        "(kur.bat / kur.sh) TEKRAR çalıştırın — yoksa '--build' eklentiyi siler.",
+        "en": "Exploit plugin installed: after updating, re-run kur (kur.bat / kur.sh) in "
+        "exploit_kurulum — otherwise '--build' removes the plugin.",
+    },
     "update_status_unreachable": {
         "tr": "Sürüm sunucusuna erişilemedi (internet yok ya da engelli).",
         "en": "Could not reach the version server (no internet or blocked).",
