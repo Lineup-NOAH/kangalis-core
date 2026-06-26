@@ -644,6 +644,23 @@ DICT: dict[str, dict[str, str]] = {
         "separate 'Exploit / Exploitation' mode. Use only on authorized, backed-up systems; this "
         "action is recorded in the audit log.",
     },
+    # Sömürme (exploit) modu onayı — gerçek içeri-sızma (EN YÜKSEK müdahale).
+    "danger_exploit_title": {
+        "tr": "SÖMÜRME modu — gerçek içeri-sızma denemesi",
+        "en": "EXPLOITATION mode — real break-in attempt",
+    },
+    "danger_exploit_body": {
+        "tr": "Bu mod agresif gibi tarar AMA eşleşen exploit'leri (Metasploit + Exploit-DB) "
+        "hedefe GERÇEKTEN UYGULAR — yani içeri sızmayı dener. Hedef servisleri çökebilir, "
+        "veri değişebilir/kaybolabilir ve kalıcı iz bırakır. EN YÜKSEK müdahale seviyesidir. "
+        "Yalnızca AÇIKÇA YETKİLİ, izole/yedeği alınmış lab veya sistemlerde kullanın; her "
+        "deneme denetim günlüğüne kaydedilir.",
+        "en": "This mode scans like aggressive but ACTUALLY APPLIES matching exploits "
+        "(Metasploit + Exploit-DB) to the target — i.e. attempts to break in. Target "
+        "services may crash, data may change/be lost, and it leaves persistent traces. This "
+        "is the HIGHEST intrusion level. Use only on EXPLICITLY AUTHORIZED, isolated/backed-up "
+        "lab or systems; every attempt is recorded in the audit log.",
+    },
     # Web modu (DAST) onayı — nmap NSE değil, web uygulamasına müdahaleci payload (IX-2).
     # Web CVE (web_aggressive) modu onayı — aktif DAST. SR-3b: pasif "Web" modu artık uyarı/onay
     # İSTEMEZ (DAST bu moda taşındı). Sömürmez — gerçek web sömürüsü ayrı "Web Sömürü" modunda.
@@ -733,6 +750,7 @@ DICT: dict[str, dict[str, str]] = {
         "vulnerability exists. Does NOT touch the target (no exploitation).",
     },
     "wmode_cve_aggr": {"tr": "Agresif CVE (sömürmez)", "en": "Aggressive CVE (no exploit)"},
+    "wmode_exploit": {"tr": "Sömürme (gerçek exploit)", "en": "Exploitation (real exploit)"},
     "wmode_cve_aggr_d": {
         "tr": "CVE'leri aktif olarak doğrular (nmap NSE vuln/exploit) ve hangi exploit'lerin "
         "KULLANILABİLECEĞİNİ gösterir — ama SÖMÜRMEZ. Müdahaleci — yalnız admin + açık onay.",

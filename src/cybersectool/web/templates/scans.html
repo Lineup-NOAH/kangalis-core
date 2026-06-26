@@ -71,6 +71,7 @@
           {% if user.role.value == "admin" %}<option value="cve_aggressive">{{ t('wmode_cve_aggr') }}</option>{% endif %}
           <option value="web">{{ t('type_web') }}</option>
           {% if user.role.value == "admin" %}<option value="web_aggressive">{{ t('wmode_web_cve') }}</option>{% endif %}
+          {% if exploit_unlocked and user.role.value == "admin" %}<option value="exploit">{{ t('wmode_exploit') }}</option>{% endif %}
         </select>
       </div>
       <div id="q-ports-wrap">
@@ -500,7 +501,7 @@ function scanMode() {
   document.getElementById('q-ports-wrap').style.display = (mv === 'network') ? '' : 'none';
   // UDP servis taraması (#143): port taraması yapan modlarda (ağ + CVE) anlamlı.
   var udpW = document.getElementById('q-udp-wrap');
-  if (udpW) udpW.style.display = (mv === 'network' || mv === 'cve_safe' || mv === 'cve_aggressive') ? '' : 'none';
+  if (udpW) udpW.style.display = (mv === 'network' || mv === 'cve_safe' || mv === 'cve_aggressive' || mv === 'exploit') ? '' : 'none';
   if (mv === 'network') { scanPorts(); }
   else { var pc = document.getElementById('q-ports-custom-wrap'); if (pc) pc.style.display = 'none'; }
   // SR-3b: web modları (Web / Web CVE / Web Sömürü) — URL/dirscan/external alanları ortak.
@@ -517,11 +518,14 @@ function scanMode() {
     dirWordlistToggle();
   }
   // SR-3b: sade "Web" PASİF → onay istemez (DAST "Web CVE" modunda). Yalnız agresif onay ister.
-  var needsAck = (mv === 'cve_aggressive') || (mv === 'web_aggressive');
+  var needsAck = (mv === 'cve_aggressive') || (mv === 'web_aggressive') || (mv === 'exploit');
   if (needsAck) {
     var ackTitle = document.getElementById('q-ack-title');
     var ackBody = document.getElementById('q-ack-body');
-    if (isWeb) {
+    if (mv === 'exploit') {
+      ackTitle.textContent = {{ t('danger_exploit_title') | tojson }};
+      ackBody.textContent = {{ t('danger_exploit_body') | tojson }};
+    } else if (isWeb) {
       ackTitle.textContent = {{ t('danger_web_title') | tojson }};
       ackBody.textContent = {{ t('danger_web_body') | tojson }};
     } else {
@@ -532,9 +536,9 @@ function scanMode() {
   document.getElementById('q-ack-box').style.display = needsAck ? 'flex' : 'none';
   var ack = document.getElementById('q-ack');
   if (!needsAck && ack) ack.checked = false;
-  // web (güvenli) ack'siz başlayabilir (DAST opsiyonel); agresif modlar ack zorunlu.
+  // web (güvenli) ack'siz başlayabilir (DAST opsiyonel); agresif/sömürme modlar ack zorunlu.
   document.getElementById('scan-start').disabled =
-    (mv === 'cve_aggressive' || mv === 'web_aggressive')
+    (mv === 'cve_aggressive' || mv === 'web_aggressive' || mv === 'exploit')
     && !(ack && ack.checked);
 }
 function scanPorts() {

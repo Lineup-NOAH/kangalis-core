@@ -9,7 +9,7 @@
 > **The guardian of your internal network** — a Python-based vulnerability management platform with a web dashboard, focused primarily on **internal network/system scanning**.
 
 [![CI](https://github.com/Lineup-NOAH/kangalis-core/actions/workflows/ci.yml/badge.svg)](https://github.com/Lineup-NOAH/kangalis-core/actions/workflows/ci.yml)
-[![version](https://img.shields.io/badge/version-1.1.0-blue)]()
+[![version](https://img.shields.io/badge/version-1.2.0-blue)]()
 [![python](https://img.shields.io/badge/python-3.12%2B-blue)]()
 [![license](https://img.shields.io/badge/license-MIT-green)]()
 

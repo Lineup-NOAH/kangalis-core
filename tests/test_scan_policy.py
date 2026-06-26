@@ -131,16 +131,18 @@ def test_exploit_mode_gated_like_aggressive() -> None:
 
 
 def test_wizard_modes_split() -> None:
-    """SR-1: agresif CVE artık exploit=False; yeni cve_exploit modu exploit=True (kapılı)."""
+    """SR-1: agresif CVE exploit=False; ayrı 'exploit' (Sömürme) modu exploit=True (kapılı)."""
     aggr = WIZARD_MODES["cve_aggressive"]
     assert aggr.nmap_mode == ScanMode.aggressive
     assert aggr.exploit is False  # sömürmez
     assert aggr.needs_ack and aggr.admin_only
 
-    # OSS açık-kaynak çekirdek: Sömürme (cve_exploit) modu kullanıcıya SUNULMAZ.
-    assert "cve_exploit" not in WIZARD_MODES
-    # Eski "exploit" form alias'ı güvenli (sömürmeyen) ağ moduna düşer.
-    assert resolve_wizard_mode("exploit").key == "network"
+    # Sömürme (exploit) modu WIZARD_MODES'ta — UI'da YALNIZ eklenti+lisans varken görünür
+    # (exploit_unlocked, template-gated); backend ScanMode.exploit ile gerçek sömürü yapar.
+    assert "exploit" in WIZARD_MODES
+    exp = resolve_wizard_mode("exploit")
+    assert exp.nmap_mode == ScanMode.exploit
+    assert exp.exploit and exp.admin_only and exp.needs_ack
 
 
 def test_nmap_options_mapping() -> None:

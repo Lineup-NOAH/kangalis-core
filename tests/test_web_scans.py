@@ -30,6 +30,32 @@ async def test_scans_page_renders(
     assert "Tarama Başlat" in resp.text
 
 
+async def test_scans_exploit_mode_gated(
+    client: AsyncClient,
+    session_factory: async_sessionmaker[AsyncSession],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Sömürme (exploit) modu YALNIZ eklenti+lisans (exploit_unlocked) + admin için forma düşer."""
+    # Varsayılan: eklenti/lisans yok → exploit_unlocked False → seçenek GÖRÜNMEZ.
+    await _login(client, session_factory, "exadmin", Role.admin)
+    resp = await client.get("/scans")
+    assert resp.status_code == 200
+    assert 'value="exploit"' not in resp.text
+
+    # Eklenti kurulu + lisanslı (exploit_unlocked True) → seçenek admin formuna düşer.
+    async def _unlocked(_session: object) -> bool:
+        return True
+
+    monkeypatch.setattr("cybersectool.web.routes.exploit_unlocked", _unlocked)
+    resp2 = await client.get("/scans")
+    assert 'value="exploit"' in resp2.text
+
+    # Admin-only: kilit açık olsa bile analist görmez.
+    await _login(client, session_factory, "exanalyst", Role.analyst)
+    resp3 = await client.get("/scans")
+    assert 'value="exploit"' not in resp3.text
+
+
 async def test_scans_redirects_anonymous(client: AsyncClient) -> None:
     resp = await client.get("/scans", follow_redirects=False)
     assert resp.status_code == 303

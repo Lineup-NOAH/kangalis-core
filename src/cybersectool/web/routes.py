@@ -143,7 +143,7 @@ from cybersectool.core.ldap import (
     ldap_test_connection,
 )
 from cybersectool.core.ldap_config import get_bind_password, get_ldap_config, save_ldap_config
-from cybersectool.core.licensing import active_license, feature_licensed
+from cybersectool.core.licensing import active_license, exploit_unlocked, feature_licensed
 from cybersectool.core.login_guard import (
     clear_login_failures,
     login_lockout_remaining,
@@ -492,6 +492,8 @@ async def _scans_page(
             "error": error,
             "message": message,
             "allow_aggressive": settings.allow_aggressive_scans,
+            # Sömürme modu yalnız eklenti+lisans varsa forma düşer (scans.html exploit_unlocked).
+            "exploit_unlocked": await exploit_unlocked(session),
         },
         status_code=status_code,
     )

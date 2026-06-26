@@ -4,6 +4,16 @@ All notable changes to Kangalis are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project follows
 [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] - 2026-06-27
+
+### Added
+- **Exploitation scan mode (plugin- and license-gated)** — when the commercial
+  `kangalis-exploit` plugin is installed **and** a valid `exploit` license is active, an
+  "Exploitation" mode appears in the scan form (admin only, explicit consent required). It
+  scans like the aggressive mode but applies matching Metasploit / Exploit-DB exploits to the
+  target — real exploitation. Without both the plugin **and** the license the option stays
+  hidden and the core never exploits.
+
 ## [1.1.0] - 2026-06-26
 
 ### Added

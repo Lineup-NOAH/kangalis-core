@@ -608,6 +608,18 @@ WIZARD_MODES: dict[str, WizardModeSpec] = {
         admin_only=True,
         exploit=False,
     ),
+    # Sömürme (SR-1): agresif gibi tarar AMA eşleşen exploit'leri (MSF + Exploit-DB) UYGULAR (gerçek
+    # sızma). UI'da yalnız eklenti+lisans varken görünür (``exploit_unlocked``); worker'da
+    # ``does_exploitation`` + ``feature_licensed`` + eklenti ``_gate`` ile kapılı (agresif kilitleri
+    # + msfrpcd/ALLOW_EXPLOITDB_EXECUTION EK kapı).
+    "exploit": WizardModeSpec(
+        "exploit",
+        ScanType.vuln,
+        ScanMode.exploit,
+        needs_ack=True,
+        admin_only=True,
+        exploit=True,
+    ),
 }
 
 # Eski form/şablon değerleri (geri uyumluluk): safe→ağ, aggressive→agresif CVE,
@@ -615,7 +627,6 @@ WIZARD_MODES: dict[str, WizardModeSpec] = {
 _LEGACY_MODE_ALIASES = {
     "safe": "network",
     "aggressive": "cve_aggressive",
-    "exploit": "network",
     "credentialed": "network",
 }
 
