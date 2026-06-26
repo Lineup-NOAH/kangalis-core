@@ -142,6 +142,12 @@ inside the images. Nothing to install by hand.
 > (Windows: `%UserProfile%\.wslconfig` → `memory=…`; or Docker Desktop → Settings → Resources), or
 > lower `AI_MEM_LIMIT`. **The scanning core runs fine on 4–8 GB — the AI is entirely optional.**
 
+> **⚙️ Local-AI CPU usage.** The model runs on CPU and uses the cores **only while generating** a
+> reply (a few seconds per summary) — it idles at ~0 % the rest of the time. It scales with cores:
+> **4 cores are enough** (slower replies), 8+ just answer faster. The scanning core itself needs only
+> ~2. On a low-core host you can cap it with `OLLAMA_NUM_THREAD=N` (or a Compose `cpus:` limit) so an
+> AI reply doesn't briefly take the whole box.
+
 > **🌐 Network reachability.** Scans run from the worker container, so the host must have layer-3
 > connectivity to the networks you scan (same subnet/VLAN, or a route to them).
 
