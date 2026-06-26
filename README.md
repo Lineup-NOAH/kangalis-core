@@ -1,3 +1,9 @@
+<p align="center">
+  <a href="README.md"><img alt="English" src="https://img.shields.io/badge/English-2563eb?style=for-the-badge"></a>
+  &nbsp;
+  <a href="README.tr.md"><img alt="Türkçe" src="https://img.shields.io/badge/T%C3%BCrk%C3%A7e-64748b?style=for-the-badge"></a>
+</p>
+
 # Kangalis
 
 > **The guardian of your internal network** — a Python-based vulnerability management platform with a web dashboard, focused primarily on **internal network/system scanning**.
