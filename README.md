@@ -107,6 +107,44 @@ sandboxed Exploit-DB/searchsploit PoC runner, credential brute-force). The core 
 Exploit-DB **metadata signal** (*an exploit exists* — id ↔ CVE ↔ URL, informational); fetching and
 **running** PoCs is the plugin's job.
 
+## System requirements
+
+Everything runs in Docker containers, so the host's **only** hard prerequisite is **Docker + Docker
+Compose** — `nmap`, Python, PostgreSQL, Redis and (optionally) the local AI model are all provisioned
+inside the images. Nothing to install by hand.
+
+| Resource | Core (scanning + dashboard) | + Local AI (optional) |
+|---|---|---|
+| **CPU** | 2 cores (4 recommended) | 4 cores (8+ recommended — CPU inference) |
+| **RAM** | 4 GB min · **8 GB recommended** | **+8 GB** → **16 GB** total recommended |
+| **Disk** | ~5 GB (10 GB recommended) | **+6 GB** → ~15–20 GB |
+| **GPU** | — | not required (CPU-only); a GPU only makes the AI faster |
+
+**Operating system** — anything that runs Docker:
+- **Linux** — native Docker Engine (recommended for production / air-gapped sites).
+- **Windows 10/11** — Docker Desktop (WSL2 backend).
+- **macOS 12+** — Docker Desktop (Apple Silicon or Intel).
+
+**Software & connectivity**
+- **Docker Engine 24+** and **Docker Compose v2** — the single hard requirement.
+- Internet is needed only for the **first** build/pull and the CVE-database seed (~42 MB). After
+  that the scanner — and the local AI — run **fully offline / air-gapped**.
+- Optional: a free **NVD API key** for faster vulnerability-database sync.
+
+**Where the footprint goes** (measured on a live install)
+- Images: core ~0.9 GB · PostgreSQL ~0.6 GB · Redis ~0.15 GB.
+- Vulnerability database: **~0.5 GB**, pre-seeded with ≈220 K CVEs + 1.3 M CPE rules at install.
+- Local AI model `qwen3:8b`: **~5 GB** (one-time, stored in a Docker volume).
+
+> **🧠 Local-AI memory (Docker Desktop on Windows/macOS).** The AI container needs ~8 GB to hold the
+> model (`mem_limit`, env `AI_MEM_LIMIT`, default `8g`). Docker Desktop only allocates a *slice* of
+> physical RAM (≈half by default), so on a **16 GB** laptop the AI may not fit. Give Docker ≥12 GB
+> (Windows: `%UserProfile%\.wslconfig` → `memory=…`; or Docker Desktop → Settings → Resources), or
+> lower `AI_MEM_LIMIT`. **The scanning core runs fine on 4–8 GB — the AI is entirely optional.**
+
+> **🌐 Network reachability.** Scans run from the worker container, so the host must have layer-3
+> connectivity to the networks you scan (same subnet/VLAN, or a route to them).
+
 ## Installation (quick start)
 
 **Only prerequisite: Docker + Docker Compose.** Runs entirely **on-prem**: scanning, data, and AI
