@@ -38,8 +38,8 @@ If you find a security vulnerability **in Kangalis itself**, please follow
 responsible disclosure:
 
 - **Do not publish** the issue as a **public** GitHub issue/PR.
-- Report it privately to the Lineup-NOAH security team:
-  **security@lineup-noah.com** (you may request PGP).
+- Report it privately via **GitHub Private Vulnerability Reporting** — open the repo's
+  [**Security** tab → **Report a vulnerability**](https://github.com/Lineup-NOAH/kangalis-core/security/advisories/new).
 - Include in your report: affected version/commit, reproduction steps, impact
   assessment, and a proof-of-concept (PoC) if available.
 - We ask that you keep the details confidential until we have verified and fixed
@@ -128,8 +128,8 @@ Kangalis'in **kendisinde** bir güvenlik açığı bulursanız, lütfen sorumlu 
 ilkesine uyun:
 
 - Açığı **kamuya açık** GitHub issue/PR olarak **yayınlamayın**.
-- Bulguyu özel olarak Lineup-NOAH güvenlik ekibine bildirin:
-  **security@lineup-noah.com** (PGP talep edebilirsiniz).
+- Bulguyu **GitHub Private Vulnerability Reporting** ile özel olarak bildirin — deponun
+  [**Security** sekmesi → **Report a vulnerability**](https://github.com/Lineup-NOAH/kangalis-core/security/advisories/new).
 - Bildiriminize şunları ekleyin: etkilenen sürüm/commit, yeniden üretim adımları,
   etki değerlendirmesi ve varsa kavram-kanıtı (PoC).
 - Sorununuzu doğrulayıp düzeltene kadar ayrıntıları gizli tutmanızı rica ederiz.

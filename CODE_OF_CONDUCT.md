@@ -53,9 +53,8 @@ an individual is officially representing the community in public spaces.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the community leaders responsible for enforcement at
-**security@lineup-noah.com**. All complaints will be reviewed and investigated
-promptly and fairly.
+reported to the project maintainer ([**@Lineup-NOAH**](https://github.com/Lineup-NOAH)) via GitHub.
+All complaints will be reviewed and investigated promptly and fairly.
 
 All community leaders are obligated to respect the privacy and security of the
 reporter of any incident.
@@ -122,7 +121,7 @@ toplulukları kamusal alanlarda resmî olarak temsil ettiği durumlarda da geçe
 ## Uygulama
 
 Suistimal, taciz ya da başka türlü kabul edilemez davranışlar uygulamadan sorumlu
-topluluk yöneticilerine **security@lineup-noah.com** adresinden bildirilebilir. Tüm
+proje yöneticisine ([**@Lineup-NOAH**](https://github.com/Lineup-NOAH)) GitHub üzerinden bildirilebilir. Tüm
 şikâyetler hızlı ve adil biçimde incelenir ve soruşturulur.
 
 Tüm topluluk yöneticileri, herhangi bir olayı bildiren kişinin gizliliğine ve

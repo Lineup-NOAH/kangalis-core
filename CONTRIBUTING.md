@@ -10,8 +10,9 @@ contribution process and quality expectations. Please review it before opening a
 ## Security vulnerabilities
 
 **Please do not report security vulnerabilities as public issues or PRs.** Instead,
-follow the responsible-disclosure process in [SECURITY.md](SECURITY.md) (private
-report: `security@lineup-noah.com`). Details are kept confidential until fixed.
+follow the responsible-disclosure process in [SECURITY.md](SECURITY.md) — report privately via
+GitHub's [**Security** tab → **Report a vulnerability**](https://github.com/Lineup-NOAH/kangalis-core/security/advisories/new).
+Details are kept confidential until fixed.
 
 ## Contribution workflow
 
@@ -89,8 +90,9 @@ ve kalite beklentilerini özetler. Lütfen bir PR açmadan önce gözden geçiri
 ## Güvenlik açıkları
 
 **Güvenlik açıklarını lütfen kamuya açık issue veya PR olarak bildirmeyin.** Bunun
-yerine [SECURITY.md](SECURITY.md) belgesindeki sorumlu açıklama sürecini izleyin
-(özel bildirim: `security@lineup-noah.com`). Detaylar düzeltilene kadar gizli tutulur.
+yerine [SECURITY.md](SECURITY.md) belgesindeki sorumlu açıklama sürecini izleyin — GitHub'ın
+[**Security** sekmesi → **Report a vulnerability**](https://github.com/Lineup-NOAH/kangalis-core/security/advisories/new)
+ile özel olarak bildirin. Detaylar düzeltilene kadar gizli tutulur.
 
 ## Katkı akışı
 
