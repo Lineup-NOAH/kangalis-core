@@ -3,6 +3,9 @@
 {% block title %}{{ t('report_title') }} · {{ app_name }}{% endblock %}
 
 {% block content %}
+{# Tüm AI üretim butonları bu boş öğeye senkronlanır (hx-sync ...:queue all) → aynı anda iki
+   AI üretilmez; ikisine de basılırsa SIRAYLA çalışır (Ollama tek-slot, OLLAMA_NUM_PARALLEL=1). #}
+<div id="kg-report-ai" hidden></div>
 <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:18px;">
   <div>
     {% if scan or batch %}<a href="/report" class="kg-chip kg-chip-link" style="margin-bottom:10px; display:inline-flex;">&larr; {{ t('back_to_reports') }}</a>{% endif %}
@@ -57,7 +60,7 @@
   <button type="button" class="kg-btn kg-btn-subtle"
           hx-post="/ai/summary" hx-vals='{"scope": "{{ ai_summary_scope }}", "scope_id": {{ ai_summary_id }}}'
           hx-target="#ai-summary-box" hx-swap="innerHTML"
-          hx-indicator="#ai-summary-spin" hx-disabled-elt="this">{{ icon('sparkles', 14) }} {{ t('ai_summary_btn') }}</button>
+          hx-indicator="#ai-summary-spin" hx-sync="#kg-report-ai:queue all" hx-disabled-elt="this">{{ icon('sparkles', 14) }} {{ t('ai_summary_btn') }}</button>
   <span id="ai-summary-spin" class="htmx-indicator k-sm" style="margin-left:8px; color:var(--fg2);">{{ t('ai_generating') }}</span>
   {% endif %}
 </div>
@@ -79,7 +82,7 @@
   <button type="button" class="kg-btn kg-btn-subtle"
           hx-post="/ai/summary" hx-vals='{"scope": "{{ ai_summary_scope }}", "scope_id": {{ ai_summary_id }}, "audience": "customer"}'
           hx-target="#ai-summary-exec-box" hx-swap="innerHTML"
-          hx-indicator="#ai-summary-exec-spin" hx-disabled-elt="this">{{ icon('reports', 14) }} {{ t('ai_summary_exec_btn') }}</button>
+          hx-indicator="#ai-summary-exec-spin" hx-sync="#kg-report-ai:queue all" hx-disabled-elt="this">{{ icon('reports', 14) }} {{ t('ai_summary_exec_btn') }}</button>
   <span id="ai-summary-exec-spin" class="htmx-indicator k-sm" style="margin-left:8px; color:var(--fg2);">{{ t('ai_generating') }}</span>
   {% endif %}
 </div>
@@ -101,7 +104,7 @@
   <button type="button" class="kg-btn kg-btn-subtle"
           hx-post="/ai/priorities" hx-vals='{"scope": "{{ ai_summary_scope }}", "scope_id": {{ ai_summary_id }}}'
           hx-target="#ai-priorities-box" hx-swap="innerHTML"
-          hx-indicator="#ai-priorities-spin" hx-disabled-elt="this">{{ icon('list', 14) }} {{ t('ai_priorities_btn') }}</button>
+          hx-indicator="#ai-priorities-spin" hx-sync="#kg-report-ai:queue all" hx-disabled-elt="this">{{ icon('list', 14) }} {{ t('ai_priorities_btn') }}</button>
   <span id="ai-priorities-spin" class="htmx-indicator k-sm" style="margin-left:8px; color:var(--fg2);">{{ t('ai_generating') }}</span>
   {% endif %}
 </div>
@@ -115,7 +118,7 @@
   <button type="button" class="kg-btn kg-btn-subtle"
           hx-post="/ai/exploit-chain" hx-vals='{"scope": "{{ ai_summary_scope }}", "scope_id": {{ ai_summary_id }}}'
           hx-target="#ai-exploit-chain-box" hx-swap="innerHTML"
-          hx-indicator="#ai-exploit-chain-spin" hx-disabled-elt="this">{{ icon('sparkles', 14) }} {{ t('ai_exploit_chain_btn') }}</button>
+          hx-indicator="#ai-exploit-chain-spin" hx-sync="#kg-report-ai:queue all" hx-disabled-elt="this">{{ icon('sparkles', 14) }} {{ t('ai_exploit_chain_btn') }}</button>
   <span id="ai-exploit-chain-spin" class="htmx-indicator k-sm" style="margin-left:8px; color:var(--fg2);">{{ t('ai_generating') }}</span>
 </div>
 {% endif %}
@@ -168,7 +171,7 @@
   <button type="button" class="kg-btn kg-btn-subtle"
           hx-post="/ai/compliance" hx-vals='{"scope": "{{ ai_summary_scope }}", "scope_id": {{ ai_summary_id }}}'
           hx-target="#ai-compliance-box" hx-swap="innerHTML"
-          hx-indicator="#ai-compliance-spin" hx-disabled-elt="this">{{ icon('sparkles', 14) }} {{ t('ai_compliance_btn') }}</button>
+          hx-indicator="#ai-compliance-spin" hx-sync="#kg-report-ai:queue all" hx-disabled-elt="this">{{ icon('sparkles', 14) }} {{ t('ai_compliance_btn') }}</button>
   <span id="ai-compliance-spin" class="htmx-indicator k-sm" style="margin-left:8px; color:var(--fg2);">{{ t('ai_generating') }}</span>
 </div>
 {% endif %}
@@ -275,7 +278,7 @@
   <button type="button" class="kg-btn kg-btn-subtle kg-btn-sm"
           hx-post="/ai/asset-story" hx-vals='{"asset_id": {{ grp.asset_id }}, "scope": "{{ ai_summary_scope }}", "scope_id": {{ ai_summary_id }}}'
           hx-target="#ai-story-{{ grp.asset_id }}" hx-swap="innerHTML"
-          hx-indicator="#ai-story-spin-{{ grp.asset_id }}" hx-disabled-elt="this">{{ icon('sparkles', 13) }} {{ t('ai_story_btn') }}</button>
+          hx-indicator="#ai-story-spin-{{ grp.asset_id }}" hx-sync="#kg-report-ai:queue all" hx-disabled-elt="this">{{ icon('sparkles', 13) }} {{ t('ai_story_btn') }}</button>
   <span id="ai-story-spin-{{ grp.asset_id }}" class="htmx-indicator k-sm" style="color:var(--fg2);">{{ t('ai_generating') }}</span>
   {% endif %}
   <span class="kg-chip">{{ grp['items']|length }}</span>
@@ -374,7 +377,7 @@
     <button type="button" class="kg-btn kg-btn-subtle" style="margin-top:6px;"
             hx-post="/ai/explain" hx-vals='{"finding_id": {{ f.id }}}'
             hx-target="#ai-exp-{{ f.id }}" hx-swap="innerHTML"
-            hx-indicator="#ai-spin-{{ f.id }}" hx-disabled-elt="this">{{ icon('sparkles', 14) }} {{ t('ai_explain_btn') }}</button>
+            hx-indicator="#ai-spin-{{ f.id }}" hx-sync="#kg-report-ai:queue all" hx-disabled-elt="this">{{ icon('sparkles', 14) }} {{ t('ai_explain_btn') }}</button>
     <span id="ai-spin-{{ f.id }}" class="htmx-indicator k-sm" style="margin-left:8px; color:var(--fg2);">{{ t('ai_generating') }}</span>
     {% endif %}
   </div>
@@ -388,7 +391,7 @@
     <button type="button" class="kg-btn kg-btn-subtle"
             hx-post="/ai/remediation-script" hx-vals='{"finding_id": {{ f.id }}}'
             hx-target="#ai-scr-{{ f.id }}" hx-swap="innerHTML"
-            hx-indicator="#ai-scr-spin-{{ f.id }}" hx-disabled-elt="this">{{ icon('copy', 14) }} {{ t('ai_remscript_btn') }}</button>
+            hx-indicator="#ai-scr-spin-{{ f.id }}" hx-sync="#kg-report-ai:queue all" hx-disabled-elt="this">{{ icon('copy', 14) }} {{ t('ai_remscript_btn') }}</button>
     <span id="ai-scr-spin-{{ f.id }}" class="htmx-indicator k-sm" style="margin-left:8px; color:var(--fg2);">{{ t('ai_generating') }}</span>
     {% endif %}
   </div>
