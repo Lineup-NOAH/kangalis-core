@@ -22,8 +22,20 @@
 <form method="post" action="/scans/start" id="scan-form" class="kg-card" style="padding:20px; margin-bottom:16px;">
   <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:4px;">
     <h2 class="k-h3" style="display:flex; align-items:center; gap:8px; margin:0;">{{ icon('target', 18) }} {{ t('scan_panel_title') }}</h2>
+    {% if exploit_unlocked and user.role.value == "admin" %}
+    <!-- #216: Exploit denemeleri — sağ üstte ayrı buton; tıklanınca onay pop-up'ı, kabul edilince Sömürme modu açılır -->
+    <button type="button" id="exploit-toggle" class="kg-btn kg-btn-ghost" onclick="exploitZoneToggle()" style="display:flex; align-items:center; gap:6px;">{{ icon('exploit', 15) }} {{ t('exploit_zone_toggle') }}</button>
+    {% endif %}
   </div>
   <p class="k-sm" style="margin:0 0 16px;">{{ t('scan_panel_sub') }}</p>
+
+  {% if exploit_unlocked and user.role.value == "admin" %}
+  <!-- Exploit denemeleri uyarı bandı — yalnız Exploit alanı açılınca görünür -->
+  <div id="exploit-zone-banner" class="kg-danger" style="display:none; margin:0 0 16px;">
+    <span style="color:var(--sev-critical); flex:0 0 auto; margin-top:1px;">{{ icon('alert', 20, 2) }}</span>
+    <div class="k-sm" style="line-height:1.6;">{{ t('exploit_zone_warn') }}</div>
+  </div>
+  {% endif %}
 
   <!-- ADIM: Hedef -->
   <div class="scan-step" data-step="target">
@@ -71,7 +83,7 @@
           {% if user.role.value == "admin" %}<option value="cve_aggressive">{{ t('wmode_cve_aggr') }}</option>{% endif %}
           <option value="web">{{ t('type_web') }}</option>
           {% if user.role.value == "admin" %}<option value="web_aggressive">{{ t('wmode_web_cve') }}</option>{% endif %}
-          {% if exploit_unlocked and user.role.value == "admin" %}<option value="exploit">{{ t('wmode_exploit') }}</option>{% endif %}
+          {% if exploit_unlocked and user.role.value == "admin" %}<option value="exploit" class="exploit-mode-opt" hidden disabled>{{ t('wmode_exploit') }}</option>{% endif %}
         </select>
       </div>
       <div id="q-ports-wrap">
@@ -582,6 +594,31 @@ function auditZoneCount(pid) {
   var n = pop ? pop.querySelectorAll('input[type="checkbox"]:checked').length : 0;
   var el = document.getElementById(pid + '-zones-sum');
   if (el) el.textContent = n ? AUDIT_ZONE_T.sum.replace('{n}', n) : AUDIT_ZONE_T.none;
+}
+
+/* #216: Exploit denemeleri alanı aç/kapat — sağ üst buton. Varsayılan GÜVENLİ:
+   "Sömürme" modu gizli/kapalı. Buton tıklanınca onay pop-up'ı; kabul edilirse
+   mod seçicide görünür + uyarı bandı açılır. Tekrar tıklanınca güvenli moda döner. */
+function exploitZoneOpts() {
+  return Array.prototype.slice.call(document.querySelectorAll('#q-mode .exploit-mode-opt'));
+}
+function exploitZoneToggle() {
+  var btn = document.getElementById('exploit-toggle');
+  var banner = document.getElementById('exploit-zone-banner');
+  var sel = document.getElementById('q-mode');
+  var open = btn && btn.classList.contains('kg-btn-danger');
+  if (!open) {
+    if (!confirm({{ t('exploit_zone_confirm') | tojson }})) return;
+    exploitZoneOpts().forEach(function (o) { o.hidden = false; o.disabled = false; });
+    if (banner) banner.style.display = 'flex';
+    if (btn) { btn.classList.remove('kg-btn-ghost'); btn.classList.add('kg-btn-danger'); }
+  } else {
+    if (sel) sel.value = 'network';
+    exploitZoneOpts().forEach(function (o) { o.hidden = true; o.disabled = true; });
+    if (banner) banner.style.display = 'none';
+    if (btn) { btn.classList.remove('kg-btn-danger'); btn.classList.add('kg-btn-ghost'); }
+  }
+  scanMode();
 }
 
 document.addEventListener('keydown', function (e) {

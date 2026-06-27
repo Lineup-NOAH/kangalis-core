@@ -35,25 +35,32 @@ async def test_scans_exploit_mode_gated(
     session_factory: async_sessionmaker[AsyncSession],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Sömürme (exploit) modu YALNIZ eklenti+lisans (exploit_unlocked) + admin için forma düşer."""
-    # Varsayılan: eklenti/lisans yok → exploit_unlocked False → seçenek GÖRÜNMEZ.
+    """Sömürme (exploit): YALNIZ eklenti+lisans (exploit_unlocked) + admin için forma düşer;
+    ve mod seçeneği GİZLİ gelir — sağ üstteki 'Exploit denemeleri' butonu açar (#216)."""
+    # Varsayılan: eklenti/lisans yok → exploit_unlocked False → ne seçenek ne buton GÖRÜNMEZ.
     await _login(client, session_factory, "exadmin", Role.admin)
     resp = await client.get("/scans")
     assert resp.status_code == 200
     assert 'value="exploit"' not in resp.text
+    assert 'id="exploit-toggle"' not in resp.text
 
-    # Eklenti kurulu + lisanslı (exploit_unlocked True) → seçenek admin formuna düşer.
+    # Eklenti kurulu + lisanslı (exploit_unlocked True) → buton + GİZLİ mod seçeneği düşer.
     async def _unlocked(_session: object) -> bool:
         return True
 
     monkeypatch.setattr("cybersectool.web.routes.exploit_unlocked", _unlocked)
     resp2 = await client.get("/scans")
+    # Mod artık doğrudan listelenmez; gizli (exploit-mode-opt) + sağ üst buton ile açılır.
     assert 'value="exploit"' in resp2.text
+    # Varsayılan GİZLİ + seçilemez (hidden disabled) — toggle açmadan kullanılamaz.
+    assert 'class="exploit-mode-opt" hidden disabled' in resp2.text
+    assert 'id="exploit-toggle"' in resp2.text  # sağ üst aç/kapat butonu
 
-    # Admin-only: kilit açık olsa bile analist görmez.
+    # Admin-only: kilit açık olsa bile analist ne seçeneği ne butonu görür.
     await _login(client, session_factory, "exanalyst", Role.analyst)
     resp3 = await client.get("/scans")
     assert 'value="exploit"' not in resp3.text
+    assert 'id="exploit-toggle"' not in resp3.text
 
 
 async def test_scans_redirects_anonymous(client: AsyncClient) -> None:

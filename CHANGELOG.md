@@ -4,6 +4,18 @@ All notable changes to Kangalis are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project follows
 [Semantic Versioning](https://semver.org/).
 
+## [1.4.0] - 2026-06-27
+
+### Changed
+- **Exploitation is now behind a top-right "Exploit attempts" button, not a scan mode.**
+  When the commercial `kangalis-exploit` plugin **and** a valid `exploit` license are active,
+  admins see an "Exploit attempts" button in the top-right of the scan panel. Clicking it
+  shows a consent prompt; on accept it reveals the (otherwise hidden) "Exploitation" mode plus
+  a warning banner, and clicking again returns to the safe default. The mode no longer appears
+  directly in the scan-mode dropdown and cannot be selected without this explicit opt-in. This
+  restores the earlier "safe area + Exploit tab" design. Without both the plugin and the license,
+  neither the button nor the mode is shown.
+
 ## [1.3.0] - 2026-06-27
 
 ### Added

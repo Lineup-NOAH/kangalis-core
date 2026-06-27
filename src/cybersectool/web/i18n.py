@@ -759,6 +759,24 @@ DICT: dict[str, dict[str, str]] = {
     },
     "wmode_cve_aggr": {"tr": "Agresif CVE (sömürmez)", "en": "Aggressive CVE (no exploit)"},
     "wmode_exploit": {"tr": "Sömürme (gerçek exploit)", "en": "Exploitation (real exploit)"},
+    # #216: Exploit denemeleri — sağ üst buton + onay pop-up + uyarı bandı (Sömürme modunu açar)
+    "exploit_zone_toggle": {"tr": "Exploit denemeleri", "en": "Exploit attempts"},
+    "exploit_zone_confirm": {
+        "tr": "Sömürme (gerçek exploit) hedefe MÜDAHALE eder "
+        "(servis kesintisi/iz riski). Yalnız yetkili + yedekli sistemlerde. "
+        "Devam edilsin mi?",
+        "en": "Exploitation (real exploit) INTERVENES on the target "
+        "(service disruption/trace risk). Only on authorized + backed-up "
+        "systems. Continue?",
+    },
+    "exploit_zone_warn": {
+        "tr": "⚠️ Exploit denemeleri alanı — deneysel/müdahaleci. 'Sömürme' modu hedefe "
+        "gerçek exploit uygular (eklenti + lisans gerekli); yalnız yetkili + yedekli "
+        "sistemlerde kullan.",
+        "en": "⚠️ Exploit attempts zone — experimental/intrusive. 'Exploitation' mode applies "
+        "real exploits to the target (plugin + license required); use only on authorized + "
+        "backed-up systems.",
+    },
     "wmode_cve_aggr_d": {
         "tr": "CVE'leri aktif olarak doğrular (nmap NSE vuln/exploit) ve hangi exploit'lerin "
         "KULLANILABİLECEĞİNİ gösterir — ama SÖMÜRMEZ. Müdahaleci — yalnız admin + açık onay.",
