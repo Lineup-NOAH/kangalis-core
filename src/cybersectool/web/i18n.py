@@ -260,6 +260,18 @@ DICT: dict[str, dict[str, str]] = {
         "tr": "Büyük sürüm yükseltmeleri öncesi veritabanı yedeği (pg_dump) almanız önerilir.",
         "en": "Taking a database backup (pg_dump) before major upgrades is recommended.",
     },
+    "update_offline_note": {
+        "tr": "Windows PowerShell'de komutları TEK TEK çalıştır (her satırı ayrı; '&&' "
+        "desteklenmez). 'git pull' → \"not a git repository\" diyorsa klasörün bir git klonu "
+        "değildir: yeni sürümü GitHub'dan ZIP indir (Releases > kaynak kodu), içeriğini mevcut "
+        "klasörünün üzerine kopyala (.env korunur, veritabanı Docker volume'ünde durur), sonra "
+        "'docker compose up -d --build' çalıştır.",
+        "en": "On Windows PowerShell, run the commands one per line ('&&' is not supported). If "
+        "'git pull' says \"not a git repository\", your folder isn't a git clone: download the "
+        "new version's ZIP from GitHub (Releases > source code), copy its contents over your "
+        "existing folder (.env is kept, the database stays in its Docker volume), then run "
+        "'docker compose up -d --build'.",
+    },
     "update_copy": {"tr": "Kopyala", "en": "Copy"},
     "update_copied": {"tr": "Kopyalandı", "en": "Copied"},
     "update_settings_title": {"tr": "Denetim Ayarları", "en": "Check Settings"},

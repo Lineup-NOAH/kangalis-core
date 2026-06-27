@@ -4,6 +4,15 @@ All notable changes to Kangalis are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project follows
 [Semantic Versioning](https://semver.org/).
 
+## [1.5.1] - 2026-06-27
+
+### Fixed
+- **Update page: the manual update commands no longer use `&&`.** They are now shown one per
+  line, so they work in Windows PowerShell 5.1 (where `&&` is a parse error) as well as bash.
+- **Update page: added guidance for non-git-clone installs.** If `git pull` reports "not a git
+  repository", the page now explains the offline path (download the release ZIP, copy it over
+  the existing folder — `.env` and the database volume are preserved — then rebuild).
+
 ## [1.5.0] - 2026-06-27
 
 ### Added

@@ -6031,8 +6031,10 @@ async def license_save_web(
 
 # Host'ta çalıştırılacak güncelleme komutları (iki dağıtım yolu için sabit; kullanıcı girdisi yok).
 _UPDATE_APPLY_CMDS = {
-    "image": "docker compose pull && docker compose up -d",
-    "source": "git pull && docker compose up -d --build",
+    # Komutlar AYRI SATIRLARDA — Windows PowerShell 5.1 '&&' DESTEKLEMEZ (parse hatasi).
+    # Her satir tek tek calisir (PowerShell + bash + cmd hepsinde gecerli).
+    "image": "docker compose pull\ndocker compose up -d",
+    "source": "git pull\ndocker compose up -d --build",
 }
 
 

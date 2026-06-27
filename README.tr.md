@@ -9,7 +9,7 @@
 > **İç ağınızın bekçisi** — birincil odağı **iç ağ/sistem taraması** olan, web panelli, Python tabanlı bir zafiyet yönetim platformu.
 
 [![CI](https://github.com/Lineup-NOAH/kangalis-core/actions/workflows/ci.yml/badge.svg)](https://github.com/Lineup-NOAH/kangalis-core/actions/workflows/ci.yml)
-[![version](https://img.shields.io/badge/version-1.5.0-blue)]()
+[![version](https://img.shields.io/badge/version-1.5.1-blue)]()
 [![python](https://img.shields.io/badge/python-3.12%2B-blue)]()
 [![license](https://img.shields.io/badge/license-MIT-green)]()
 
