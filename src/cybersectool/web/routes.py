@@ -22,7 +22,7 @@ from typing import Annotated, cast
 from urllib.parse import quote, urlparse
 
 from fastapi import APIRouter, File, Form, Request, Response, UploadFile, status
-from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -225,6 +225,9 @@ from cybersectool.core.schedules import (
 )
 from cybersectool.core.scope import get_active_policy, set_active_scope
 from cybersectool.core.security import verify_password
+from cybersectool.core.self_update import apply_possible as self_update_apply_possible
+from cybersectool.core.self_update import trigger_update as trigger_self_update
+from cybersectool.core.self_update import update_status as self_update_status
 from cybersectool.core.session_guard import (
     session_idle_expired,
     start_session_timeout,
@@ -6034,7 +6037,13 @@ _UPDATE_APPLY_CMDS = {
 
 
 async def _update_page(
-    request: Request, session: AsyncSession, user: User, *, message: str | None = None
+    request: Request,
+    session: AsyncSession,
+    user: User,
+    *,
+    message: str | None = None,
+    apply_started: bool = False,
+    apply_error: str | None = None,
 ) -> Response:
     """Güncelleme sayfası: bileşen sürümleri + son denetim durumu + uygulama komutları."""
     row = await get_settings(session)
@@ -6050,6 +6059,10 @@ async def _update_page(
             "apply_cmds": _UPDATE_APPLY_CMDS,
             # Eklenti kuruluysa "guncelle" sonrasi re-bake hatirlatmasi (--build eklentiyi siler).
             "exploitation_available": exploit_plugin_available(),
+            # Uygulama-içi otomatik güncelleme: docker.sock var mı + bu istekte tetiklendi/hata.
+            "update_apply_possible": self_update_apply_possible(),
+            "apply_started": apply_started,
+            "apply_error": apply_error,
             "message": message,
         },
     )
@@ -6089,16 +6102,65 @@ async def update_settings_save(
     session: SessionDep,
     update_check_enabled: Annotated[bool, Form()] = False,
     update_check_url: Annotated[str, Form()] = "",
+    update_apply_enabled: Annotated[bool, Form()] = False,
 ) -> Response:
-    """Güncelleme denetimi ayarlarını kaydeder (egress aç/kapa + sürüm-kaynak URL)."""
+    """Güncelleme denetimi ayarlarını kaydeder (egress aç/kapa + sürüm-kaynak URL + oto-uygula)."""
     user = await _current_user(request, session)
     if user is None:
         return _redirect_login()
     if user.role != Role.admin:
         return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
-    await save_update_settings(session, enabled=update_check_enabled, url=update_check_url)
+    await save_update_settings(
+        session,
+        enabled=update_check_enabled,
+        url=update_check_url,
+        apply_enabled=update_apply_enabled,
+    )
     await log_action(session, "settings_update", user_id=user.id, target="update")
     return RedirectResponse("/update?msg=saved", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/update/apply")
+async def update_apply_now(request: Request, session: SessionDep) -> Response:
+    """Admin "Güncelle" → uygulama-içi OTOMATİK güncellemeyi tetikler (opt-in + docker.sock).
+
+    GÜVENLİK KAPILARI: (1) yalnız admin, (2) ``update_apply_enabled`` açık olmalı (varsayılan
+    KAPALI). İkisi de sağlanmazsa hiçbir şey yapmaz. Tetikleme + sonuç audit'e yazılır.
+    Güncelleyici konteyneri host'ta derle+yeniden-başlat yapar; sayfa "başladı" durumunu gösterip
+    durumu yoklar.
+    """
+    user = await _current_user(request, session)
+    if user is None:
+        return _redirect_login()
+    if user.role != Role.admin:
+        return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
+    row = await get_settings(session)
+    if not row.update_apply_enabled:
+        # Opt-in kapalı → reddet (sayfada hata göster). Güvenlik sınırı: varsayılan kapalı.
+        await log_action(session, "update_apply", user_id=user.id, target="rejected_disabled")
+        return await _update_page(request, session, user, apply_error="disabled", message=None)
+    result = await trigger_self_update()
+    await log_action(
+        session,
+        "update_apply",
+        user_id=user.id,
+        target=("started" if result.ok else f"failed: {result.message}")[:200],
+    )
+    if result.ok:
+        return await _update_page(request, session, user, apply_started=True)
+    return await _update_page(request, session, user, apply_error=result.message)
+
+
+@router.get("/update/apply/status")
+async def update_apply_status(request: Request, session: SessionDep) -> Response:
+    """Güncelleyici konteynerinin durumunu JSON döndürür (sayfa yoklaması; admin)."""
+    user = await _current_user(request, session)
+    if user is None:
+        return JSONResponse({"state": "none"}, status_code=status.HTTP_401_UNAUTHORIZED)
+    if user.role != Role.admin:
+        return JSONResponse({"state": "none"}, status_code=status.HTTP_403_FORBIDDEN)
+    st = await self_update_status()
+    return JSONResponse({"state": st.state, "exit_code": st.exit_code, "log_tail": st.log_tail})
 
 
 @router.post("/settings/smtp")

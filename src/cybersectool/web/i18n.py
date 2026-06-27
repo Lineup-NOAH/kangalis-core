@@ -173,6 +173,50 @@ DICT: dict[str, dict[str, str]] = {
     "update_uptodate": {"tr": "Günceldir", "en": "Up to date"},
     "update_available_badge": {"tr": "Yeni sürüm var!", "en": "Update available!"},
     "update_do_now": {"tr": "Güncelle", "en": "Update"},
+    # Uygulama-içi OTOMATİK güncelleme (docker.sock; opt-in + admin)
+    "update_apply_btn": {"tr": "Şimdi otomatik güncelle", "en": "Auto-update now"},
+    "update_apply_confirm": {
+        "tr": "Otomatik güncelleme: uygulama host'ta yeni sürümü derleyip kendini yeniden "
+        "başlatacak. Birkaç dakika sürebilir ve bu sırada uygulama kısa süre erişilemez olur. "
+        "Devam edilsin mi?",
+        "en": "Auto-update: the app will build the new version on the host and restart itself. "
+        "This can take a few minutes and the app will be briefly unavailable. Continue?",
+    },
+    "update_apply_started_title": {"tr": "Güncelleme başladı", "en": "Update started"},
+    "update_apply_started_body": {
+        "tr": "Yeni sürüm host'ta derleniyor; uygulama birkaç dakika içinde yeni sürümle "
+        "yeniden başlayacak. Bu sayfa durumu otomatik izliyor.",
+        "en": "The new version is building on the host; the app will restart with it in a few "
+        "minutes. This page is tracking the status automatically.",
+    },
+    "update_apply_failed": {
+        "tr": "Otomatik güncelleme başlatılamadı",
+        "en": "Auto-update could not start",
+    },
+    "update_apply_disabled_msg": {
+        "tr": "Otomatik güncelleme kapalı. Aşağıdaki ayarlardan açabilirsin.",
+        "en": "Auto-update is off. You can enable it in the settings below.",
+    },
+    "update_apply_optin_label": {
+        "tr": "Uygulama-içi otomatik güncellemeye izin ver (Güncelle butonu)",
+        "en": "Allow in-app auto-update (Update button)",
+    },
+    "update_apply_optin_hint": {
+        "tr": "Açıkça istemediysen KAPALI tut. Açıkken admin'in 'Güncelle' butonu uygulamanın "
+        "host'taki Docker üzerinden kendini yeniden derleyip başlatmasına izin verir "
+        "(docker.sock gerekir; kurulum bir git klonu olmalı + internet).",
+        "en": "Keep OFF unless you want it. When on, an admin's 'Update' button lets the app "
+        "rebuild and restart itself via the host's Docker (requires docker.sock; the install "
+        "must be a git clone + internet).",
+    },
+    "update_apply_socket_missing": {
+        "tr": "docker.sock bu kuruluma mount edilmemiş → otomatik güncelleme kullanılamaz "
+        "(compose'da app volumes'a eklenmeli).",
+        "en": "docker.sock is not mounted into this install → auto-update unavailable "
+        "(add it to the app volumes in compose).",
+    },
+    "update_apply_running": {"tr": "Güncelleme sürüyor…", "en": "Update in progress…"},
+    "update_apply_log_label": {"tr": "Güncelleyici günlüğü", "en": "Updater log"},
     "update_release_notes": {"tr": "Sürüm notları", "en": "Release notes"},
     "update_plugin_rebake_note": {
         "tr": "Exploit eklentisi kurulu: güncellemeden sonra exploit_kurulum içindeki kur'u "

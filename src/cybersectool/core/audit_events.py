@@ -496,6 +496,12 @@ AUDIT_EVENTS: dict[str, AuditEventMeta] = {
         "Güncelleme denetimi yapıldı: {target}",
         "Update check performed: {target}",
     ),
+    "update_apply": AuditEventMeta(
+        8025,
+        "system",
+        "Uygulama-içi otomatik güncelleme tetiklendi: {target}",
+        "In-app automatic update triggered: {target}",
+    ),
     "demo_task": AuditEventMeta(
         8999, "system", "Demo görevi çalıştırıldı: {target}", "Demo task executed: {target}"
     ),

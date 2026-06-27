@@ -292,17 +292,21 @@ async def save_license_public_key(session: AsyncSession, *, public_key: str) -> 
     return row
 
 
-async def save_update_settings(session: AsyncSession, *, enabled: bool, url: str) -> AppSettings:
-    """Güncelleme denetimi ayarlarını kaydeder (egress aç/kapa + sürüm-kaynak URL).
+async def save_update_settings(
+    session: AsyncSession, *, enabled: bool, url: str, apply_enabled: bool = False
+) -> AppSettings:
+    """Güncelleme denetimi ayarlarını kaydeder (egress aç/kapa + sürüm-kaynak URL + oto-uygula).
 
     URL boş ise varsayılana düşer; http(s) değilse de varsayılana çekilir (SSRF/şema koruması —
-    admin-ayarlı olsa bile file://, gopher:// vb. engellenir). Sonuç değerleri (latest_version,
-    update_last_*) buradan DEĞİŞTİRİLMEZ; onları yalnız denetim (run_update_check) yazar.
+    admin-ayarlı olsa bile file://, gopher:// vb. engellenir). ``apply_enabled`` = uygulama-içi
+    OTOMATİK güncelleme (docker.sock) opt-in'i. Sonuç değerleri (latest_version, update_last_*)
+    buradan DEĞİŞTİRİLMEZ; onları yalnız denetim (run_update_check) yazar.
     """
     from cybersectool.core.update_check import DEFAULT_UPDATE_CHECK_URL
 
     row = await get_settings(session)
     row.update_check_enabled = enabled
+    row.update_apply_enabled = apply_enabled
     clean = (url or "").strip()
     if not clean.lower().startswith(("http://", "https://")):
         clean = DEFAULT_UPDATE_CHECK_URL

@@ -781,6 +781,12 @@ class AppSettings(Base):
     # DIŞ-ERİŞİM (egress): YALNIZ bu denetim internete çıkar; kapatılabilir (air-gap/sıfır-egress)
     # + URL değiştirilebilir (kendi ayna/sürüm sunucusu). Uygulamanın geri kalanı tamamen yereldir.
     update_check_enabled: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    # Uygulama-içi OTOMATİK güncelleme (docker.sock ile yığını yeniden derle+başlat) —
+    # OPT-IN, VARSAYILAN KAPALI. Açıkken admin /update sayfasından "Güncelle" butonuyla
+    # güncellemeyi tetikleyebilir (bkz. core/self_update). Güvenlik bedeli operatörün tercihi.
+    update_apply_enabled: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false"
+    )
     # Sürüm kaynağı (GitHub Releases API). core/update_check.DEFAULT_UPDATE_CHECK_URL ile AYNI.
     update_check_url: Mapped[str] = mapped_column(
         String(500),

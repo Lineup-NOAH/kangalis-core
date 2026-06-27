@@ -4,6 +4,18 @@ All notable changes to Kangalis are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project follows
 [Semantic Versioning](https://semver.org/).
 
+## [1.5.0] - 2026-06-27
+
+### Added
+- **Optional in-app auto-update.** On the Update page, admins can enable "Allow in-app
+  auto-update". When it's on and an update is available, the **Update** button performs the
+  update itself: it launches a one-shot updater container (via the mounted Docker socket) that
+  runs `git pull` + rebuild + restart on the host, and the page tracks progress and reloads on
+  the new version. **Off by default** — when off, or when the Docker socket isn't mounted, the
+  page still just shows the manual host commands, preserving the prior security boundary. It is
+  admin-only, requires an explicit consent prompt, and every trigger is written to the audit log.
+  Requires a git-clone install with internet access.
+
 ## [1.4.0] - 2026-06-27
 
 ### Changed

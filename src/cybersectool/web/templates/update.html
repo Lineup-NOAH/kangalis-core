@@ -12,6 +12,31 @@
 <div class="kg-card" style="max-width:820px; margin-bottom:14px; padding:10px 14px; border-left:3px solid var(--accent);">{{ t('update_flash_saved') }}</div>
 {% endif %}
 
+{% if apply_error %}
+<div class="kg-alert kg-alert-error" style="max-width:820px; margin-bottom:14px;">
+  <strong>{{ t('update_apply_failed') }}:</strong>
+  {% if apply_error == 'disabled' %}{{ t('update_apply_disabled_msg') }}{% else %}{{ apply_error }}{% endif %}
+</div>
+{% endif %}
+
+{% if apply_started %}
+<style>
+  @keyframes kgspin { to { transform: rotate(360deg); } }
+  .kg-spin { width:16px; height:16px; border:2px solid var(--border); border-top-color:var(--accent);
+             border-radius:50%; animation:kgspin .8s linear infinite; flex:0 0 auto; }
+</style>
+<div id="apply-panel" class="kg-card" style="max-width:820px; margin-bottom:14px; padding:14px 16px; border-left:3px solid var(--accent);">
+  <div style="display:flex; align-items:center; gap:10px;">
+    <span class="kg-spin" aria-hidden="true"></span>
+    <div>
+      <div style="font-weight:600;">{{ t('update_apply_started_title') }}</div>
+      <div class="k-sm" style="color:var(--fg2);" id="apply-status-line">{{ t('update_apply_started_body') }}</div>
+    </div>
+  </div>
+  <pre id="apply-log" class="k-xs font-mono" style="display:none; margin:10px 0 0; padding:9px 11px; background:var(--bg2); border:1px solid var(--border); border-radius:6px; max-height:220px; overflow:auto; white-space:pre-wrap;"></pre>
+</div>
+{% endif %}
+
 <div style="max-width:820px; display:flex; flex-direction:column; gap:16px;">
 
   {# --- Sürüm bilgisi (ürün + bileşenler) --- #}
@@ -77,7 +102,16 @@
         <span class="font-mono k-sm">v{{ update.current }} → v{{ update.latest }}</span>
       </div>
       <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+        {% if s.update_apply_enabled and update_apply_possible %}
+        {# Opt-in açık + docker.sock var → buton gerçekten host'ta günceller (onaylı). #}
+        <form method="post" action="/update/apply" style="margin:0;"
+              onsubmit="return confirm({{ t('update_apply_confirm') | tojson }});">
+          <button type="submit" class="kg-btn kg-btn-primary kg-btn-sm">{{ icon('download', 15) }} {{ t('update_apply_btn') }}</button>
+        </form>
+        {% else %}
+        {# Oto-güncelleme kapalı/imkânsız → elle komutlara yönlendir (güvenli varsayılan). #}
         <a href="#update-how" class="kg-btn kg-btn-primary kg-btn-sm">{{ icon('download', 15) }} {{ t('update_do_now') }}</a>
+        {% endif %}
         <a href="https://github.com/Lineup-NOAH/kangalis-core/releases/tag/v{{ update.latest }}" target="_blank" rel="noopener noreferrer" class="kg-btn kg-btn-sm">{{ icon('info', 15) }} {{ t('update_release_notes') }} ↗</a>
       </div>
     </div>
@@ -137,6 +171,17 @@
         <input type="checkbox" name="update_check_enabled" value="true" {{ 'checked' if s.update_check_enabled else '' }} />
         {{ t('update_enabled_label') }}
       </label>
+      {# Uygulama-içi otomatik güncelleme opt-in'i (docker.sock; varsayılan KAPALI) #}
+      <div>
+        <label class="k-sm" style="display:flex; align-items:flex-start; gap:8px; cursor:pointer;">
+          <input type="checkbox" name="update_apply_enabled" value="true" {{ 'checked' if s.update_apply_enabled else '' }} style="margin-top:2px;" />
+          <span>{{ t('update_apply_optin_label') }}</span>
+        </label>
+        <p class="k-xs" style="color:var(--fg2); margin:4px 0 0; padding-left:24px;">{{ t('update_apply_optin_hint') }}</p>
+        {% if not update_apply_possible %}
+        <p class="k-xs" style="color:var(--sev-medium, #d97706); margin:4px 0 0; padding-left:24px;">{{ icon('alert', 12) }} {{ t('update_apply_socket_missing') }}</p>
+        {% endif %}
+      </div>
       <div>
         <label class="k-xs" style="color:var(--fg2); display:block; margin-bottom:4px;">{{ t('update_url_label') }}</label>
         <input type="url" name="update_check_url" class="kg-input font-mono k-xs" style="width:100%;"
@@ -170,5 +215,37 @@
       document.body.removeChild(ta);
     }
   }
+
+  /* Otomatik güncelleme başlatıldıysa güncelleyici durumunu yokla; bitince sayfayı yenile.
+     App yeniden başlarken yoklama hata verir (geçici) → tekrar dener; geri gelince sürüm yeni olur. */
+  (function () {
+    var panel = document.getElementById('apply-panel');
+    if (!panel) return;
+    var logEl = document.getElementById('apply-log');
+    var lineEl = document.getElementById('apply-status-line');
+    var tries = 0, MAX = 200;  // ~13 dk (4 sn * 200)
+    var FAILED = {{ t('update_apply_failed') | tojson }};
+    var DONE = {{ t('update_uptodate') | tojson }};
+    function poll() {
+      tries++;
+      fetch('/update/apply/status', { headers: { 'Accept': 'application/json' } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          if (d && d.log_tail) { logEl.style.display = 'block'; logEl.textContent = d.log_tail; }
+          if (d && d.state === 'exited') {
+            if (d.exit_code === 0) {
+              lineEl.textContent = DONE;
+              setTimeout(function () { location.reload(); }, 4000);
+              return;
+            }
+            lineEl.textContent = FAILED + (d.exit_code == null ? '' : ' (rc=' + d.exit_code + ')');
+            return;  // başarısız → dur, log görünür kalsın
+          }
+          if (tries < MAX) setTimeout(poll, 4000);
+        })
+        .catch(function () { if (tries < MAX) setTimeout(poll, 4000); });
+    }
+    setTimeout(poll, 3000);
+  })();
 </script>
 {% endblock %}
