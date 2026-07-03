@@ -4,6 +4,13 @@ All notable changes to Kangalis are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project follows
 [Semantic Versioning](https://semver.org/).
 
+## [1.5.2] - 2026-07-03
+
+### Fixed
+- **Report & live panel: the "destructive (DoS) PoC blocked" chip now shows text.** The
+  `exploitdb_dos_blocked` label was missing from the translation table, so the critical-severity
+  chip shown on destructive Exploit-DB PoCs rendered blank; added Turkish + English strings.
+
 ## [1.5.1] - 2026-06-27
 
 ### Fixed

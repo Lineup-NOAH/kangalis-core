@@ -1770,6 +1770,10 @@ DICT: dict[str, dict[str, str]] = {
     },
     "exploitdb_run_cmd": {"tr": "Önerilen komut", "en": "Suggested command"},
     "exploitdb_output": {"tr": "Çıktı", "en": "Output"},
+    "exploitdb_dos_blocked": {
+        "tr": "Yıkıcı (DoS) PoC — otomatik çalıştırma engellendi",
+        "en": "Destructive (DoS) PoC — auto-run blocked",
+    },
     "exploitdb_staged_cap": {
         "tr": "Bu sayı bulunan TÜM exploit'ler değil — yalnız denenmek üzere hazırlanan PoC'ler "
         "(CVE başına en çok 3). 'Kullanılabilir exploit' (MSF + Exploit-DB) sayısı daha yüksek "
